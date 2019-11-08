@@ -1,0 +1,691 @@
+{
+	"variables": [],
+	"info": {
+		"name": "groups api",
+		"_postman_id": "2d6beb8f-0956-ef58-0dd7-ecdf67478586",
+		"description": "",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Get Sub Groups",
+			"description": "",
+			"item": [
+				{
+					"name": "get-sub-groups-recursively",
+					"request": {
+						"url": {
+							"raw": "http://local.topcoder-dev.com:8080/v3/groups/1/getSubGroups?includeSubGroups=true&oneLevel=false",
+							"protocol": "http",
+							"host": [
+								"local",
+								"topcoder-dev",
+								"com"
+							],
+							"port": "8080",
+							"path": [
+								"v3",
+								"groups",
+								"1",
+								"getSubGroups"
+							],
+							"query": [
+								{
+									"key": "includeSubGroups",
+									"value": "true",
+									"equals": true,
+									"description": ""
+								},
+								{
+									"key": "oneLevel",
+									"value": "false",
+									"equals": true,
+									"description": ""
+								}
+							],
+							"variable": []
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJhZG1pbmlzdHJhdG9yIl0sImlzcyI6Imh0dHBzOi8vYXBpLnRvcGNvZGVyLWRldi5jb20iLCJoYW5kbGUiOiJrb2hhdGF0ZXN0NzYiLCJleHAiOjE4MTA1MzQwNjYsInVzZXJJZCI6IjQwMTM1NjQ1IiwiaWF0IjoxNDk1MTc0MDY2LCJlbWFpbCI6bnVsbCwianRpIjoiNzkwZTU3ZjQtZDM4ZC00ZDZmLThiZDgtYWUzYjM3M2E0MWYyIn0.OnWYwyVc35jzPBKQgJ27J-n7zYUzjaj3e9k6oRy3PjM",
+								"description": ""
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "get-sub-groups-recursively-with-field-selector",
+					"request": {
+						"url": {
+							"raw": "http://local.topcoder-dev.com:8080/v3/groups/1/getSubGroups?includeSubGroups=true&oneLevel=false&fields=id,subGroups",
+							"protocol": "http",
+							"host": [
+								"local",
+								"topcoder-dev",
+								"com"
+							],
+							"port": "8080",
+							"path": [
+								"v3",
+								"groups",
+								"1",
+								"getSubGroups"
+							],
+							"query": [
+								{
+									"key": "includeSubGroups",
+									"value": "true",
+									"equals": true,
+									"description": ""
+								},
+								{
+									"key": "oneLevel",
+									"value": "false",
+									"equals": true,
+									"description": ""
+								},
+								{
+									"key": "fields",
+									"value": "id,subGroups",
+									"equals": true,
+									"description": ""
+								}
+							],
+							"variable": []
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJhZG1pbmlzdHJhdG9yIl0sImlzcyI6Imh0dHBzOi8vYXBpLnRvcGNvZGVyLWRldi5jb20iLCJoYW5kbGUiOiJrb2hhdGF0ZXN0NzYiLCJleHAiOjE4MTA1MzQwNjYsInVzZXJJZCI6IjQwMTM1NjQ1IiwiaWF0IjoxNDk1MTc0MDY2LCJlbWFpbCI6bnVsbCwianRpIjoiNzkwZTU3ZjQtZDM4ZC00ZDZmLThiZDgtYWUzYjM3M2E0MWYyIn0.OnWYwyVc35jzPBKQgJ27J-n7zYUzjaj3e9k6oRy3PjM",
+								"description": ""
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "get-sub-groups-one-level",
+					"request": {
+						"url": {
+							"raw": "http://local.topcoder-dev.com:8080/v3/groups/1/getSubGroups?includeSubGroups=true&oneLevel=true",
+							"protocol": "http",
+							"host": [
+								"local",
+								"topcoder-dev",
+								"com"
+							],
+							"port": "8080",
+							"path": [
+								"v3",
+								"groups",
+								"1",
+								"getSubGroups"
+							],
+							"query": [
+								{
+									"key": "includeSubGroups",
+									"value": "true",
+									"equals": true,
+									"description": ""
+								},
+								{
+									"key": "oneLevel",
+									"value": "true",
+									"equals": true,
+									"description": ""
+								}
+							],
+							"variable": []
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJhZG1pbmlzdHJhdG9yIl0sImlzcyI6Imh0dHBzOi8vYXBpLnRvcGNvZGVyLWRldi5jb20iLCJoYW5kbGUiOiJrb2hhdGF0ZXN0NzYiLCJleHAiOjE4MTA1MzQwNjYsInVzZXJJZCI6IjQwMTM1NjQ1IiwiaWF0IjoxNDk1MTc0MDY2LCJlbWFpbCI6bnVsbCwianRpIjoiNzkwZTU3ZjQtZDM4ZC00ZDZmLThiZDgtYWUzYjM3M2E0MWYyIn0.OnWYwyVc35jzPBKQgJ27J-n7zYUzjaj3e9k6oRy3PjM",
+								"description": ""
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "get-sub-groups-exclude",
+					"request": {
+						"url": {
+							"raw": "http://local.topcoder-dev.com:8080/v3/groups/1/getSubGroups?includeSubGroups=false&oneLevel=true",
+							"protocol": "http",
+							"host": [
+								"local",
+								"topcoder-dev",
+								"com"
+							],
+							"port": "8080",
+							"path": [
+								"v3",
+								"groups",
+								"1",
+								"getSubGroups"
+							],
+							"query": [
+								{
+									"key": "includeSubGroups",
+									"value": "false",
+									"equals": true,
+									"description": ""
+								},
+								{
+									"key": "oneLevel",
+									"value": "true",
+									"equals": true,
+									"description": ""
+								}
+							],
+							"variable": []
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJhZG1pbmlzdHJhdG9yIl0sImlzcyI6Imh0dHBzOi8vYXBpLnRvcGNvZGVyLWRldi5jb20iLCJoYW5kbGUiOiJrb2hhdGF0ZXN0NzYiLCJleHAiOjE4MTA1MzQwNjYsInVzZXJJZCI6IjQwMTM1NjQ1IiwiaWF0IjoxNDk1MTc0MDY2LCJlbWFpbCI6bnVsbCwianRpIjoiNzkwZTU3ZjQtZDM4ZC00ZDZmLThiZDgtYWUzYjM3M2E0MWYyIn0.OnWYwyVc35jzPBKQgJ27J-n7zYUzjaj3e9k6oRy3PjM",
+								"description": ""
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "get-sub-groups-without-any-query-param",
+					"request": {
+						"url": "http://local.topcoder-dev.com:8080/v3/groups/1/getSubGroups",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJhZG1pbmlzdHJhdG9yIl0sImlzcyI6Imh0dHBzOi8vYXBpLnRvcGNvZGVyLWRldi5jb20iLCJoYW5kbGUiOiJrb2hhdGF0ZXN0NzYiLCJleHAiOjE4MTA1MzQwNjYsInVzZXJJZCI6IjQwMTM1NjQ1IiwiaWF0IjoxNDk1MTc0MDY2LCJlbWFpbCI6bnVsbCwianRpIjoiNzkwZTU3ZjQtZDM4ZC00ZDZmLThiZDgtYWUzYjM3M2E0MWYyIn0.OnWYwyVc35jzPBKQgJ27J-n7zYUzjaj3e9k6oRy3PjM",
+								"description": ""
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "get-sub-groups-parent-group-not-exists",
+					"request": {
+						"url": {
+							"raw": "http://local.topcoder-dev.com:8080/v3/groups/199999/getSubGroups?includeSubGroups=false&oneLevel=true",
+							"protocol": "http",
+							"host": [
+								"local",
+								"topcoder-dev",
+								"com"
+							],
+							"port": "8080",
+							"path": [
+								"v3",
+								"groups",
+								"199999",
+								"getSubGroups"
+							],
+							"query": [
+								{
+									"key": "includeSubGroups",
+									"value": "false",
+									"equals": true,
+									"description": ""
+								},
+								{
+									"key": "oneLevel",
+									"value": "true",
+									"equals": true,
+									"description": ""
+								}
+							],
+							"variable": []
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJhZG1pbmlzdHJhdG9yIl0sImlzcyI6Imh0dHBzOi8vYXBpLnRvcGNvZGVyLWRldi5jb20iLCJoYW5kbGUiOiJrb2hhdGF0ZXN0NzYiLCJleHAiOjE4MTA1MzQwNjYsInVzZXJJZCI6IjQwMTM1NjQ1IiwiaWF0IjoxNDk1MTc0MDY2LCJlbWFpbCI6bnVsbCwianRpIjoiNzkwZTU3ZjQtZDM4ZC00ZDZmLThiZDgtYWUzYjM3M2E0MWYyIn0.OnWYwyVc35jzPBKQgJ27J-n7zYUzjaj3e9k6oRy3PjM",
+								"description": ""
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"description": ""
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Get Parent Group",
+			"description": "",
+			"item": [
+				{
+					"name": "get-parent-group-recursively",
+					"request": {
+						"url": {
+							"raw": "http://local.topcoder-dev.com:8080/v3/groups/4/getParentGroup?oneLevel=false",
+							"protocol": "http",
+							"host": [
+								"local",
+								"topcoder-dev",
+								"com"
+							],
+							"port": "8080",
+							"path": [
+								"v3",
+								"groups",
+								"4",
+								"getParentGroup"
+							],
+							"query": [
+								{
+									"key": "oneLevel",
+									"value": "false",
+									"equals": true,
+									"description": ""
+								}
+							],
+							"variable": []
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJhZG1pbmlzdHJhdG9yIl0sImlzcyI6Imh0dHBzOi8vYXBpLnRvcGNvZGVyLWRldi5jb20iLCJoYW5kbGUiOiJrb2hhdGF0ZXN0NzYiLCJleHAiOjE4MTA1MzQwNjYsInVzZXJJZCI6IjQwMTM1NjQ1IiwiaWF0IjoxNDk1MTc0MDY2LCJlbWFpbCI6bnVsbCwianRpIjoiNzkwZTU3ZjQtZDM4ZC00ZDZmLThiZDgtYWUzYjM3M2E0MWYyIn0.OnWYwyVc35jzPBKQgJ27J-n7zYUzjaj3e9k6oRy3PjM",
+								"description": ""
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "get-parent-group-one-level",
+					"request": {
+						"url": "http://local.topcoder-dev.com:8080/v3/groups/4/getParentGroup",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJhZG1pbmlzdHJhdG9yIl0sImlzcyI6Imh0dHBzOi8vYXBpLnRvcGNvZGVyLWRldi5jb20iLCJoYW5kbGUiOiJrb2hhdGF0ZXN0NzYiLCJleHAiOjE4MTA1MzQwNjYsInVzZXJJZCI6IjQwMTM1NjQ1IiwiaWF0IjoxNDk1MTc0MDY2LCJlbWFpbCI6bnVsbCwianRpIjoiNzkwZTU3ZjQtZDM4ZC00ZDZmLThiZDgtYWUzYjM3M2E0MWYyIn0.OnWYwyVc35jzPBKQgJ27J-n7zYUzjaj3e9k6oRy3PjM",
+								"description": ""
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"description": ""
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "/groups create group",
+			"request": {
+				"url": "http://local.topcoder-dev.com:8080/v3/groups",
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJhZG1pbmlzdHJhdG9yIl0sImlzcyI6Imh0dHBzOi8vYXBpLnRvcGNvZGVyLWRldi5jb20iLCJoYW5kbGUiOiJrb2hhdGF0ZXN0NzYiLCJleHAiOjE4MTA1MzQwNjYsInVzZXJJZCI6IjQwMTM1NjQ1IiwiaWF0IjoxNDk1MTc0MDY2LCJlbWFpbCI6bnVsbCwianRpIjoiNzkwZTU3ZjQtZDM4ZC00ZDZmLThiZDgtYWUzYjM3M2E0MWYyIn0.OnWYwyVc35jzPBKQgJ27J-n7zYUzjaj3e9k6oRy3PjM",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"param\": {\n        \"name\": \"ExampleSubGroup1\",\n        \"description\": \"Example Sub Group1\"\n    }\n}"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "/groups create group with privateGroup and selfRegister fields",
+			"request": {
+				"url": "http://local.topcoder-dev.com:8080/v3/groups",
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJhZG1pbmlzdHJhdG9yIl0sImlzcyI6Imh0dHBzOi8vYXBpLnRvcGNvZGVyLWRldi5jb20iLCJoYW5kbGUiOiJrb2hhdGF0ZXN0NzYiLCJleHAiOjE4MTA1MzQwNjYsInVzZXJJZCI6IjQwMTM1NjQ1IiwiaWF0IjoxNDk1MTc0MDY2LCJlbWFpbCI6bnVsbCwianRpIjoiNzkwZTU3ZjQtZDM4ZC00ZDZmLThiZDgtYWUzYjM3M2E0MWYyIn0.OnWYwyVc35jzPBKQgJ27J-n7zYUzjaj3e9k6oRy3PjM",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"param\": {\n        \"name\": \"ExampleSubGroup2\",\n        \"description\": \"Example Sub Group2\",\n        \"privateGroup\": false,\n        \"selfRegister\": true\n    }\n}"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "/groups update group",
+			"request": {
+				"url": "http://local.topcoder-dev.com:8080/v3/groups/2",
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJhZG1pbmlzdHJhdG9yIl0sImlzcyI6Imh0dHBzOi8vYXBpLnRvcGNvZGVyLWRldi5jb20iLCJoYW5kbGUiOiJrb2hhdGF0ZXN0NzYiLCJleHAiOjE4MTA5NzQzMTEsInVzZXJJZCI6IjQwMTM1NjQ1IiwiaWF0IjoxNDk1NjE0MzExLCJlbWFpbCI6bnVsbCwianRpIjoiN2Y4Njc5M2MtYTU2Ni00ZTE1LTg2MzEtZTFlZmRhN2QxN2E0In0.3buqizYd-VU3f43iGQuw2OwKiOMB4-1H1pKCn4M-UA4",
+						"description": ""
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"param\": {\n        \"name\": \"new namerr\",\n        \"description\": \"new descrrr\",\n        \"privateGroup\": false,\n        \"selfRegister\": false\n    }\n}"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "/groups delete group",
+			"request": {
+				"url": "http://local.topcoder-dev.com:8080/v3/groups/1",
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJhZG1pbmlzdHJhdG9yIl0sImlzcyI6Imh0dHBzOi8vYXBpLnRvcGNvZGVyLWRldi5jb20iLCJoYW5kbGUiOiJrb2hhdGF0ZXN0NzYiLCJleHAiOjE4MTA5NzQzMTEsInVzZXJJZCI6IjQwMTM1NjQ1IiwiaWF0IjoxNDk1NjE0MzExLCJlbWFpbCI6bnVsbCwianRpIjoiN2Y4Njc5M2MtYTU2Ni00ZTE1LTg2MzEtZTFlZmRhN2QxN2E0In0.3buqizYd-VU3f43iGQuw2OwKiOMB4-1H1pKCn4M-UA4",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "/groups get group",
+			"request": {
+				"url": "http://local.topcoder-dev.com:8080/v3/groups/1",
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJhZG1pbmlzdHJhdG9yIl0sImlzcyI6Imh0dHBzOi8vYXBpLnRvcGNvZGVyLWRldi5jb20iLCJoYW5kbGUiOiJrb2hhdGF0ZXN0NzYiLCJleHAiOjE4MTA5NzQzMTEsInVzZXJJZCI6IjQwMTM1NjQ1IiwiaWF0IjoxNDk1NjE0MzExLCJlbWFpbCI6bnVsbCwianRpIjoiN2Y4Njc5M2MtYTU2Ni00ZTE1LTg2MzEtZTFlZmRhN2QxN2E0In0.3buqizYd-VU3f43iGQuw2OwKiOMB4-1H1pKCn4M-UA4",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "/groups get all groups",
+			"request": {
+				"url": "http://local.topcoder-dev.com:8080/v3/groups",
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJhZG1pbmlzdHJhdG9yIl0sImlzcyI6Imh0dHBzOi8vYXBpLnRvcGNvZGVyLWRldi5jb20iLCJoYW5kbGUiOiJrb2hhdGF0ZXN0NzYiLCJleHAiOjE4MTA5NzQzMTEsInVzZXJJZCI6IjQwMTM1NjQ1IiwiaWF0IjoxNDk1NjE0MzExLCJlbWFpbCI6bnVsbCwianRpIjoiN2Y4Njc5M2MtYTU2Ni00ZTE1LTg2MzEtZTFlZmRhN2QxN2E0In0.3buqizYd-VU3f43iGQuw2OwKiOMB4-1H1pKCn4M-UA4",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "/groups get groups by user",
+			"request": {
+				"url": {
+					"raw": "http://local.topcoder-dev.com:8080/v3/groups?memberId=40135645&membershipType=user",
+					"protocol": "http",
+					"host": [
+						"local",
+						"topcoder-dev",
+						"com"
+					],
+					"port": "8080",
+					"path": [
+						"v3",
+						"groups"
+					],
+					"query": [
+						{
+							"key": "memberId",
+							"value": "40135645"
+						},
+						{
+							"key": "membershipType",
+							"value": "user"
+						}
+					],
+					"variable": []
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJhZG1pbmlzdHJhdG9yIl0sImlzcyI6Imh0dHBzOi8vYXBpLnRvcGNvZGVyLWRldi5jb20iLCJoYW5kbGUiOiJrb2hhdGF0ZXN0NzYiLCJleHAiOjE4MTA1MzQwNjYsInVzZXJJZCI6IjQwMTM1NjQ1IiwiaWF0IjoxNDk1MTc0MDY2LCJlbWFpbCI6bnVsbCwianRpIjoiNzkwZTU3ZjQtZDM4ZC00ZDZmLThiZDgtYWUzYjM3M2E0MWYyIn0.OnWYwyVc35jzPBKQgJ27J-n7zYUzjaj3e9k6oRy3PjM",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "/groups get groups by group",
+			"request": {
+				"url": {
+					"raw": "http://local.topcoder-dev.com:8080/v3/groups?memberId=5&membershipType=group",
+					"protocol": "http",
+					"host": [
+						"local",
+						"topcoder-dev",
+						"com"
+					],
+					"port": "8080",
+					"path": [
+						"v3",
+						"groups"
+					],
+					"query": [
+						{
+							"key": "memberId",
+							"value": "5"
+						},
+						{
+							"key": "membershipType",
+							"value": "group"
+						}
+					],
+					"variable": []
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJhZG1pbmlzdHJhdG9yIl0sImlzcyI6Imh0dHBzOi8vYXBpLnRvcGNvZGVyLWRldi5jb20iLCJoYW5kbGUiOiJrb2hhdGF0ZXN0NzYiLCJleHAiOjE4MTA1MzQwNjYsInVzZXJJZCI6IjQwMTM1NjQ1IiwiaWF0IjoxNDk1MTc0MDY2LCJlbWFpbCI6bnVsbCwianRpIjoiNzkwZTU3ZjQtZDM4ZC00ZDZmLThiZDgtYWUzYjM3M2E0MWYyIn0.OnWYwyVc35jzPBKQgJ27J-n7zYUzjaj3e9k6oRy3PjM",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "/groups add member",
+			"request": {
+				"url": "http://local.topcoder-dev.com:8080/v3/groups/1/members",
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJhZG1pbmlzdHJhdG9yIl0sImlzcyI6Imh0dHBzOi8vYXBpLnRvcGNvZGVyLWRldi5jb20iLCJoYW5kbGUiOiJrb2hhdGF0ZXN0NzYiLCJleHAiOjE4MTA1MzQwNjYsInVzZXJJZCI6IjQwMTM1NjQ1IiwiaWF0IjoxNDk1MTc0MDY2LCJlbWFpbCI6bnVsbCwianRpIjoiNzkwZTU3ZjQtZDM4ZC00ZDZmLThiZDgtYWUzYjM3M2E0MWYyIn0.OnWYwyVc35jzPBKQgJ27J-n7zYUzjaj3e9k6oRy3PjM",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"param\": {\n        \"memberId\": 40135645,\n        \"membershipType\": \"user\"\n    }\n}"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "/groups delete membership",
+			"request": {
+				"url": "http://local.topcoder-dev.com:8080/v3/groups/1/members/2",
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJhZG1pbmlzdHJhdG9yIl0sImlzcyI6Imh0dHBzOi8vYXBpLnRvcGNvZGVyLWRldi5jb20iLCJoYW5kbGUiOiJrb2hhdGF0ZXN0NzYiLCJleHAiOjE4MTA5NzQzMTEsInVzZXJJZCI6IjQwMTM1NjQ1IiwiaWF0IjoxNDk1NjE0MzExLCJlbWFpbCI6bnVsbCwianRpIjoiN2Y4Njc5M2MtYTU2Ni00ZTE1LTg2MzEtZTFlZmRhN2QxN2E0In0.3buqizYd-VU3f43iGQuw2OwKiOMB4-1H1pKCn4M-UA4",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "/groups get members",
+			"request": {
+				"url": "http://local.topcoder-dev.com:8080/v3/groups/1/members",
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJhZG1pbmlzdHJhdG9yIl0sImlzcyI6Imh0dHBzOi8vYXBpLnRvcGNvZGVyLWRldi5jb20iLCJoYW5kbGUiOiJrb2hhdGF0ZXN0NzYiLCJleHAiOjE4MTA1MzQwNjYsInVzZXJJZCI6IjQwMTM1NjQ1IiwiaWF0IjoxNDk1MTc0MDY2LCJlbWFpbCI6bnVsbCwianRpIjoiNzkwZTU3ZjQtZDM4ZC00ZDZmLThiZDgtYWUzYjM3M2E0MWYyIn0.OnWYwyVc35jzPBKQgJ27J-n7zYUzjaj3e9k6oRy3PjM",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"description": ""
+			},
+			"response": []
+		}
+	]
+}

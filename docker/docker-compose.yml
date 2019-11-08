@@ -1,0 +1,40 @@
+version: '2'
+services:
+  mysql:
+    image: "appiriodevops/tc-identity-mysql:0.1.0"
+    container_name: "tc-mysqld"
+    ports:
+     - "3306:3306"
+    privileged: true
+    environment:
+     - MYSQL_DATABASE=Authorization
+     - MYSQL_USER=coder
+     - MYSQL_PASSWORD=topcoder
+     - MYSQL_ROOT_PASSWORD=topcoder
+    volumes:
+     - .:/data
+  ldap:
+    image: "appiriodevops/tc-openldap:0.1.0"
+    container_name: "tc-ldap"
+    ports:
+     - "389:389"
+    volumes:
+     - .:/data
+  kafka:
+    image: "spotify/kafka"
+    container_name: "tc-kafka"
+    ports:
+     - "2181:2181"
+     - "9092:9092"
+    environment:
+     - ADVERTISED_HOST=${DOCKER_IP}
+     - ADVERTISED_PORT=9092
+    volumes:
+     - .:/data
+  redis:
+    image: "redis"
+    container_name: "tc-redis"
+    ports:
+     - "6379:6379"
+    volumes:
+     - .:/data

@@ -1,0 +1,27 @@
+# -----------------------------------------------------------------------------
+# Users and their (optional) assigned roles
+# username = password, role1, role2, ..., roleN
+# -----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+# Roles with assigned permissions
+# roleName = perm1, perm2, ..., permN
+# -----------------------------------------------------------------------------
+
+
+# database
+ds = com.mysql.jdbc.jdbc2.optional.MysqlDataSource
+ds.serverName = @authorization.database.host@
+ds.port = 3306
+ds.user = coder
+ds.password = topcoder
+ds.databaseName = Authorization
+
+# realms
+DAORealm = com.appirio.tech.core.service.identity.dao.DAORealm
+DAORealm.dataSource = $ds
+DAORealm.permissionsLookupEnabled = true
+DAORealm.userRolesQuery = select role_id from role_assignment where subject_id = ?
+DAORealm.permissionsQuery = select permission_id from permission_assignment where role_id = ?
+
+securityManager.realms = $DAORealm

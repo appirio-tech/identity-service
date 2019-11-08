@@ -1,0 +1,72 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+
+    "Description" : "AWS CloudFormation template for creating ExternalAccounts table",
+
+    "Parameters" : {
+        "ReadCapacityUnits" : {
+            "Description" : "Provisioned read throughput",
+            "Type" : "Number",
+            "Default" : "1",
+            "MinValue": "1",
+            "MaxValue": "10000",
+            "ConstraintDescription" : "must be between 5 and 10000"
+        },
+
+        "WriteCapacityUnits" : {
+            "Description" : "Provisioned write throughput",
+            "Type" : "Number",
+            "Default" : "1",
+            "MinValue": "1",
+            "MaxValue": "10000",
+            "ConstraintDescription" : "must be between 5 and 10000"
+        }
+    },
+
+    "Resources" : {
+        "ExternalAccounts" : {
+            "Type" : "AWS::DynamoDB::Table",
+            "Properties" : {
+                "AttributeDefinitions": [ {
+                    "AttributeName" : "userId",
+                    "AttributeType" : "S"
+                }, {
+                    "AttributeName" : "accountType",
+                    "AttributeType" : "S"
+                }, {
+                    "AttributeName" : "synchronizedAt",
+                    "AttributeType" : "N"
+                } ],
+                "KeySchema": [
+                    { "AttributeName": "userId", "KeyType": "HASH" },
+                    { "AttributeName": "accountType", "KeyType": "RANGE" }
+                ],
+                "GlobalSecondaryIndexes": [ {
+                    "IndexName": "synchronizedAt-index",
+                    "KeySchema": [
+                        { "AttributeName": "synchronizedAt", "KeyType": "HASH" }
+                    ],
+                    "Projection": {
+                        "ProjectionType": "ALL"
+                    },
+                    "ProvisionedThroughput": {
+                        "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+                        "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+                    }
+                }],
+                "ProvisionedThroughput" : {
+                    "ReadCapacityUnits" : {"Ref" : "ReadCapacityUnits"},
+                    "WriteCapacityUnits" : {"Ref" : "WriteCapacityUnits"}
+                },
+                "TableName" : "Externals.Accounts"
+            }
+        }
+    },
+
+    "Outputs" : {
+        "TableName" : {
+            "Value" : {"Ref" : "ExternalAccounts"},
+            "Description" : "Table name of the newly created DynamoDB table"
+        }
+    }
+}

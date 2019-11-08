@@ -1,0 +1,258 @@
+{
+	"variables": [],
+	"info": {
+		"name": "roles api",
+		"_postman_id": "4357cbb5-0ce5-51f8-e80c-6394cdc34129",
+		"description": "",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "/roles create role",
+			"request": {
+				"url": "http://local.topcoder-dev.com:8080/v3/roles",
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJhZG1pbmlzdHJhdG9yIl0sImlzcyI6Imh0dHBzOi8vYXBpLnRvcGNvZGVyLWRldi5jb20iLCJoYW5kbGUiOiJrb2hhdGF0ZXN0NzYiLCJleHAiOjE4MTA1MzQwNjYsInVzZXJJZCI6IjQwMTM1NjQ1IiwiaWF0IjoxNDk1MTc0MDY2LCJlbWFpbCI6bnVsbCwianRpIjoiNzkwZTU3ZjQtZDM4ZC00ZDZmLThiZDgtYWUzYjM3M2E0MWYyIn0.OnWYwyVc35jzPBKQgJ27J-n7zYUzjaj3e9k6oRy3PjM",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"param\": {\n        \"roleName\": \"TestRole\"\n    }\n}"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "/roles get all roles",
+			"request": {
+				"url": "http://local.topcoder-dev.com:8080/v3/roles",
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJhZG1pbmlzdHJhdG9yIl0sImlzcyI6Imh0dHBzOi8vYXBpLnRvcGNvZGVyLWRldi5jb20iLCJoYW5kbGUiOiJrb2hhdGF0ZXN0NzYiLCJleHAiOjE4MTA1MzQwNjYsInVzZXJJZCI6IjQwMTM1NjQ1IiwiaWF0IjoxNDk1MTc0MDY2LCJlbWFpbCI6bnVsbCwianRpIjoiNzkwZTU3ZjQtZDM4ZC00ZDZmLThiZDgtYWUzYjM3M2E0MWYyIn0.OnWYwyVc35jzPBKQgJ27J-n7zYUzjaj3e9k6oRy3PjM",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "/roles get role",
+			"request": {
+				"url": "http://local.topcoder-dev.com:8080/v3/roles/1",
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJhZG1pbmlzdHJhdG9yIl0sImlzcyI6Imh0dHBzOi8vYXBpLnRvcGNvZGVyLWRldi5jb20iLCJoYW5kbGUiOiJrb2hhdGF0ZXN0NzYiLCJleHAiOjE4MTA1MzQwNjYsInVzZXJJZCI6IjQwMTM1NjQ1IiwiaWF0IjoxNDk1MTc0MDY2LCJlbWFpbCI6bnVsbCwianRpIjoiNzkwZTU3ZjQtZDM4ZC00ZDZmLThiZDgtYWUzYjM3M2E0MWYyIn0.OnWYwyVc35jzPBKQgJ27J-n7zYUzjaj3e9k6oRy3PjM",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "/roles delete role",
+			"request": {
+				"url": "http://local.topcoder-dev.com:8080/v3/roles/8",
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJhZG1pbmlzdHJhdG9yIl0sImlzcyI6Imh0dHBzOi8vYXBpLnRvcGNvZGVyLWRldi5jb20iLCJoYW5kbGUiOiJrb2hhdGF0ZXN0NzYiLCJleHAiOjE4MTA1MzQwNjYsInVzZXJJZCI6IjQwMTM1NjQ1IiwiaWF0IjoxNDk1MTc0MDY2LCJlbWFpbCI6bnVsbCwianRpIjoiNzkwZTU3ZjQtZDM4ZC00ZDZmLThiZDgtYWUzYjM3M2E0MWYyIn0.OnWYwyVc35jzPBKQgJ27J-n7zYUzjaj3e9k6oRy3PjM",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "/roles update role",
+			"request": {
+				"url": "http://local.topcoder-dev.com:8080/v3/roles/9",
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJhZG1pbmlzdHJhdG9yIl0sImlzcyI6Imh0dHBzOi8vYXBpLnRvcGNvZGVyLWRldi5jb20iLCJoYW5kbGUiOiJrb2hhdGF0ZXN0NzYiLCJleHAiOjE4MTA5NzQzMTEsInVzZXJJZCI6IjQwMTM1NjQ1IiwiaWF0IjoxNDk1NjE0MzExLCJlbWFpbCI6bnVsbCwianRpIjoiN2Y4Njc5M2MtYTU2Ni00ZTE1LTg2MzEtZTFlZmRhN2QxN2E0In0.3buqizYd-VU3f43iGQuw2OwKiOMB4-1H1pKCn4M-UA4",
+						"description": ""
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"param\": {\n        \"roleName\": \"updated role\"\n    }\n}"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "/roles assign role",
+			"request": {
+				"url": {
+					"raw": "http://local.topcoder-dev.com:8080/v3/roles/2/assign?filter=subjectID=100",
+					"protocol": "http",
+					"auth": {},
+					"host": [
+						"local",
+						"topcoder-dev",
+						"com"
+					],
+					"port": "8080",
+					"path": [
+						"v3",
+						"roles",
+						"2",
+						"assign"
+					],
+					"query": [
+						{
+							"key": "filter",
+							"value": "subjectID=100",
+							"equals": true,
+							"description": ""
+						}
+					],
+					"variable": []
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJhZG1pbmlzdHJhdG9yIl0sImlzcyI6Imh0dHBzOi8vYXBpLnRvcGNvZGVyLWRldi5jb20iLCJoYW5kbGUiOiJrb2hhdGF0ZXN0NzYiLCJleHAiOjE4MTA1MzQwNjYsInVzZXJJZCI6IjQwMTM1NjQ1IiwiaWF0IjoxNDk1MTc0MDY2LCJlbWFpbCI6bnVsbCwianRpIjoiNzkwZTU3ZjQtZDM4ZC00ZDZmLThiZDgtYWUzYjM3M2E0MWYyIn0.OnWYwyVc35jzPBKQgJ27J-n7zYUzjaj3e9k6oRy3PjM",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "/roles get subjects by role",
+			"request": {
+				"url": {
+					"raw": "http://local.topcoder-dev.com:8080/v3/roles/2?fields=subjects",
+					"protocol": "http",
+					"auth": {},
+					"host": [
+						"local",
+						"topcoder-dev",
+						"com"
+					],
+					"port": "8080",
+					"path": [
+						"v3",
+						"roles",
+						"2"
+					],
+					"query": [
+						{
+							"key": "fields",
+							"value": "subjects",
+							"equals": true,
+							"description": ""
+						}
+					],
+					"variable": []
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJhZG1pbmlzdHJhdG9yIl0sImlzcyI6Imh0dHBzOi8vYXBpLnRvcGNvZGVyLWRldi5jb20iLCJoYW5kbGUiOiJrb2hhdGF0ZXN0NzYiLCJleHAiOjE4MTA1MzQwNjYsInVzZXJJZCI6IjQwMTM1NjQ1IiwiaWF0IjoxNDk1MTc0MDY2LCJlbWFpbCI6bnVsbCwianRpIjoiNzkwZTU3ZjQtZDM4ZC00ZDZmLThiZDgtYWUzYjM3M2E0MWYyIn0.OnWYwyVc35jzPBKQgJ27J-n7zYUzjaj3e9k6oRy3PjM",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "/roles get roles by subject",
+			"request": {
+				"url": {
+					"raw": "http://local.topcoder-dev.com:8080/v3/roles?filter=subjectID=100",
+					"protocol": "http",
+					"auth": {},
+					"host": [
+						"local",
+						"topcoder-dev",
+						"com"
+					],
+					"port": "8080",
+					"path": [
+						"v3",
+						"roles"
+					],
+					"query": [
+						{
+							"key": "filter",
+							"value": "subjectID=100",
+							"equals": true,
+							"description": ""
+						}
+					],
+					"variable": []
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJhZG1pbmlzdHJhdG9yIl0sImlzcyI6Imh0dHBzOi8vYXBpLnRvcGNvZGVyLWRldi5jb20iLCJoYW5kbGUiOiJrb2hhdGF0ZXN0NzYiLCJleHAiOjE4MTA1MzQwNjYsInVzZXJJZCI6IjQwMTM1NjQ1IiwiaWF0IjoxNDk1MTc0MDY2LCJlbWFpbCI6bnVsbCwianRpIjoiNzkwZTU3ZjQtZDM4ZC00ZDZmLThiZDgtYWUzYjM3M2E0MWYyIn0.OnWYwyVc35jzPBKQgJ27J-n7zYUzjaj3e9k6oRy3PjM",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"description": ""
+			},
+			"response": []
+		}
+	]
+}

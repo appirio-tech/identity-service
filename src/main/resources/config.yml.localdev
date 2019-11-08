@@ -1,0 +1,187 @@
+
+# Domain for authentication [topcoder-dev.com|topcoder-qa.com|topcoder.com]
+authDomain: topcoder-dev.com
+
+# System properties
+systemProperties:
+  TC_JWT_KEY: topcoder-dev.com
+
+# Identity service specific environment properties
+context:
+  defaultPassword: DEFAULT-PASSWORD
+  passwordHashKey: PASSWORD-HASH-KEY
+  ssoTokenSalt: SSO-TOKEN-SALT
+  jwtExpirySeconds: 600
+  cookieExpirySeconds: 7776000
+
+# Database
+database:
+  # the name of your JDBC driver
+  driverClass: com.informix.jdbc.IfxDriver
+
+  # the username
+  user: informix
+
+  # the password
+  password: informix
+
+  # the JDBC URL
+  url: jdbc:informix-sqli://${DOCKER_IP}:9088/common_oltp:INFORMIXSERVER=dev
+
+  validationQuery: SELECT TODAY FROM systables WHERE tabid = 1
+
+filters:
+  - com.appirio.tech.core.api.v3.util.filter.LoggingFilter
+  #- com.sun.jersey.api.container.filter.LoggingFilter
+
+# CORS is configured in nginx 
+# OPTIONAL: CORS setting in Jetty.
+corsSettings:
+  enabled : true
+  allowedOrigins : "*"
+  allowedMethods : GET,PUT,POST,DELETE,OPTIONS,PATCH
+  allowedHeaders : Authorization,Content-Type,Accept,Origin,User-Agent,DNT,Cache-Control,X-Mx-ReqToken,Keep-Alive,X-Requested-With,If-Modified-Since
+  allowCredentials : true
+#  #preflightMaxAge : 1800
+#  #exposedHeaders :
+
+# Cache settings
+# cache/type: [memory|redis]
+#   - memory: HashMap based simple in-memory implementation.
+#   - redis : External store in Redis.
+cache:
+  type: redis
+  spec:
+    host: ${DOCKER_IP}
+    port: 6379
+    poolSize: 5
+
+# Auth store settings
+# authStore/type: [memory|redis]
+#   - memory: HashMap based simple in-memory implementation.
+#   - redis : External store in Redis.
+authStore:
+  type: redis
+  spec:
+    host: ${DOCKER_IP}
+    port: 6379
+    expirySeconds: 7776000
+
+# Auth0 settings
+# auth0/domain       : domain of auth0 account
+# auth0/clientId     : client-id for the auth0 account
+# auth0/clientSecret : client-secret for the auth0 account
+auth0:
+  domain      : dummy
+  clientId    : dummy
+  clientSecret: dummy
+  nonInteractiveClientId    : AUTH0-NI-CLIENT-ID
+  nonInteractiveClientSecret: AUTH0-NI-CLIENT-SECRET
+
+auth0New:
+  domain      : dummy
+  clientId    : dummy
+  clientSecret: dummy
+  nonInteractiveClientId    : AUTH0-NI-CLIENT-ID
+  nonInteractiveClientSecret: AUTH0-NI-CLIENT-SECRET
+
+# LDAP Settings
+ldap:
+  host: ${DOCKER_IP}
+  port: 389
+  bindDN: cn=admin,dc=topcoder,dc=com
+  bindPassword: topcoder
+  useSSLConnection: false
+
+# Authorized accounts
+serviceAccount:
+  type: static
+  accounts:
+    - clientId     : CLIENT-01
+      clientSecret : CLIENT-SECRET-01
+      contextUserId: 10000001
+    - clientId     : CLIENT-02
+      clientSecret : CLIENT-SECRET-02
+      contextUserId: 10000002
+
+# Zendesk settings
+zendesk:
+  secret: ZENDESK-SECRET
+  idPrefix: dummy
+
+# Shiro settings
+shiroSettings:
+  # enable/disable shiro authorization
+  useShiroAuthorization : true
+  # iniConfig file path    
+  iniConfigPath: "classpath:shiro.ini"
+  
+# Authorization Database settings
+authorizationDatabase:
+  # the name of your JDBC driver
+  driverClass: com.mysql.jdbc.Driver
+
+  # the username
+  user: coder
+
+  # the password
+  password: topcoder
+
+  # the JDBC URL
+  url: jdbc:mysql://${DOCKER_IP}:3306/Authorization
+
+  validationQuery: SELECT id FROM role WHERE id = 1
+
+# Event system settings
+eventSystem:
+  producer:
+    type: kafka
+
+#for the bus endpoint, is for the real dev environment
+eventBusServiceClient:
+  endpoint: end-point-url
+  configuration:
+    topic: topic-name
+    originator: app.identity.service
+
+m2mAuthConfig:
+  clientId: dummy
+  clientSecret: dummy
+  audience: dummy
+  m2mAuthDomain: dummy
+  tokenExpireTimeInMinutes: 60
+  userId: 1234567890
+  
+# Server settings
+server:
+  rootPath: /v3/
+  applicationConnectors:
+    - type: http
+      port: 8080
+  adminConnectors:
+    - type: http
+      port: 8081
+
+# Logging settings.
+logging:
+  # The default level of all loggers. Can be OFF, ERROR, WARN, INFO, DEBUG, TRACE, or ALL.
+  level: INFO
+  # Logger-specific levels.
+  loggers:
+    # Sets the level for 'com.appirio.tech' to DEBUG.
+    com.appirio.tech: DEBUG
+    # Logging filter
+    #com.sun.jersey.api.container.filter.LoggingFilter: INFO
+    com.appirio.tech.core.api.v3.util.filter.LoggingFilter: INFO
+    # JDBI
+    org.skife.jdbi.v2: TRACE
+  appenders:
+    - type: console
+    - type: file
+      currentLogFilename: /var/log/ap-identity.log
+      logFormat: "[%date{ISO8601}] %m%n"
+      threshold: INFO
+      archive: true
+      archivedLogFilenamePattern: /var/log/ap-identity-%d.log
+      archivedFileCount: 50
+      timeZone: UTC

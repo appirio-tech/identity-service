@@ -1,0 +1,182 @@
+
+# Domain for authentication [topcoder-dev.com|topcoder-qa.com|topcoder.com]
+authDomain: @application.auth.domain@
+
+# System properties
+systemProperties:
+#  TC_JWT_KEY: '@auth.secret@'
+
+# Identity service specific environment properties
+context:
+  defaultPassword: @application.password.default@
+  passwordHashKey: @application.password.key@
+  ssoTokenSalt: @application.ssotoken.salt@
+  jwtExpirySeconds: 600
+  cookieExpirySeconds: 7776000
+
+# Database
+database:
+  # the name of your JDBC driver
+  driverClass: com.informix.jdbc.IfxDriver
+
+  # the username
+  user: @application.database.user@
+
+  # the password
+  password: @application.database.password@
+
+  # the JDBC URL
+  url: jdbc:informix-sqli://@application.database.host@:@application.database.port@/common_oltp:INFORMIXSERVER=informixoltp_tcp
+
+  validationQuery: SELECT TODAY FROM systables WHERE tabid = 1
+
+filters:
+  - com.appirio.tech.core.api.v3.util.filter.LoggingFilter
+  #- com.sun.jersey.api.container.filter.LoggingFilter
+
+# CORS is configured in nginx
+# OPTIONAL: CORS setting in Jetty.
+#corsSettings:
+#  enabled : @application.cors.enabled@
+#  allowedOrigins : "*"
+#  allowedMethods : GET,PUT,POST,DELETE,OPTIONS,PATCH
+#  allowedHeaders : Authorization,Content-Type,Accept,Origin,User-Agent,DNT,Cache-Control,X-Mx-ReqToken,Keep-Alive,X-Requested-With,If-Modified-Since
+#  allowCredentials : true
+#  #preflightMaxAge : 1800
+#  #exposedHeaders :
+
+# Cache settings
+# cache/type: [memory|redis]
+#   - memory: HashMap based simple in-memory implementation.
+#   - redis : External store in Redis.
+cache:
+  type: redis
+  spec:
+    host: @redis.host@
+    port: @redis.port@
+    poolSize: 5
+
+# Auth store settings
+# authStore/type: [memory|redis]
+#   - memory: HashMap based simple in-memory implementation.
+#   - redis : External store in Redis.
+authStore:
+  type: redis
+  spec:
+    host: @redis.host@
+    port: @redis.port@
+    expirySeconds: 7776000
+
+# Auth0 settings
+# auth0/domain       : domain of auth0 account [topcoder-dev.auth0.com|topcoder-qa.auth0.com|topcoder.auth0.com]
+# auth0/clientId     : client-id for the auth0 account
+# auth0/clientSecret : client-secret for the auth0 account
+auth0:
+  domain      : @auth0.domain@
+  clientId    : @auth0.clientId@
+  clientSecret: @auth0.clientSecret@
+  nonInteractiveClientId    : @auth0.nonInteractive.clientId@
+  nonInteractiveClientSecret: @auth0.nonInteractive.clientSecret@
+  proxyServerUrl: @m2mAuthConfig.authProxyServerUrl@
+  
+auth0New:
+  domain      : @auth0.new.domain@
+  clientId    : @auth0.new.clientId@
+  clientSecret: @auth0.new.clientSecret@
+  nonInteractiveClientId    : @auth0.new.nonInteractive.clientId@
+  nonInteractiveClientSecret: @auth0.new.nonInteractive.clientSecret@
+
+
+# Authorized accounts
+serviceAccount:
+  type: static
+  accounts:
+    - clientId     : @serviceAccount01.clientId@
+      clientSecret : @serviceAccount01.secret@
+      contextUserId: @serviceAccount01.userId@
+    - clientId     : @serviceAccount02.clientId@
+      clientSecret : @serviceAccount02.secret@
+      contextUserId: @serviceAccount02.userId@
+
+# Zendesk settings
+zendesk:
+  secret: @zendesk.secret@
+  idPrefix: @zendesk.idprefix@
+
+# Shiro settings
+shiroSettings:
+  # enable/disable shiro authorization
+  useShiroAuthorization : true
+  # iniConfig file path
+  iniConfigPath: "classpath:shiro.ini"
+
+# Authorization Database settings
+authorizationDatabase:
+  # the name of your JDBC driver
+  driverClass: com.mysql.jdbc.Driver
+
+  # the username
+  user: @authorization.database.user@
+
+  # the password
+  password: @authorization.database.password@
+
+  # the JDBC URL
+  url: jdbc:mysql://@authorization.database.host@:@authorization.database.port@/@authorization.database.schema@
+
+  validationQuery: SELECT id FROM role WHERE id = 1
+
+# Event system settings
+eventSystem:
+  producer:
+    type: kafka
+
+#for the endpoint, https://api.topcoder-dev.com/v5/bus/events is for the real dev environment
+eventBusServiceClient:
+  endpoint: @eventBusServiceClient.endpoint@
+  configuration:
+    topic: @eventBusServiceClient.configuration.topic@
+    originator: @eventBusServiceClient.configuration.originator@
+
+m2mAuthConfig:
+  clientId: @m2mAuthConfig.clientId@
+  clientSecret: @m2mAuthConfig.clientSecret@
+  audience: @m2mAuthConfig.audience@
+  m2mAuthDomain: @m2mAuthConfig.m2mAuthDomain@
+  tokenExpireTimeInMinutes: @m2mAuthConfig.tokenExpireTimeInMinutes@
+  userId: @m2mAuthConfig.userId@
+  authProxyServerUrl: @m2mAuthConfig.authProxyServerUrl@
+  
+# Server settings
+server:
+  rootPath: /v3/
+  applicationConnectors:
+    - type: http
+      port: 8080
+  adminConnectors:
+    - type: http
+      port: 8081
+
+# Logging settings.
+logging:
+  # The default level of all loggers. Can be OFF, ERROR, WARN, INFO, DEBUG, TRACE, or ALL.
+  level: INFO
+  # Logger-specific levels.
+  loggers:
+    # Sets the level for 'com.appirio.tech' to DEBUG.
+    com.appirio.tech: INFO
+    # Logging filter
+    #com.sun.jersey.api.container.filter.LoggingFilter: INFO
+    com.appirio.tech.core.api.v3.util.filter.LoggingFilter: INFO
+    # JDBI
+    org.skife.jdbi.v2: INFO
+  appenders:
+    - type: console
+    - type: file
+      currentLogFilename: /var/log/ap-identity.log
+      logFormat: "[%date{ISO8601}] %m%n"
+      threshold: INFO
+      archive: true
+      archivedLogFilenamePattern: /var/log/ap-identity-%d.log
+      archivedFileCount: 50
+      timeZone: UTC
