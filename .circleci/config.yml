@@ -135,7 +135,7 @@ workflows:
           context : org-global
           filters:
             branches:
-              only: [dev]
+              only: [dev, test]
 
       # Production build is executed on "master" branch only.
 

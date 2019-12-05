@@ -490,8 +490,9 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         logger.debug(String.format("registering user: %s", user.getHandle()));
         userDao.register(user);
         
+        // COMMENTING THE LINES AS CODE FOR ADDING MEMBERS TO THE GROUPS MOVED TO MEMBER-GROUP-PROCESSOR
         // TODO: This is a temporary fix for the urgent issue. This should be fixed.
-        if(user.getProfile()!=null && "wipro-adfs".equalsIgnoreCase(user.getProfile().getProvider()) ) {
+        /* if(user.getProfile()!=null && "wipro-adfs".equalsIgnoreCase(user.getProfile().getProvider()) ) {
         	logger.info(String.format("Adding Wipro user to the Wipro-All group. (%s, %s, %s)", user.getId(), user.getHandle(), user.getProfile().getUserId() ));
             addToGroupById(user, 20000000L);
         }
@@ -504,7 +505,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if(user.getProfile()!=null && "CreditSuisse".equalsIgnoreCase(user.getProfile().getProvider()) ) {
             logger.info(String.format("Adding CreditSuisse user to the CreditSuisse - Main group. (%s, %s, %s)", user.getId(), user.getHandle(), user.getProfile().getUserId() ));
             addToGroupById(user, 20000044L);
-        }
+        } */
 
         // registration mail with activation code for inactive user
         if(!user.isActive()) {
