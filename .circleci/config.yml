@@ -1,0 +1,146 @@
+version: 2
+defaults: &defaults
+    docker:
+      - image: circleci/openjdk:8-jdk
+
+install_dependency: &install_dependency
+          name: Installation of build and deployment dependencies.
+          command: |
+            sudo apt update
+            sudo apt install jq awscli python3-pip
+            pip3 install awscli --upgrade --user
+            #sudo apt install awscli
+
+install_deploysuite_latest: &install_deploysuite_latest
+          name: Installation of install_deploysuite.
+          command: |
+            git clone --branch v1.4.1 https://github.com/topcoder-platform/tc-deploy-scripts ../buildscript
+            cp ./../buildscript/master_deploy.sh .
+            cp ./../buildscript/buildenv.sh .
+            cp ./../buildscript/awsconfiguration.sh .
+
+restore_cache_settings_for_build: &restore_cache_settings_for_build
+          key: identity-service-{{ checksum "~/project/pom.xml" }}
+
+save_cache_settings: &save_cache_settings
+          paths:
+            - ~/.m2
+          key: identity-service-{{ checksum "~/project/pom.xml" }}
+
+restore_cache_settings_for_core: &restore_cache_settings_for_core
+          key: identity-service-{{ checksum "~/project/pom.xml" }}
+
+save_cache_settings_core: &save_cache_settings_core     
+          paths:
+            - ~/.m2
+          key: identity-service-{{ checksum "~/project/pom.xml" }}       
+
+maven_configuration_v1: &maven_configuration_v1
+          name: Configuring maven
+          command: |
+            MVNSERVERSETTING='<server>\n  <id>tcrepo</id> \n <username>${env.MVNUSERNAME}</username> \n <password>${env.MVNPASSWD}</password> \n  </server> '
+            C=$(echo $MVNSERVERSETTING | sed 's/\//\\\//g')
+            sudo sed -i.bak "/<\/servers>/ s/.*/${C}\n&/" /opt/apache-maven/conf/settings.xml
+            MVNSERVERSETTING='<server>\n  <id>tcreposnap</id> \n <username>${env.MVNUSERNAME}</username> \n <password>${env.MVNPASSWD}</password> \n  </server> '
+            C=$(echo $MVNSERVERSETTING | sed 's/\//\\\//g')
+            sudo sed -i.bak "/<\/servers>/ s/.*/${C}\n&/" /opt/apache-maven/conf/settings.xml           
+
+restore_mvn_offline: &restore_mvn_offline
+          name: maven restore go offline
+          command: _JAVA_OPTIONS=-Djdk.net.URLClassPath.disableClassPathURLCheck=true mvn -f ~/project/pom.xml dependency:go-offline
+
+restore_mvn_core_offline: &restore_mvn_core_offline
+          name: maven restore core dependency go offline
+          command: _JAVA_OPTIONS=-Djdk.net.URLClassPath.disableClassPathURLCheck=true mvn -f ~/project/pom.xml dependency:go-offline
+
+update_test_result_path: &update_test_result_path
+          name: Save test results
+          command: |
+            mkdir -p ~/junit/
+            find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/junit/ \;
+          when: always  
+
+store_test_output: &store_test_output
+          path: ~/junit
+
+maven_do_build: &maven_do_build
+          name: Doing Maven Build
+          command: |
+            _JAVA_OPTIONS=-Djdk.net.URLClassPath.disableClassPathURLCheck=true mvn -f ~/project/pom.xml package
+            
+
+build_deploy_steps: &build_deploy_steps
+      # Initialization.
+      - checkout
+      - setup_remote_docker
+      - run: *install_dependency
+      - run: *install_deploysuite_latest
+      - run:
+          name: Build and AWS Configuration
+          command: |
+            ./awsconfiguration.sh $DEPLOY_ENV
+            ./buildenv.sh -e $DEPLOY_ENV -b identity_common_var,identity_${LOGICAL_ENV}_buildvar,identity_ecs_${LOGICAL_ENV}_deployvar
+      - run: *maven_configuration_v1
+      - run:
+          name: Build of token properties
+          command: |
+            source buildenvvar
+            ./buildtokenproperties.sh $DEPLOY_ENV
+      - restore_cache: *restore_cache_settings_for_build
+      - run: *restore_mvn_offline
+      - save_cache: *save_cache_settings
+      - run: *maven_do_build
+      - run: *update_test_result_path
+      - store_test_results: *store_test_output
+      - store_artifacts: *store_test_output
+      - run:
+          name: Build Image
+          command: |
+            echo "Building image"
+            ./build/build-image.sh /home/circleci/project $LOGICAL_ENV
+      - run:
+          name: Deploying Application.
+          command: |
+            pwd
+            source awsenvconf
+            source buildenvvar
+            # ./master_deploy.sh -d EBS -e $DEPLOY_ENV -t "${LOGICAL_ENV}.${VER}"
+            ./master_deploy.sh -d ECS -e $DEPLOY_ENV -t "${LOGICAL_ENV}.${VER}" -s ${LOGICAL_ENV}_identity_ecs_appvar -i ap-identity-microservice
+
+
+jobs:
+  # Build & Deploy against development backend
+  "build-dev":
+    <<: *defaults
+    environment:
+      DEPLOY_ENV: "DEV"
+      LOGICAL_ENV: "dev"
+    steps: *build_deploy_steps
+
+  # Build & Deploy against development backend
+  "build-prod":
+    <<: *defaults
+    environment:
+      DEPLOY_ENV: "PROD"
+      LOGICAL_ENV: "prod"
+    steps: *build_deploy_steps
+
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      # Development builds are executed on "dev/develop" branch only.
+      - "build-dev":
+          context : org-global
+          filters:
+            branches:
+              only: [dev, test]
+
+      # Production build is executed on "master" branch only.
+      - "build-prod":
+          context : org-global
+          filters:
+            branches:
+              only: [master]
+

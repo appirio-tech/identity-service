@@ -1,0 +1,76 @@
+{
+	"info": {
+		"name": "authorizations_api",
+		"_postman_id": "75191140-537d-d50c-98b1-ed694d54d6ba",
+		"description": "",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Get access token",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJhZG1pbmlzdHJhdG9yIl0sImlzcyI6Imh0dHBzOi8vYXBpLnRvcGNvZGVyLWRldi5jb20iLCJoYW5kbGUiOiJoZWZmYW4iLCJleHAiOjE3NjYyODkyNDYsInVzZXJJZCI6IjEzMjQ1NiIsImlhdCI6MTQ1MDkyOTI0NiwiZW1haWwiOm51bGwsImp0aSI6IjEzNjljNjAwLWUwYTEtNDUyNS1hN2M3LTU2YmU3ZDgxM2Y1MSJ9.hp5peSoj-fh3KFkskvBpfUFIcJNtsv4zIMFV-D8F3JA"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded"
+					}
+				],
+				"body": {},
+				"url": {
+					"raw": "http://local.topcoder-dev.com:8080/v3/authorizations?code=bueoNLpscrYniFYs&redirectUrl=https://accounts-auth0.topcoder-dev.com/connector.html",
+					"protocol": "http",
+					"host": [
+						"local",
+						"topcoder-dev",
+						"com"
+					],
+					"port": "8080",
+					"path": [
+						"v3",
+						"authorizations"
+					],
+					"query": [
+						{
+							"key": "code",
+							"value": "bueoNLpscrYniFYs",
+							"equals": true
+						},
+						{
+							"key": "redirectUrl",
+							"value": "https://accounts-auth0.topcoder-dev.com/connector.html",
+							"equals": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Refresh token",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJhZG1pbmlzdHJhdG9yIl0sImlzcyI6Imh0dHBzOi8vYXBpLnRvcGNvZGVyLWRldi5jb20iLCJoYW5kbGUiOiJoZWZmYW4iLCJleHAiOjE3NjYyODkyNDYsInVzZXJJZCI6IjEzMjQ1NiIsImlhdCI6MTQ1MDkyOTI0NiwiZW1haWwiOm51bGwsImp0aSI6IjEzNjljNjAwLWUwYTEtNDUyNS1hN2M3LTU2YmU3ZDgxM2Y1MSJ9.hp5peSoj-fh3KFkskvBpfUFIcJNtsv4zIMFV-D8F3JA"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"param\": {\n\t\t\"externalToken\": \"eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6Ik9UbENOMFk0UVRWQlJERTJSRGt3TURneU56QkRSVFZFTjBGQ09VVTRSalF6T0RWQ016QkRSUSJ9.eyJpc3MiOiJodHRwczovL3RvcGNvZGVyLW5ld2F1dGguYXV0aDAuY29tLyIsInN1YiI6ImF1dGgwfDQwMTUzOTU2IiwiYXVkIjpbImh0dHBzOi8vYXBpLnRvcGNvZGVyLWRldi5jb20vdjMiLCJodHRwczovL3RvcGNvZGVyLW5ld2F1dGguYXV0aDAuY29tL3VzZXJpbmZvIl0sImlhdCI6MTUxMjcwMDM4NSwiZXhwIjoxNTEyNzg2Nzg1LCJhenAiOiJHNzZhcjJTSTR0WHowakF5RWJWR003akZ4aGVSbmtxYyIsInNjb3BlIjoib3BlbmlkIHByb2ZpbGUgb2ZmbGluZV9hY2Nlc3MifQ.d-Won0ECCfVe2lBWJUyt5lKgC-HlwlaiHcpP20o6DgJr2dQ-UW4jOH56HMRx3yBYwekJiDteJzT9DecXtWKWd8f1Ope6o_au0LfZJXp2J0UwFXbbValRtGxEEda-YdR2gWTgH8EhNkEQS-oCU80oBIEITx3FbEf3Tqjj1D0koxqp4wdV4Q-AAh67dFmV8R3ISzMEDOklBTPzO2fo7zctWiFEnoe0kK2Wyz12qLepS12q_AtUmgI8vvi5fNGQCdKWP3MMhz3snvcETBMkkXS3AJ135ESJB5l1vGkxIR_rkwMoYhFwh43aUQrCtM7uMYWEeU4EzHO5McgzIUD13cF_Cw\"\n\t}\n}"
+				},
+				"url": "http://local.topcoder-dev.com:8080/v3/authorizations"
+			},
+			"response": []
+		}
+	]
+}

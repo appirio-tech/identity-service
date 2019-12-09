@@ -1,0 +1,13 @@
+{
+  "api.version": "v1",
+  "sources": [
+    {
+      "name": "Application logs",
+      "sourceType": "LocalFile",
+      "multilineProcessingEnabled": true,
+      "pathExpression": "/var/log/ap-@APINAME@.log",
+      "category": "@CONFIG@",
+      "hostName": "ap-@APINAME@-@CONFIG@"
+    }
+  ]
+}

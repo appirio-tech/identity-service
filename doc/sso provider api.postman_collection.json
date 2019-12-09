@@ -1,0 +1,50 @@
+{
+	"info": {
+		"name": "sso provider api",
+		"_postman_id": "08257ece-a5b5-7ae9-8be7-59e50d7ac58f",
+		"description": "",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "get all sso login providers",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJhZG1pbmlzdHJhdG9yIl0sImlzcyI6Imh0dHBzOi8vYXBpLnRvcGNvZGVyLWRldi5jb20iLCJoYW5kbGUiOiJrb2hhdGF0ZXN0NzYiLCJleHAiOjE4MTA1MzQwNjYsInVzZXJJZCI6IjQwMTM1NjQ1IiwiaWF0IjoxNDk1MTc0MDY2LCJlbWFpbCI6bnVsbCwianRpIjoiNzkwZTU3ZjQtZDM4ZC00ZDZmLThiZDgtYWUzYjM3M2E0MWYyIn0.OnWYwyVc35jzPBKQgJ27J-n7zYUzjaj3e9k6oRy3PjM"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": "http://local.topcoder-dev.com:8080/v3/ssoLoginProviders"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"id": "667a3e2c-c309-45fe-b34a-e429a482fc0b",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"id": "760a2988-bfea-4954-8bae-0278539baedc",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}

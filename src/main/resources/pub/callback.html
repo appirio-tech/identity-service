@@ -1,0 +1,130 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<title>Callback Page</title>
+	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+	<script type="text/javascript" src="./utils.js"></script>
+	<script type="text/javascript">
+	<!--
+    function authorize_with_code(auth0Code, retUrl) {
+        var endpoint = "/v3/authorizations";
+        $.ajax({
+            url : endpoint,
+            type : 'POST',
+            contentType : 'application/json',
+			headers: {
+				'Authorization': 'Auth0Code '+auth0Code,
+			},
+			data : JSON.stringify({}),
+            success : function(data) {
+                console.log(data);
+                var token = data.result.content.token,
+                	externalToken = data.result.content.externalToken || '';
+                	refreshToken = data.result.content.refreshToken || '';
+                if(localStorage) {
+                	localStorage.setItem('userJWTToken', token);
+                }
+                $("#message").html("Redirecting to "+retUrl);
+                redirect(rebuildUrl(retUrl, {userJWTToken: token, auth0Jwt: externalToken, auth0Refresh: refreshToken}));
+            },
+        	error : function(xhr,status,error) {
+        		console.log(xhr.status + ':' + error);
+        		var err = getError(xhr, error);
+        		console.log(err);
+                redirect(rebuildUrl(retUrl, {status: xhr.status, message: encodeURIComponent(err)}));
+        	}
+        });
+    }
+
+    function authorize_with_token(id_token, refresh_token, retUrl) {
+        var endpoint = "/v3/authorizations",
+        	data = {externalToken : id_token, refreshToken : refresh_token},
+        	payload = JSON.stringify({param: data});
+    	
+        $.ajax({
+            url : endpoint,
+            type : 'POST',
+            contentType : 'application/json',
+            dataType : 'json',
+            data: payload,
+            success : function(data) {
+                console.log(data);
+                var token = data.result.content.token;
+                if(localStorage) { 
+                	localStorage.setItem('userJWTToken', token);
+                }
+                $("#message").html("Redirecting to "+retUrl);
+                var next = rebuildUrl(retUrl, {userJWTToken: token, auth0Jwt: id_token, auth0Refresh: refresh_token});
+                redirect(next);
+            },
+        	error : function(xhr,status,error) {
+        		console.log(xhr.status + ':' + error);
+        		var err = getError(xhr, error);
+        		console.log(err);
+        		var u = rebuildUrl(retUrl, {status: xhr.status, message: encodeURIComponent(err)});
+        		console.log(u);
+                redirect(u);
+        	}
+        });
+    }
+
+	function rebuildUrl(url, additionalParams) {
+		var p = url.indexOf('?'),
+			params;
+		if(p>=0) {
+			params = parseQuery(url.substring(p+1));
+			url = url.substring(0, p);
+		}
+		params = params || {};
+		if(additionalParams) {
+			for(var key in additionalParams) {
+				params[key] = additionalParams[key];
+			}
+		}
+		url = url+'?';
+		for(var key in params) {
+			url += (key + '=' + encodeURIComponent(params[key]) + '&');
+		}
+		return url.replace(/&$/, '');
+	}
+
+	function getError(xhr, error) {
+		if(xhr && xhr.responseJSON && xhr.responseJSON.result && xhr.responseJSON.result.content) {
+			return xhr.responseJSON.result.content;
+		}
+		return error;
+	}
+	
+    $(document).ready(function() {
+        var params = $.extend(true, getHashParameters(), getQueryParameters()),
+        	code = params['code'],
+        	id_token = params['id_token'],
+        	refresh_token = params['refresh_token'],
+        	state = decodeURIComponent(params['state']);
+    	
+        $("#message").html("Logging in...");
+		if(code) {
+        	authorize_with_code(code, state);
+		} else {
+			authorize_with_token(id_token, refresh_token, state);
+		}
+    });
+	-->
+	</script>
+	<style type="text/css">
+	<!--
+	#message {
+		margin: 20px;
+		padding: 10px;
+		width: 65%;
+	}
+	-->
+	</style>
+</head>
+<body>
+	<div>
+		<span id="message"></span>
+	</div>
+</body>
+</html>
