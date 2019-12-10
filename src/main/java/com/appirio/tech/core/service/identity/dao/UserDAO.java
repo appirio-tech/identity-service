@@ -698,6 +698,7 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
         if(user.getCredential()==null || user.getCredential().getPassword()==null)
             throw new IllegalArgumentException("password must be specified.");
         
+        logger.info(String.format("change password - encoded password. (encoded=%s)", user.getCredential().getEncodedPassword());
         // update security_user table
         updatePassword(user.getHandle(), user.getCredential().getEncodedPassword());
         
