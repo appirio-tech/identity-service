@@ -170,7 +170,6 @@ public class Utils {
 			Cipher cipher = Cipher.getInstance("Blowfish");
 			cipher.init(Cipher.ENCRYPT_MODE, sksSpec);
 			byte[] encrypted = cipher.doFinal(password.getBytes("UTF-8"));
-                        logger.info(String.format("base64 encoded . (encoded=%s)", Base64.encodeBase64String(encrypted)));
 			return Base64.encodeBase64String(encrypted);
 		} catch (Exception e) {
 			logger.error(String.format("Failed to encode password. (password=%s, key=%s) error: %s", password, key, e.getLocalizedMessage()), e);

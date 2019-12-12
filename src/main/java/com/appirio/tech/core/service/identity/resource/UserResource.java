@@ -193,6 +193,10 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if (profile.getUserId() == null) {
             throw new APIRuntimeException(SC_BAD_REQUEST, "profile must have sso user id.");
         }
+        if (profile.getEmail() == null) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, "profile must have sso email.");
+        }
+
         try {
             SSOUserDAO ssoUserDao = this.userDao.createSSOUserDAO();
             Long providerId = ssoUserDao.getSSOProviderIdByName(profile.getProvider());
