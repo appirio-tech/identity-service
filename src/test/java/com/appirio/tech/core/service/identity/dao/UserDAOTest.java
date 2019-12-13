@@ -1124,7 +1124,7 @@ public class UserDAOTest {
 		testRegister_WithProfile(profile);
 	}
 	
-	/*@Test
+	@Test
 	public void testRegister_WithSSOProfile() throws Exception {
 		
 		// test data - profile
@@ -1136,7 +1136,7 @@ public class UserDAOTest {
 		
 		// test
 		testRegister_WithProfile(profile);
-	}*/
+	}
 
 	
 	@SuppressWarnings("serial")

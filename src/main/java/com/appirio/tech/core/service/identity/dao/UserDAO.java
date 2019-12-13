@@ -405,7 +405,7 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
                 createSocialUser(userId, user.getProfile());
             }
             if(providerType!=null && providerType.isEnterprise && providerType!=ProviderType.LDAP) {
-                if (user.getProfile()!= null && user.getProfile().getEmail() != null) 
+                if (user.getProfile()!= null && user.getProfile().getEmail() == null) 
                 	throw new IllegalArgumentException("SSO profile must have email.");
                 createSSOUserDAO().createSSOUser(userId, user.getProfile());
             }
