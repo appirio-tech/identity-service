@@ -17,7 +17,8 @@ context:
 # Database
 database:
   # the name of your JDBC driver
-  driverClass: com.informix.jdbc.IfxDriver
+  #driverClass: com.informix.jdbc.IfxDriver
+  driverClass: org.postgresql.Driver
 
   # the username
   user: @application.database.user@

@@ -208,7 +208,7 @@ public class UserDAOTest {
 		String result = testee.buildLimitClause(limit);
 		
 		// verify result
-		assertEquals(String.format("FIRST %d",limit.getLimit()), result);
+		assertEquals(String.format("LIMIT %d",limit.getLimit()), result);
 	}
 
 	@Test
@@ -221,7 +221,7 @@ public class UserDAOTest {
 		String result = testee.buildLimitClause(null);
 		
 		// verify result
-		assertEquals(String.format("FIRST %d", UserDAO.DEFAULT_LIMIT), result);
+		assertEquals(String.format("LIMIT %d", UserDAO.DEFAULT_LIMIT), result);
 	}
 	
 	@Test
@@ -484,7 +484,7 @@ public class UserDAOTest {
 		String result = testee.buildOffsetClause(limit);
 		
 		// verify result
-		assertEquals(String.format("SKIP %d", iOffset), result);
+		assertEquals(String.format("OFFSET %d", iOffset), result);
 	}
 
 	@Test

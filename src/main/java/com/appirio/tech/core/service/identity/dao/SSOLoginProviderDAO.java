@@ -24,6 +24,6 @@ public abstract class SSOLoginProviderDAO implements Transactional<SSOLoginProvi
      * @return the List<SSOLoginProvider> result
      */
     @RegisterMapperFactory(TCBeanMapperFactory.class)
-    @SqlQuery("SELECT sso_login_provider_id as ssoLoginProviderId, name, type from common_oltp\\:sso_login_provider")
+    @SqlQuery("SELECT sso_login_provider_id as ssoLoginProviderId, name, type from common_oltp.sso_login_provider")
     public abstract List<SSOLoginProvider> getAllProviders();
 }
