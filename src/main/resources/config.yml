@@ -27,9 +27,9 @@ database:
   password: @application.database.password@
 
   # the JDBC URL
-  url: jdbc:informix-sqli://@application.database.host@:@application.database.port@/common_oltp:INFORMIXSERVER=informixoltp_tcp
+  url: jdbc:postgresql://@application.database.host:@application.database.port/postgres?currentSchema=common_oltp
 
-  validationQuery: SELECT TODAY FROM systables WHERE tabid = 1
+  validationQuery: SELECT 1
 
 filters:
   - com.appirio.tech.core.api.v3.util.filter.LoggingFilter
