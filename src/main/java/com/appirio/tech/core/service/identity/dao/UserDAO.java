@@ -405,6 +405,9 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
                 createSocialUser(userId, user.getProfile());
             }
             if(providerType!=null && providerType.isEnterprise && providerType!=ProviderType.LDAP) {
+                //  Handle SSO intermittent login issue #3
+                if (user.getProfile()!= null && user.getProfile().getEmail() == null)
+                    user.getProfile().setEmail(user.getEmail());
                 createSSOUserDAO().createSSOUser(userId, user.getProfile());
             }
         }
