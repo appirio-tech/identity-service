@@ -794,7 +794,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             @Context HttpServletRequest request) throws Exception {
 
         if(Utils.isEmpty(email))
-            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Handle or Email"));
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "email"));
 
         User user = userDao.findUserByEmail(email);
 
@@ -802,7 +802,12 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             throw new APIRuntimeException(SC_UNAUTHORIZED, "Credentials are incorrect.");
         }
 
-        return ApiResponseFactory.createResponse(user);
+        List<Role> roles = null;
+        if (user.getId() != null) {
+            roles = roleDao.getRolesBySubjectId(Long.parseLong(user.getId().getId()));
+        }
+
+        return ApiResponseFactory.createResponse(roles);
     }
     
     //TODO: should be PATCH?
