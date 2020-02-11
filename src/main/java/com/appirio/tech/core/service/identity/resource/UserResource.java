@@ -778,10 +778,9 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     }
 
     /**
-     * API to authenticate users with email and password.
-     * This is supposed to be called from Auth0 custom connection.
+     * API to return roles for a user (by email)
+     * This is supposed to be called from Auth0 custom connection (needed for social logins).
      * @param email
-     * @param password
      * @param request
      * @return
      * @throws Exception
@@ -791,23 +790,13 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     @Consumes("application/x-www-form-urlencoded")
     @Timed
     public ApiResponse roles(
-            @FormParam("handleOrEmail") String handleOrEmail,
-            @FormParam("password") String password,
+            @FormParam("email") String email,
             @Context HttpServletRequest request) throws Exception {
 
-        logger.info(String.format("login(%s, [PASSWORD])", handleOrEmail));
-        if(Utils.isEmpty(handleOrEmail))
+        if(Utils.isEmpty(email))
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Handle or Email"));
-        if(Utils.isEmpty(password))
-            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Password"));
 
-        logger.debug(String.format("authenticating user by '%s'", handleOrEmail));
-        User user = userDao.authenticate(handleOrEmail, password);
-
-        if (user != null && user.getId() != null) {
-            List<Role> roles = roleDao.getRolesBySubjectId(Long.parseLong(user.getId().getId()));
-            user.setRoles(roles);
-        }
+        User user = userDao.findUserByEmail(email);
 
         if(user==null) {
             throw new APIRuntimeException(SC_UNAUTHORIZED, "Credentials are incorrect.");
