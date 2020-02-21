@@ -384,10 +384,7 @@ public class AuthorizationResource implements GetResource<Authorization> {
             Map<String, Object> header = Utils.parseJWTHeader(auth.getExternalToken());
             if ("RS256".equals(header.get("alg"))) {
                 isRs256Token = true;
-                String refreshToken = this.cacheService.get(auth.getExternalToken());
-                if (refreshToken == null) {
-                    throw new APIRuntimeException(HttpServletResponse.SC_NOT_FOUND, "The refresh token is not found.");
-                }
+                String refreshToken = auth.getRefreshToken();
                 Auth0Credential cred = this.auth0New.refreshToken(refreshToken);
                 this.cacheService.delete(auth.getExternalToken());
                 this.cacheService.put(cred.getAccessToken(), refreshToken);
