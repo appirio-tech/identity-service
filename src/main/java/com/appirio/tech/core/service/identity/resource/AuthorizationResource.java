@@ -384,11 +384,13 @@ public class AuthorizationResource implements GetResource<Authorization> {
             Map<String, Object> header = Utils.parseJWTHeader(auth.getExternalToken());
             if ("RS256".equals(header.get("alg"))) {
                 isRs256Token = true;
+                /*
                 String refreshToken = auth.getRefreshToken();
                 Auth0Credential cred = this.auth0New.refreshToken(refreshToken);
                 this.cacheService.delete(auth.getExternalToken());
                 this.cacheService.put(cred.getAccessToken(), refreshToken);
                 auth.setToken(cred.getAccessToken());
+                */
             } else {
                 auth.setToken(createJWTToken(auth.getExternalToken()));
             }
