@@ -125,6 +125,14 @@ jobs:
       TEMP_ENV: "dev"
     steps: *build_deploy_steps  
 
+  "build-prod-pg":
+    <<: *defaults
+    environment:
+      DEPLOY_ENV: "PROD"
+      LOGICAL_ENV: "prod-pg"
+      TEMP_ENV: "prod"
+    steps: *build_deploy_steps  
+ 
   # Build & Deploy against development backend
   "build-prod":
     <<: *defaults
