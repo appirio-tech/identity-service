@@ -156,4 +156,9 @@ workflows:
           filters:
             branches:
               only: [master]
+      - "build-prod-pg":
+          context : org-global
+          filters:
+            branches:
+              only: [master-pg]
 
