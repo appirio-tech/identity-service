@@ -250,8 +250,6 @@ public class IdentityApplication extends APIApplication<IdentityConfiguration> {
 		GroupResource groupResource = new GroupResource(groupDao, groupInformixDao);
 		environment.jersey().register(groupResource);
 		environment.jersey().register(groupDao);
-		// TODO: temporary fix.
-		userResource.setGroupDAO(groupDao);
 		
 		// Resources::authorizations
 		AuthDataStore authDataStore = configuration.getAuthStore().createAuthDataStore();

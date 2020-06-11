@@ -99,11 +99,6 @@ public class GroupResource implements GetResource<Group>, DDLResource<Group> {
 	private static final String[] writeScopes = {"write:groups", "all:groups"};
 
 	/**
-	 * Represents the admin roles
-	 */
-	private static final String[] adminRoles = {"administrator"};
-
-	/**
 	 * Represents the DAO For Group
 	 */
 	private GroupDAO groupDao;
@@ -139,7 +134,7 @@ public class GroupResource implements GetResource<Group>, DDLResource<Group> {
 			@Context HttpServletRequest request) {
 		logger.info("createObject()");
 
-		checkAccess(authUser, writeScopes, adminRoles);
+		Utils.checkAccess(authUser, writeScopes, Utils.AdminRoles);
 
 		Group group = validateGroup(postRequest);
 
@@ -185,7 +180,7 @@ public class GroupResource implements GetResource<Group>, DDLResource<Group> {
 
         logger.info("createSecurityGroup()");
 
-        checkAccess(authUser, writeScopes, adminRoles);
+		Utils.checkAccess(authUser, writeScopes, Utils.AdminRoles);
 
         if (postRequest == null) {
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Group"));
@@ -392,7 +387,7 @@ public class GroupResource implements GetResource<Group>, DDLResource<Group> {
 			@Context HttpServletRequest request) {
 		logger.info("updateObject()");
 
-		checkAccess(authUser, writeScopes, adminRoles);
+		Utils.checkAccess(authUser, writeScopes, Utils.AdminRoles);
 
 		Group group = validateGroup(putRequest);
 
@@ -447,7 +442,7 @@ public class GroupResource implements GetResource<Group>, DDLResource<Group> {
 			@Context HttpServletRequest request) {
 		logger.info(String.format("deleteObject(%s)", groupId));
 
-		checkAccess(authUser, writeScopes, adminRoles);
+		Utils.checkAccess(authUser, writeScopes, Utils.AdminRoles);
 
 		Group group = getExistingGroup(new TCID(groupId));
 
@@ -511,7 +506,7 @@ public class GroupResource implements GetResource<Group>, DDLResource<Group> {
 		logger.info(String.format("getObject(%s)", groupId));
 		Group group = getExistingGroup(groupId);
 
-		validateAdminRoleOrPrivateGroupMembership(authUser, group, readScopes, adminRoles);
+		validateAdminRoleOrPrivateGroupMembership(authUser, group, readScopes, Utils.AdminRoles);
 
 		return ApiResponseFactory.createFieldSelectorResponse(group, selector);
 	}
@@ -636,7 +631,7 @@ public class GroupResource implements GetResource<Group>, DDLResource<Group> {
 		// Check group exists
 		Group group = getExistingGroup(groupId);
 
-		validateAdminRoleOrPrivateGroupMembership(authUser, group, readScopes, adminRoles);
+		validateAdminRoleOrPrivateGroupMembership(authUser, group, readScopes, Utils.AdminRoles);
 
 		try {
 			List<GroupMembership> memberships = groupDao.findMembershipsByGroup(Utils.toLongValue(groupId));
@@ -669,10 +664,10 @@ public class GroupResource implements GetResource<Group>, DDLResource<Group> {
 
 		logger.info(String.format("getObjects(%s, %s)", memberId, membershipType));
 
-		checkAccess(authUser, readScopes, null);
+		Utils.checkAccess(authUser, readScopes, null);
 
 		// for admin and machine token
-		if (authUser.isMachine() || hasAdminRole(authUser)) {
+		if (authUser.isMachine() || Utils.hasAdminRole(authUser)) {
 			if (memberId==null && Utils.isEmpty(membershipType)) {
 				return ApiResponseFactory.createFieldSelectorResponse(groupDao.findAllGroups(), null);
 			}
@@ -709,7 +704,7 @@ public class GroupResource implements GetResource<Group>, DDLResource<Group> {
 
 		logger.info("addMember()");
 
-		checkAccess(authUser, writeScopes, null);
+		Utils.checkAccess(authUser, writeScopes, null);
 
 		validateMembership(postRequest);
 
@@ -722,7 +717,7 @@ public class GroupResource implements GetResource<Group>, DDLResource<Group> {
 		Group group = getExistingGroup(groupId);
 
 		// only admins or self registering users are allowed (if the group allows self register)
-		if(!authUser.isMachine() && !hasAdminRole(authUser) && !(group.getSelfRegister() && membership.getMemberId().toString().equals(authUser.getUserId().getId()))) {
+		if(!authUser.isMachine() && !Utils.hasAdminRole(authUser) && !(group.getSelfRegister() && membership.getMemberId().toString().equals(authUser.getUserId().getId()))) {
 			throw new APIRuntimeException(SC_FORBIDDEN, "Forbidden");
 		}
 
@@ -759,7 +754,7 @@ System.out.println(String.format("adding member(%d, %s) to group(%d)", membershi
 
 		logger.info(String.format("removeMember(%s, %s)", groupId, membershipId));
 
-		checkAccess(authUser, writeScopes, null);
+		Utils.checkAccess(authUser, writeScopes, null);
 
 		long id = Utils.toLongValue(membershipId);
 		GroupMembership membership = groupDao.findMembership(id);
@@ -770,7 +765,7 @@ System.out.println(String.format("adding member(%d, %s) to group(%d)", membershi
 		}
 
 		// only admins or self registering users are allowed (if the group allows self register)
-		if(!authUser.isMachine() && !hasAdminRole(authUser) && !(group.getSelfRegister() && membership.getMemberId().toString().equals(authUser.getUserId().getId()))) {
+		if(!authUser.isMachine() && !Utils.hasAdminRole(authUser) && !(group.getSelfRegister() && membership.getMemberId().toString().equals(authUser.getUserId().getId()))) {
 			throw new APIRuntimeException(SC_FORBIDDEN, "Forbidden");
 		}
 
@@ -811,47 +806,5 @@ System.out.println(String.format("adding member(%d, %s) to group(%d)", membershi
 			return;
 		}
 		throw new APIRuntimeException(SC_FORBIDDEN, "Forbidden");
-	}
-
-	private void checkAccess(AuthUser authUser, String[] allowedScopes, String[] allowedRoles) {
-		if (authUser == null) {
-			throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Authentication user"));
-		}
-
-		if (authUser.isMachine()) {
-			if (allowedScopes == null || allowedScopes.length == 0) {
-				return;
-			}
-
-			for (String allowedScope : allowedScopes) {
-				if (authUser.getScope().contains(allowedScope)) {
-					return;
-				}
-			}
-		} else {
-			if (allowedRoles == null || allowedRoles.length == 0) {
-				return;
-			}
-
-			for (String role : allowedRoles) {
-				if (authUser.getRoles() != null && authUser.getRoles().contains(role)) {
-					return;
-				}
-			}
-		}
-
-		throw new APIRuntimeException(SC_FORBIDDEN, "Forbidden");
-	}
-
-	private boolean hasAdminRole(AuthUser authUser) {
-		if (authUser.getRoles() != null) {
-			for (String role : adminRoles) {
-				if (authUser.getRoles().contains(role)) {
-					return true;
-				}
-			}
-		}
-
-		return false;
 	}
 }
