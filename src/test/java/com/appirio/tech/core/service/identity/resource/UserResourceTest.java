@@ -27,6 +27,7 @@ import com.appirio.tech.core.service.identity.util.auth.Auth0Client;
 import com.appirio.tech.core.service.identity.util.cache.CacheService;
 import com.appirio.tech.core.service.identity.util.event.MailRepresentation;
 import com.appirio.tech.core.service.identity.util.ldap.MemberStatus;
+import com.appirio.tech.core.service.identity.util.m2mscope.UserProfilesFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.dropwizard.jackson.Jackson;
@@ -65,6 +66,8 @@ import static org.mockito.Mockito.*;
 public class UserResourceTest {
     
     private final RoleDAO mockRoleDao = mock(RoleDAO.class);
+    
+    private final UserProfilesFactory userProfilesFactory = new UserProfilesFactory();
     
     @Before
     @SuppressWarnings("serial")
@@ -141,7 +144,7 @@ public class UserResourceTest {
         doNothing().when(eventProducer).publish(anyString(), anyString());
         ObjectMapper objectMapper = mock(ObjectMapper.class);
         when(objectMapper.writeValueAsString(anyObject())).thenReturn("payload");
-        UserResource testee = spy(new UserResource(userDao, mockRoleDao, cache, eventProducer, null));
+        UserResource testee = spy(new UserResource(userDao, mockRoleDao, cache, eventProducer, null, userProfilesFactory));
         
         // Creating mock: PostPutRequest - give mock user
         UserProfile userProfile = new UserProfile();
@@ -197,7 +200,7 @@ public class UserResourceTest {
         PostPutRequest<UserProfile> param = (PostPutRequest<UserProfile>)mock(PostPutRequest.class);
         when(param.getParam()).thenReturn(userProfile);
 
-        AuthUser authUser = TestUtils.createMachineUserMock(UserResource.CreateScopes);
+        AuthUser authUser = TestUtils.createMachineUserMock(userProfilesFactory.getCreateScopes());
 
         SSOUserDAO ssoUserDao = mock(SSOUserDAO.class);
         when(userDao.createSSOUserDAO()).thenReturn(ssoUserDao);
@@ -333,7 +336,7 @@ public class UserResourceTest {
         PostPutRequest<UserProfile> param = (PostPutRequest<UserProfile>)mock(PostPutRequest.class);
         when(param.getParam()).thenReturn(userProfile);
 
-        AuthUser authUser = TestUtils.createMachineUserMock(UserResource.UpdateScopes);
+        AuthUser authUser = TestUtils.createMachineUserMock(userProfilesFactory.getUpdateScopes());
 
         SSOUserDAO ssoUserDao = mock(SSOUserDAO.class);
         when(userDao.createSSOUserDAO()).thenReturn(ssoUserDao);
@@ -453,7 +456,7 @@ public class UserResourceTest {
         when(objectMapper.writeValueAsString(anyObject())).thenReturn("payload");
         UserResource testee = spy(new UserResource(userDao, mockRoleDao, cache, eventProducer, null));
 
-        AuthUser authUser = TestUtils.createMachineUserMock(UserResource.DeleteScopes);
+        AuthUser authUser = TestUtils.createMachineUserMock(userProfilesFactory.getDeleteScopes());
 
         SSOUserDAO ssoUserDao = mock(SSOUserDAO.class);
         when(userDao.createSSOUserDAO()).thenReturn(ssoUserDao);
@@ -619,7 +622,7 @@ public class UserResourceTest {
         List<UserProfile> profiles = new ArrayList<>();
         profiles.add(userProfile);
 
-        AuthUser authUser = TestUtils.createMachineUserMock(UserResource.ReadScopes);
+        AuthUser authUser = TestUtils.createMachineUserMock(userProfilesFactory.getReadScopes());
 
         SSOUserDAO ssoUserDao = mock(SSOUserDAO.class);
         when(ssoUserDao.findProfilesByUserId(1L)).thenReturn(profiles);
@@ -1019,7 +1022,7 @@ public class UserResourceTest {
         
         // confirm check methods are passed
         verify(testee).checkResourceId(id);
-        verify(testee).validateResourceIdAndCheckPermission(authUser, id, UserResource.UpdateScopes);
+        verify(testee).validateResourceIdAndCheckPermission(authUser, id, userProfilesFactory.getUpdateScopes());
         verify(testee).checkParam(param);
     }
 
@@ -1088,7 +1091,7 @@ public class UserResourceTest {
         
         // confirm check methods are passed
         verify(testee).checkResourceId(id);
-        verify(testee).validateResourceIdAndCheckPermission(authUser, id, UserResource.UpdateScopes);
+        verify(testee).validateResourceIdAndCheckPermission(authUser, id, userProfilesFactory.getUpdateScopes());
         verify(testee).checkParam(param);
     }
     
@@ -1309,7 +1312,7 @@ public class UserResourceTest {
 
         // confirm check methods are passed
         verify(testee).checkResourceId(id);
-        verify(testee).validateResourceIdAndCheckPermission(authUser, id, UserResource.CreateScopes);
+        verify(testee).validateResourceIdAndCheckPermission(authUser, id, userProfilesFactory.getCreateScopes());
         verify(testee).checkParam(param);
     }
 
@@ -1452,7 +1455,7 @@ public class UserResourceTest {
         
         // confirm check methods are passed
         verify(testee).checkResourceId(id);
-        verify(testee).validateResourceIdAndCheckPermission(authUser, id, UserResource.DeleteScopes);
+        verify(testee).validateResourceIdAndCheckPermission(authUser, id, userProfilesFactory.getDeleteScopes());
     }
 
     @Test
@@ -2252,7 +2255,7 @@ public class UserResourceTest {
         
         // confirm check methods are passed
         verify(testee).checkResourceId(id);
-        verify(testee).validateResourceIdAndCheckPermission(authUser, id, UserResource.UpdateScopes);
+        verify(testee).validateResourceIdAndCheckPermission(authUser, id, userProfilesFactory.getUpdateScopes());
         verify(testee).checkParam(param);
     }
     
@@ -2521,7 +2524,7 @@ public class UserResourceTest {
         
         // confirm check methods are passed
         verify(testee).checkResourceId(id);
-        verify(testee).validateResourceIdAndCheckPermission(authUser, id, UserResource.UpdateScopes);
+        verify(testee).validateResourceIdAndCheckPermission(authUser, id, userProfilesFactory.getUpdateScopes());
         verify(testee).checkParam(param);
     }
     
@@ -2559,7 +2562,7 @@ public class UserResourceTest {
         // testee
         UserResource testee = spy(new UserResource(userDao, mockRoleDao, null, eventProducer, null));
         doNothing().when(testee).checkResourceId(any(TCID.class));
-        doNothing().when(testee).validateResourceIdAndCheckPermission(authUser, new TCID(resourceId), UserResource.UpdateScopes);
+        doNothing().when(testee).validateResourceIdAndCheckPermission(authUser, new TCID(resourceId), userProfilesFactory.getUpdateScopes());
         doNothing().when(testee).checkParam(any(PostPutRequest.class));
         doReturn(null).when(testee).validateEmail(newEmail); // mock: always valid
 
@@ -2590,7 +2593,7 @@ public class UserResourceTest {
         
         // confirm check methods are passed
         TCID uid = new TCID(resourceId);
-        verify(testee).validateResourceIdAndCheckPermission(authUser, uid, UserResource.UpdateScopes);
+        verify(testee).validateResourceIdAndCheckPermission(authUser, uid, userProfilesFactory.getUpdateScopes());
         verify(testee).checkParam(param);
     }
     
@@ -2616,7 +2619,7 @@ public class UserResourceTest {
         // testee
         UserResource testee = spy(new UserResource(null, null, null, null, null));
         doNothing().when(testee).checkResourceId(any(TCID.class));
-        doNothing().when(testee).validateResourceIdAndCheckPermission(authUser, new TCID(resourceId), UserResource.UpdateScopes);
+        doNothing().when(testee).validateResourceIdAndCheckPermission(authUser, new TCID(resourceId), userProfilesFactory.getUpdateScopes());
         doNothing().when(testee).checkParam(any(PostPutRequest.class));
         //doReturn(null).when(testee).validateEmail(newEmail); // mock: always valid
 
@@ -2634,7 +2637,7 @@ public class UserResourceTest {
         
         // confirm check methods are passed
         TCID uid = new TCID(resourceId);
-        verify(testee).validateResourceIdAndCheckPermission(authUser, uid, UserResource.UpdateScopes);
+        verify(testee).validateResourceIdAndCheckPermission(authUser, uid, userProfilesFactory.getUpdateScopes());
         verify(testee).checkParam(param);
     }
     
@@ -2659,7 +2662,7 @@ public class UserResourceTest {
         // testee
         UserResource testee = spy(new UserResource(null, null, null, null, null));
         doNothing().when(testee).checkResourceId(any(TCID.class));
-        doNothing().when(testee).validateResourceIdAndCheckPermission(authUser, new TCID(resourceId), UserResource.UpdateScopes);
+        doNothing().when(testee).validateResourceIdAndCheckPermission(authUser, new TCID(resourceId), userProfilesFactory.getUpdateScopes());
         doNothing().when(testee).checkParam(any(PostPutRequest.class));
         String error = "ERROR";
         doReturn(error).when(testee).validateEmail(newEmail); // mock: invalid
@@ -2679,7 +2682,7 @@ public class UserResourceTest {
         
         // confirm check methods are passed
         TCID uid = new TCID(resourceId);
-        verify(testee).validateResourceIdAndCheckPermission(authUser, uid, UserResource.UpdateScopes);
+        verify(testee).validateResourceIdAndCheckPermission(authUser, uid, userProfilesFactory.getUpdateScopes());
         verify(testee).checkParam(param);
     }
     
@@ -2708,7 +2711,7 @@ public class UserResourceTest {
         // testee
         UserResource testee = spy(new UserResource(userDao, mockRoleDao, null, null, null));
         doNothing().when(testee).checkResourceId(any(TCID.class));
-        doNothing().when(testee).validateResourceIdAndCheckPermission(authUser, new TCID(resourceId), UserResource.UpdateScopes);
+        doNothing().when(testee).validateResourceIdAndCheckPermission(authUser, new TCID(resourceId), userProfilesFactory.getUpdateScopes());
         doNothing().when(testee).checkParam(any(PostPutRequest.class));
         doReturn(null).when(testee).validateEmail(newEmail); // mock: valid
 
@@ -2728,7 +2731,7 @@ public class UserResourceTest {
         
         // confirm check methods are passed
         TCID uid = new TCID(resourceId);
-        verify(testee).validateResourceIdAndCheckPermission(authUser, uid, UserResource.UpdateScopes);
+        verify(testee).validateResourceIdAndCheckPermission(authUser, uid, userProfilesFactory.getUpdateScopes());
         verify(testee).checkParam(param);
     }
 
@@ -3038,7 +3041,7 @@ public class UserResourceTest {
         
         // confirm check methods are passed
         verify(testee).checkResourceId(id);
-        verify(testee).validateResourceIdAndCheckPermission(authUser, id, UserResource.UpdateScopes);
+        verify(testee).validateResourceIdAndCheckPermission(authUser, id, userProfilesFactory.getUpdateScopes());
         verify(testee).checkParam(param);
     }
     
@@ -4001,7 +4004,7 @@ public class UserResourceTest {
         verify(userDao, never()).findAchievements(anyLong());
         
         verify(testee).checkResourceId(userId);
-        verify(testee).validateResourceIdAndCheckPermission(authUser, userId, UserResource.ReadScopes);
+        verify(testee).validateResourceIdAndCheckPermission(authUser, userId, userProfilesFactory.getReadScopes());
     }
 
     @Test

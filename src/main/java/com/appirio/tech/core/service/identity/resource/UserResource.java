@@ -2,6 +2,8 @@ package com.appirio.tech.core.service.identity.resource;
 
 import static com.appirio.tech.core.service.identity.util.Constants.*;
 import static javax.servlet.http.HttpServletResponse.*;
+
+import com.appirio.tech.core.service.identity.util.m2mscope.UserProfilesFactory;
 import io.dropwizard.auth.Auth;
 import io.dropwizard.jersey.PATCH;
 
@@ -91,26 +93,6 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     // TODO: switch to slf4j directly (this delegates to it) - it's more efficient
     private static final Logger logger = Logger.getLogger(UserResource.class);
 
-    /**
-     * Represents the create scopes for machine token validation.
-     */
-    public static final String[] ReadScopes = {"read:user_profiles", "all:user_profiles"};
-
-    /**
-     * Represents the create scopes for machine token validation.
-     */
-    public static final String[] CreateScopes = {"create:user_profiles", "all:user_profiles"};
-
-    /**
-     * Represents the delete scopes for machine token validation.
-     */
-    public static final String[] DeleteScopes = {"delete:user_profiles", "all:user_profiles"};
-
-    /**
-     * Represents the update scopes for machine token validation.
-     */
-    public static final String[] UpdateScopes = {"update:user_profiles", "all:user_profiles"};
-
     private int resetTokenExpirySeconds = 30 * 60; //30min
     
     private int resendActivationCodeExpirySeconds = 30 * 60; //30min
@@ -139,7 +121,38 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
      * The event bus service client field used to send the event
      */
     private final EventBusServiceClient eventBusServiceClient;
+
+    private final UserProfilesFactory userProfilesFactory;
     
+    /**
+     * Create UserResource
+     *
+     * @param userDao the userDao to use
+     * @param roleDao the roleDao to use
+     * @param cacheService the cacheService to use
+     * @param eventProducer the eventProducer to use
+     * @param eventBusServiceClient the eventBusServiceClient to use
+     * @param userProfilesFactory the user profiles scopes configuration.
+     */
+    public UserResource(
+                UserDAO userDao,
+                RoleDAO roleDao,
+                CacheService cacheService,
+                EventProducer eventProducer,
+                EventBusServiceClient eventBusServiceClient, UserProfilesFactory userProfilesFactory) {
+        this.userDao = userDao;
+        this.roleDao = roleDao;
+        this.cacheService = cacheService;
+        this.eventProducer = eventProducer;
+        this.eventBusServiceClient = eventBusServiceClient;
+        if (userProfilesFactory == null) {
+            // create a default one
+            this.userProfilesFactory = new UserProfilesFactory();
+        } else {
+            this.userProfilesFactory = userProfilesFactory;
+        }
+    }
+
     /**
      * Create UserResource
      *
@@ -150,16 +163,12 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
      * @param eventBusServiceClient the eventBusServiceClient to use
      */
     public UserResource(
-                UserDAO userDao,
-                RoleDAO roleDao,
-                CacheService cacheService,
-                EventProducer eventProducer,
-                EventBusServiceClient eventBusServiceClient) {
-        this.userDao = userDao;
-        this.roleDao = roleDao;
-        this.cacheService = cacheService;
-        this.eventProducer = eventProducer;
-        this.eventBusServiceClient = eventBusServiceClient;
+            UserDAO userDao,
+            RoleDAO roleDao,
+            CacheService cacheService,
+            EventProducer eventProducer,
+            EventBusServiceClient eventBusServiceClient) {
+        this(userDao, roleDao, cacheService, eventProducer, eventBusServiceClient, null);
     }
 
     protected void setObjectMapper(ObjectMapper objectMapper) {
@@ -205,7 +214,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             @Valid PostPutRequest<UserProfile> postRequest) {
         UserProfile profile = postRequest.getParam();
 
-        checkAccessAndUserProfile(authUser, userId, profile, CreateScopes);
+        checkAccessAndUserProfile(authUser, userId, profile, userProfilesFactory.getCreateScopes());
 
         try {
             SSOUserDAO ssoUserDao = this.userDao.createSSOUserDAO();
@@ -246,7 +255,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             @PathParam("userId") long userId,
             @Valid PostPutRequest<UserProfile> postRequest) {
         UserProfile profile = postRequest.getParam();
-        checkAccessAndUserProfile(authUser, userId, profile, UpdateScopes);
+        checkAccessAndUserProfile(authUser, userId, profile, userProfilesFactory.getUpdateScopes());
 
         try {
             SSOUserDAO ssoUserDao = this.userDao.createSSOUserDAO();
@@ -283,7 +292,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     @Path("/{userId}/SSOUserLogin")
     public ApiResponse deleteSSOUserLogin(@Auth AuthUser authUser,
             @PathParam("userId") long userId, @QueryParam("provider") String provider,  @QueryParam("providerId") Long providerId) {
-        Utils.checkAccess(authUser, DeleteScopes, Utils.AdminRoles);
+        Utils.checkAccess(authUser, userProfilesFactory.getDeleteScopes(), Utils.AdminRoles);
         if (userId <= 0) {
             throw new APIRuntimeException(SC_BAD_REQUEST, "userId should be positive:" + userId);
         }
@@ -339,7 +348,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     @Path("/{userId}/SSOUserLogins")
     public ApiResponse getSSOUserLoginsByUserId(@Auth AuthUser authUser,
             @PathParam("userId") long userId) {
-        Utils.checkAccess(authUser, ReadScopes, Utils.AdminRoles);
+        Utils.checkAccess(authUser, userProfilesFactory.getReadScopes(), Utils.AdminRoles);
         if (userId <= 0) {
             throw new APIRuntimeException(SC_BAD_REQUEST, "userId should be positive:" + userId);
         }
@@ -365,7 +374,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             @APIQueryParam(repClass = User.class) QueryParameter query,
             @Context HttpServletRequest request) {
         logger.info("getObjects");
-        Utils.checkAccess(authUser, ReadScopes, Utils.AdminRoles);
+        Utils.checkAccess(authUser, userProfilesFactory.getReadScopes(), Utils.AdminRoles);
 
         try {
             List<User> users = userDao.findUsers(
@@ -394,7 +403,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             @PathParam("resourceId") TCID resourceId,
             @APIFieldParam(repClass = User.class) FieldSelector selector,
             @Context HttpServletRequest request) throws Exception {
-        validateResourceIdAndCheckPermission(authUser, resourceId, ReadScopes);
+        validateResourceIdAndCheckPermission(authUser, resourceId, userProfilesFactory.getReadScopes());
 
         User user = this.userDao.populateById(selector, resourceId);
         if (user == null) {
@@ -508,7 +517,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
         TCID id = new TCID(resourceId);
 
-        validateResourceIdAndCheckPermission(authUser, id, UpdateScopes);
+        validateResourceIdAndCheckPermission(authUser, id, userProfilesFactory.getUpdateScopes());
         // checking param
         checkParam(patchRequest);
 
@@ -603,7 +612,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         logger.info(String.format("createUserProfile(%s)", resourceId));
 
         TCID id = new TCID(resourceId);
-        validateResourceIdAndCheckPermission(authUser, id, CreateScopes);
+        validateResourceIdAndCheckPermission(authUser, id, userProfilesFactory.getCreateScopes());
         // checking param
         checkParam(postRequest);
         
@@ -678,7 +687,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(Constants.MSG_TEMPLATE_MANDATORY, "provider"));
         
         TCID id = new TCID(resourceId);
-        validateResourceIdAndCheckPermission(authUser, id, DeleteScopes);
+        validateResourceIdAndCheckPermission(authUser, id, userProfilesFactory.getDeleteScopes());
         
         ProviderType providerType = ProviderType.getByName(provider);
         if(providerType==null)
@@ -842,7 +851,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         logger.info(String.format("updateHandle(%s)", resourceId));
 
         TCID id = new TCID(resourceId);
-        validateResourceIdAndCheckPermission(authUser, id, UpdateScopes);
+        validateResourceIdAndCheckPermission(authUser, id, userProfilesFactory.getUpdateScopes());
         // checking param
         checkParam(patchRequest);
 
@@ -888,7 +897,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         logger.info(String.format("updatePrimaryEmail(%s)", resourceId));
 
         TCID id = new TCID(resourceId);
-        validateResourceIdAndCheckPermission(authUser, id, UpdateScopes);
+        validateResourceIdAndCheckPermission(authUser, id, userProfilesFactory.getUpdateScopes());
         // checking param
         checkParam(patchRequest);
 
@@ -993,7 +1002,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         logger.info(String.format("updateStatus(%s, %s)", resourceId, comment));
 
         TCID id = new TCID(resourceId);
-        validateResourceIdAndCheckPermission(authUser, id, UpdateScopes);
+        validateResourceIdAndCheckPermission(authUser, id, userProfilesFactory.getUpdateScopes());
         // checking param
         checkParam(patchRequest);
         
@@ -1165,7 +1174,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         
         logger.info(String.format("getAchievements(%s)", resourceId));
 
-        validateResourceIdAndCheckPermission(authUser, resourceId, ReadScopes);
+        validateResourceIdAndCheckPermission(authUser, resourceId, userProfilesFactory.getReadScopes());
         
         Long userId = Utils.toLongValue(resourceId);
         logger.debug(String.format("findUserById(%s)", userId));
