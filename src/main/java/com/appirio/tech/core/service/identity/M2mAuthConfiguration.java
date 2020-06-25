@@ -1,5 +1,6 @@
 package com.appirio.tech.core.service.identity;
 
+import com.appirio.tech.core.service.identity.util.m2mscope.UserProfilesFactory;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.validation.constraints.NotNull;
 
@@ -61,6 +62,17 @@ public class M2mAuthConfiguration {
     @JsonProperty
     private String authProxyServerUrl;
 
+    @JsonProperty
+    private UserProfilesFactory userProfiles = new UserProfilesFactory();
+
+    public UserProfilesFactory getUserProfiles() {
+        return userProfiles;
+    }
+
+    public void setUserProfiles(UserProfilesFactory userProfiles) {
+        this.userProfiles = userProfiles;
+    }
+
     /**
      * Get clientId
      * 
@@ -73,7 +85,7 @@ public class M2mAuthConfiguration {
     /**
      * Set clientId
      * 
-     * @return the clientId to set
+     * @param clientId the clientId to set
      */
     public void setClientId(String clientId) {
         this.clientId = clientId;
@@ -91,7 +103,7 @@ public class M2mAuthConfiguration {
     /**
      * Set clientSecret
      * 
-     * @return the clientSecret to set
+     * @param clientSecret the clientSecret to set
      */
     public void setClientSecret(String clientSecret) {
         this.clientSecret = clientSecret;
@@ -109,7 +121,7 @@ public class M2mAuthConfiguration {
     /**
      * Set audience
      * 
-     * @return the audience to set
+     * @param audience the audience to set
      */
     public void setAudience(String audience) {
         this.audience = audience;
@@ -127,7 +139,7 @@ public class M2mAuthConfiguration {
     /**
      * Set m2mAuthDomain
      * 
-     * @return the m2mAuthDomain to set
+     * @param m2mAuthDomain the m2mAuthDomain to set
      */
     public void setM2mAuthDomain(String m2mAuthDomain) {
         this.m2mAuthDomain = m2mAuthDomain;
@@ -145,7 +157,7 @@ public class M2mAuthConfiguration {
     /**
      * Set tokenExpireTimeInMinutes
      * 
-     * @return the tokenExpireTimeInMinutes to set
+     * @param tokenExpireTimeInMinutes the tokenExpireTimeInMinutes to set
      */
     public void setTokenExpireTimeInMinutes(Integer tokenExpireTimeInMinutes) {
         this.tokenExpireTimeInMinutes = tokenExpireTimeInMinutes;
@@ -163,7 +175,7 @@ public class M2mAuthConfiguration {
     /**
      * Set userId
      * 
-     * @return the userId to set
+     * @param userId the userId to set
      */
     public void setUserId(Long userId) {
         this.userId = userId;
@@ -181,7 +193,7 @@ public class M2mAuthConfiguration {
     /**
      * Set authProxyServerUrl
      *
-     * @return the authProxyServerUrl to set
+     * @param authProxyServerUrl the authProxyServerUrl to set
      */
     public void setAuthServerProxyUrl(String authProxyServerUrl) {
         this.authProxyServerUrl = authProxyServerUrl;
