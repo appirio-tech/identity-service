@@ -146,6 +146,11 @@ m2mAuthConfig:
   tokenExpireTimeInMinutes: @m2mAuthConfig.tokenExpireTimeInMinutes@
   userId: @m2mAuthConfig.userId@
   authProxyServerUrl: @m2mAuthConfig.authProxyServerUrl@
+  userProfiles:
+    create: @m2mAuthConfig.userProfiles.create@
+    read: @m2mAuthConfig.userProfiles.read@
+    update: @m2mAuthConfig.userProfiles.update@
+    delete: @m2mAuthConfig.userProfiles.delete@
   
 # Server settings
 server:

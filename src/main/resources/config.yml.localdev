@@ -151,6 +151,11 @@ m2mAuthConfig:
   m2mAuthDomain: dummy
   tokenExpireTimeInMinutes: 60
   userId: 1234567890
+  userProfiles:
+    create: create:user_profiles,all:user_profiles
+    read: read:user_profiles,all:user_profiles
+    update: update:user_profiles,all:user_profiles
+    delete: delete:user_profiles,all:user_profiles
   
 # Server settings
 server:
