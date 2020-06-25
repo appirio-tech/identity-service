@@ -14,7 +14,7 @@ install_dependency: &install_dependency
 install_deploysuite_latest: &install_deploysuite_latest
           name: Installation of install_deploysuite.
           command: |
-            git clone --branch v1.4.1 https://github.com/topcoder-platform/tc-deploy-scripts ../buildscript
+            git clone --branch master https://github.com/topcoder-platform/tc-deploy-scripts ../buildscript
             cp ./../buildscript/master_deploy.sh .
             cp ./../buildscript/buildenv.sh .
             cp ./../buildscript/awsconfiguration.sh .
@@ -97,7 +97,7 @@ build_deploy_steps: &build_deploy_steps
           name: Build Image
           command: |
             echo "Building image"
-            ./build/build-image.sh /home/circleci/project $LOGICAL_ENV
+            ./build/build-image.sh /home/circleci/project $TEMP_ENV
       - run:
           name: Deploying Application.
           command: |
@@ -105,7 +105,7 @@ build_deploy_steps: &build_deploy_steps
             source awsenvconf
             source buildenvvar
             # ./master_deploy.sh -d EBS -e $DEPLOY_ENV -t "${LOGICAL_ENV}.${VER}"
-            ./master_deploy.sh -d ECS -e $DEPLOY_ENV -t "${LOGICAL_ENV}.${VER}" -s ${LOGICAL_ENV}_identity_ecs_appvar -i ap-identity-microservice
+            ./master_deploy.sh -d ECS -e $DEPLOY_ENV -t "${TEMP_ENV}.${VER}" -s ${LOGICAL_ENV}_identity_ecs_appvar -i ap-identity-microservice
 
 
 jobs:
@@ -116,6 +116,14 @@ jobs:
       DEPLOY_ENV: "DEV"
       LOGICAL_ENV: "dev"
     steps: *build_deploy_steps
+    
+  "build-dev-pg":
+    <<: *defaults
+    environment:
+      DEPLOY_ENV: "DEV"
+      LOGICAL_ENV: "test-pg"
+      TEMP_ENV: "dev"
+    steps: *build_deploy_steps  
 
   # Build & Deploy against development backend
   "build-prod":
@@ -136,7 +144,12 @@ workflows:
           filters:
             branches:
               only: [dev, test]
-
+      - "build-dev-pg":
+          context : org-global
+          filters:
+            branches:
+              only: [dev-pg]
+              
       # Production build is executed on "master" branch only.
       - "build-prod":
           context : org-global

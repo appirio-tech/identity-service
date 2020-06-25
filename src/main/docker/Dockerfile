@@ -19,8 +19,8 @@ COPY TC.prod.ldap.keystore ./TC.prod.ldap.keystore
 
 COPY run-service.sh ./run-service.sh
 
-RUN yum install wget -y; \
-wget -O dd-java-agent.jar 'https://search.maven.org/classic/remote_content?g=com.datadoghq&a=dd-java-agent&v=LATEST'
+#RUN yum install wget -y; \
+#wget -O dd-java-agent.jar 'https://search.maven.org/classic/remote_content?g=com.datadoghq&a=dd-java-agent&v=LATEST'
 
 CMD ["/bin/bash", "/data/run-service.sh"]
 

@@ -34,13 +34,13 @@ public abstract class SSOUserDAO implements Transactional<SocialUserDAO> {
 
 
     @SqlQuery(
-            "SELECT user_id FROM user_sso_login " +
+            "SELECT user_id FROM common_oltp.user_sso_login " +
             "WHERE sso_user_id = :ssoUserId AND provider_id = :providerId"
     )
     abstract Long getUserIdBySSOUserId(@Bind("ssoUserId") String ssoUserId, @Bind("providerId") Long providerId);
 
     @SqlQuery(
-            "SELECT user_id FROM user_sso_login " +
+            "SELECT user_id FROM common_oltp.user_sso_login " +
             "WHERE email = :ssoEmail AND provider_id = :providerId"
     )
     abstract Long getUserIdBySSOEmail(@Bind("ssoEmail") String ssoEmail, @Bind("providerId") Long providerId);
@@ -55,20 +55,20 @@ public abstract class SSOUserDAO implements Transactional<SocialUserDAO> {
                 "p.sso_login_provider_id, " +
                 "p.name AS provider, " +
                 "p.type AS providerType " +
-            "FROM user_sso_login AS u " +
-            "LEFT OUTER JOIN sso_login_provider AS p ON u.provider_id = p.sso_login_provider_id " +
+            "FROM common_oltp.user_sso_login AS u " +
+            "LEFT OUTER JOIN common_oltp.sso_login_provider AS p ON u.provider_id = p.sso_login_provider_id " +
             "WHERE u.user_id = :userId"
     )
     public abstract List<UserProfile> findProfilesByUserId(@Bind("userId") Long userId);
 
     @SqlQuery(
-            "SELECT sso_login_provider_id FROM sso_login_provider " +
+            "SELECT sso_login_provider_id FROM common_oltp.sso_login_provider " +
             "WHERE name = :ssoProvider"
     )
     public abstract Long getSSOProviderIdByName(@Bind("ssoProvider") String ssoProvider);
     
     @SqlUpdate(
-            "INSERT INTO user_sso_login(" +
+            "INSERT INTO common_oltp.user_sso_login(" +
                     "user_id," + 
                     "provider_id," +
                     "sso_user_id," +
@@ -92,7 +92,7 @@ public abstract class SSOUserDAO implements Transactional<SocialUserDAO> {
      * @return the update affected row number
      */
     @SqlUpdate(
-            "UPDATE user_sso_login " +
+            "UPDATE common_oltp.user_sso_login " +
                     "SET user_id = :userId," + 
                     "provider_id = :providerId," +
                     "sso_user_id = :p.userId," +
@@ -111,7 +111,7 @@ public abstract class SSOUserDAO implements Transactional<SocialUserDAO> {
      * @return the update affected row number
      */
     @SqlUpdate(
-            "DELETE from user_sso_login " +
+            "DELETE from common_oltp.user_sso_login " +
             " WHERE " +
                     "user_id = :userId AND " +
                     "provider_id = :providerId")
@@ -124,7 +124,7 @@ public abstract class SSOUserDAO implements Transactional<SocialUserDAO> {
      * @param providerId the providerId to use
      * @return the int result
      */
-    @SqlQuery("SELECT count(user_id) from  user_sso_login WHERE user_id = :userId AND provider_id = :providerId")
+    @SqlQuery("SELECT count(user_id) from  common_oltp.user_sso_login WHERE user_id = :userId AND provider_id = :providerId")
     public abstract int checkUserIdAndProviderId(@Bind("userId") Long userId, @Bind("providerId") Long providerId);
     
     /**

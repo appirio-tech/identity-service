@@ -176,7 +176,7 @@ public class IdentityApplication extends APIApplication<IdentityConfiguration> {
 		
 		// JDBI based DAOs
 		final DBIFactory factory = new DBIFactory();
-		final DBI jdbi = factory.build(environment, configuration.getDataSourceFactory(), "common_oltp");
+		final DBI jdbi = factory.build(environment, configuration.getDataSourceFactory(), "postgresql");
 		jdbi.registerArgumentFactory(new TCIDArgumentFactory());
 		final UserDAO userDao = jdbi.onDemand(UserDAO.class);
 		final IdentityProviderDAO identityProviderDAO = jdbi.onDemand(IdentityProviderDAO.class);
