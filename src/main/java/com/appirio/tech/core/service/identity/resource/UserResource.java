@@ -8,10 +8,7 @@ import io.dropwizard.jersey.PATCH;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -30,7 +27,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.log4j.Logger;
-import org.joda.time.DateTime;
 
 import com.appirio.eventsbus.api.client.EventProducer;
 import com.appirio.tech.core.api.v3.TCID;
@@ -48,7 +44,6 @@ import com.appirio.tech.core.api.v3.util.jwt.JWTToken;
 import com.appirio.tech.core.auth.AuthUser;
 import com.appirio.tech.core.service.identity.clients.EventBusServiceClient;
 import com.appirio.tech.core.service.identity.clients.EventMessage;
-import com.appirio.tech.core.service.identity.dao.GroupDAO;
 import com.appirio.tech.core.service.identity.dao.RoleDAO;
 import com.appirio.tech.core.service.identity.dao.SSOUserDAO;
 import com.appirio.tech.core.service.identity.dao.UserDAO;
@@ -56,7 +51,6 @@ import com.appirio.tech.core.service.identity.representation.Achievement;
 import com.appirio.tech.core.service.identity.representation.Country;
 import com.appirio.tech.core.service.identity.representation.Credential;
 import com.appirio.tech.core.service.identity.representation.Email;
-import com.appirio.tech.core.service.identity.representation.GroupMembership;
 import com.appirio.tech.core.service.identity.representation.ProviderType;
 import com.appirio.tech.core.service.identity.representation.Role;
 import com.appirio.tech.core.service.identity.representation.User;
@@ -96,7 +90,27 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class UserResource implements GetResource<User>, DDLResource<User> {
     // TODO: switch to slf4j directly (this delegates to it) - it's more efficient
     private static final Logger logger = Logger.getLogger(UserResource.class);
-    
+
+    /**
+     * Represents the create scopes for machine token validation.
+     */
+    public static final String[] ReadScopes = {"read:user_profiles", "all:user_profiles"};
+
+    /**
+     * Represents the create scopes for machine token validation.
+     */
+    public static final String[] CreateScopes = {"create:user_profiles", "all:user_profiles"};
+
+    /**
+     * Represents the delete scopes for machine token validation.
+     */
+    public static final String[] DeleteScopes = {"delete:user_profiles", "all:user_profiles"};
+
+    /**
+     * Represents the update scopes for machine token validation.
+     */
+    public static final String[] UpdateScopes = {"update:user_profiles", "all:user_profiles"};
+
     private int resetTokenExpirySeconds = 30 * 60; //30min
     
     private int resendActivationCodeExpirySeconds = 30 * 60; //30min
@@ -108,24 +122,19 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     protected UserDAO userDao;
     
     private final RoleDAO roleDao;
-    
-    // TODO: temporary fix
-    private GroupDAO groupDao;
-    public void setGroupDAO(GroupDAO groupDao) { this.groupDao = groupDao; }
 
     protected CacheService cacheService;
     
     private Auth0Client auth0;
 
-    private EventProducer eventProducer;
+    private final EventProducer eventProducer;
 
     private ObjectMapper objectMapper = new ObjectMapper();
     
     private Long defaultUserRoleId;
     
     private String secret;
-    
-    
+
     /**
      * The event bus service client field used to send the event
      */
@@ -160,30 +169,14 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     public void setAuth0Client(Auth0Client auth0) {
         this.auth0 = auth0;
     }
-    
-    /**
-     * Create sso user login
-     *
-     * @param authUser the authUser to use
-     * @param userId the userId to use
-     * @param postRequest the postRequest to use
-     * @throws Exception if any error occurs
-     * @return the ApiResponse result
-     */
-    @POST
-    @Timed
-    @Path("/{userId}/SSOUserLogin")
-    public ApiResponse createSSOUserLogin(@Auth AuthUser authUser,
-            @PathParam("userId") long userId,
-            @Valid PostPutRequest<UserProfile> postRequest) throws Exception {
-        if(!hasAdminRole(authUser)) {
-            throw new APIRuntimeException(SC_FORBIDDEN, "Forbidden");
-        }
+
+    private static void checkAccessAndUserProfile(AuthUser authUser, long userId, UserProfile profile, String[] allowedScopes) {
+        Utils.checkAccess(authUser, allowedScopes, Utils.AdminRoles);
+
         if (userId <= 0) {
             throw new APIRuntimeException(SC_BAD_REQUEST, "userId should be positive:" + userId);
         }
         
-        UserProfile profile = postRequest.getParam();
         if (profile == null) {
             throw new APIRuntimeException(SC_BAD_REQUEST, "profile must be specified.");
         }
@@ -193,6 +186,27 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if (profile.getUserId() == null) {
             throw new APIRuntimeException(SC_BAD_REQUEST, "profile must have sso user id.");
         }
+    }
+    
+    /**
+     * Create sso user login
+     *
+     * @param authUser the authUser to use
+     * @param userId the userId to use
+     * @param postRequest the postRequest to use
+     * @throws APIRuntimeException if any error occurs
+     * @return the ApiResponse result
+     */
+    @POST
+    @Timed
+    @Path("/{userId}/SSOUserLogin")
+    public ApiResponse createSSOUserLogin(@Auth AuthUser authUser,
+            @PathParam("userId") long userId,
+            @Valid PostPutRequest<UserProfile> postRequest) {
+        UserProfile profile = postRequest.getParam();
+
+        checkAccessAndUserProfile(authUser, userId, profile, CreateScopes);
+
         try {
             SSOUserDAO ssoUserDao = this.userDao.createSSOUserDAO();
             Long providerId = ssoUserDao.getSSOProviderIdByName(profile.getProvider());
@@ -222,7 +236,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
      * @param authUser the authUser to use
      * @param userId the userId to use
      * @param postRequest the postRequest to use
-     * @throws Exception if any error occurs
+     * @throws APIRuntimeException if any error occurs
      * @return the ApiResponse result
      */
     @PUT
@@ -230,24 +244,10 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     @Path("/{userId}/SSOUserLogin")
     public ApiResponse updateSSOUserLogin(@Auth AuthUser authUser,
             @PathParam("userId") long userId,
-            @Valid PostPutRequest<UserProfile> postRequest) throws Exception {
-        if(!hasAdminRole(authUser)) {
-            throw new APIRuntimeException(SC_FORBIDDEN, "Forbidden");
-        }
-        if (userId <= 0) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, "userId should be positive:" + userId);
-        }
-        
+            @Valid PostPutRequest<UserProfile> postRequest) {
         UserProfile profile = postRequest.getParam();
-        if (profile == null) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, "profile must be specified.");
-        }
-        if (profile.getProvider() == null) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, "profile must have provider.");
-        }
-        if (profile.getUserId() == null) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, "profile must have sso user id.");
-        }
+        checkAccessAndUserProfile(authUser, userId, profile, UpdateScopes);
+
         try {
             SSOUserDAO ssoUserDao = this.userDao.createSSOUserDAO();
             Long providerId = ssoUserDao.getSSOProviderIdByName(profile.getProvider());
@@ -275,17 +275,15 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
      *
      * @param authUser the authUser to use
      * @param userId the userId to use
-     * @throws Exception if any error occurs
+     * @throws APIRuntimeException if any error occurs
      * @return the ApiResponse result
      */
     @DELETE
     @Timed
     @Path("/{userId}/SSOUserLogin")
     public ApiResponse deleteSSOUserLogin(@Auth AuthUser authUser,
-            @PathParam("userId") long userId, @QueryParam("provider") String provider,  @QueryParam("providerId") Long providerId) throws Exception {
-        if(!hasAdminRole(authUser)) {
-            throw new APIRuntimeException(SC_FORBIDDEN, "Forbidden");
-        }
+            @PathParam("userId") long userId, @QueryParam("provider") String provider,  @QueryParam("providerId") Long providerId) {
+        Utils.checkAccess(authUser, DeleteScopes, Utils.AdminRoles);
         if (userId <= 0) {
             throw new APIRuntimeException(SC_BAD_REQUEST, "userId should be positive:" + userId);
         }
@@ -333,22 +331,20 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
      *
      * @param authUser the authUser to use
      * @param userId the userId to use
-     * @throws Exception if any error occurs
+     * @throws APIRuntimeException if any error occurs
      * @return the ApiResponse result
      */
     @GET
     @Timed
     @Path("/{userId}/SSOUserLogins")
     public ApiResponse getSSOUserLoginsByUserId(@Auth AuthUser authUser,
-            @PathParam("userId") long userId) throws Exception {
-        if(!hasAdminRole(authUser)) {
-            throw new APIRuntimeException(SC_FORBIDDEN, "Forbidden");
-        }
+            @PathParam("userId") long userId) {
+        Utils.checkAccess(authUser, ReadScopes, Utils.AdminRoles);
         if (userId <= 0) {
             throw new APIRuntimeException(SC_BAD_REQUEST, "userId should be positive:" + userId);
         }
         
-        List<UserProfile> profiles = null;
+        List<UserProfile> profiles;
         try {
             SSOUserDAO ssoUserDao = this.userDao.createSSOUserDAO();
             profiles = ssoUserDao.findProfilesByUserId(userId);
@@ -367,13 +363,9 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     public ApiResponse getObjects(
             @Auth AuthUser authUser,
             @APIQueryParam(repClass = User.class) QueryParameter query,
-            @Context HttpServletRequest request) throws Exception {
-
+            @Context HttpServletRequest request) {
         logger.info("getObjects");
-
-        if(!hasAdminRole(authUser) && (authUser.getScope() == null || !authUser.getScope().contains("read:user_profiles"))) {
-            throw new APIRuntimeException(SC_FORBIDDEN, "Forbidden");
-        }
+        Utils.checkAccess(authUser, ReadScopes, Utils.AdminRoles);
 
         try {
             List<User> users = userDao.findUsers(
@@ -387,7 +379,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     /**
      * Get user object
      * @param authUser the authUser to use
-     * @param recordId the recordId to use
+     * @param resourceId the recordId to use
      * @param selector the selector to use
      * @param request the request to use
      * @throws Exception if any error occurs
@@ -399,19 +391,12 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     @Timed
     public ApiResponse getObject(
             @Auth AuthUser authUser,
-            @PathParam("resourceId") TCID recordId,
+            @PathParam("resourceId") TCID resourceId,
             @APIFieldParam(repClass = User.class) FieldSelector selector,
             @Context HttpServletRequest request) throws Exception {
-        if (recordId == null) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, "resourceId is required.");
-        }
+        validateResourceIdAndCheckPermission(authUser, resourceId, ReadScopes);
 
-        // checking ID
-        checkResourceId(recordId);
-        // checking permission
-        checkAdminPermission(authUser, recordId);
-
-        User user = this.userDao.populateById(selector, recordId);
+        User user = this.userDao.populateById(selector, resourceId);
         if (user == null) {
             throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
         }
@@ -423,29 +408,15 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     public ApiResponse createObject(
             AuthUser authUser,
             @Valid PostPutRequest<User> postRequest,
-            @Context HttpServletRequest request) throws Exception {
+            @Context HttpServletRequest request) {
         throw new APIRuntimeException(HttpServletResponse.SC_NOT_IMPLEMENTED);
-    }
-
-    void addToGroupById(User user, long groupId) {
-        GroupMembership membership = new GroupMembership();
-        membership.setMemberId(Utils.toLongValue(user.getId()));
-        membership.setMembershipType("user");
-        membership.setGroupId(groupId);
-        membership.setCreatedBy(user.getId());
-        membership.setCreatedAt(DateTime.now());
-        try {
-            groupDao.addMembership(membership);
-        } catch(Exception e) {
-            logger.error(String.format("Failed to add user %s(%s) to group %s.", user.getId(), user.getHandle(), groupId), e);
-        }
     }
     
     @POST
     @Timed
     public ApiResponse createObject(
             @Valid PostPutRequest<User> postRequest,
-            @Context HttpServletRequest request) throws Exception {
+            @Context HttpServletRequest request) {
 
         logger.info("createObject");
 
@@ -510,7 +481,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         // registration mail with activation code for inactive user
         if(!user.isActive()) {
             String redirectUrl = postRequest.getOptionString("afterActivationURL");
-            logger.debug(String.format("sending registeration mail to: %s (%s)", user.getEmail(), user.getHandle()));
+            logger.debug(String.format("sending registration mail to: %s (%s)", user.getEmail(), user.getHandle()));
             // publish event.
             notifyActivation(user, redirectUrl);
         } else {
@@ -536,10 +507,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         logger.info(String.format("updateObject userId: %s", resourceId));
 
         TCID id = new TCID(resourceId);
-        // checking ID
-        checkResourceId(id);
-        // checking permission
-        checkAdminPermission(authUser, id);
+
+        validateResourceIdAndCheckPermission(authUser, id, UpdateScopes);
         // checking param
         checkParam(patchRequest);
 
@@ -617,7 +586,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     public ApiResponse deleteObject(
             @Auth AuthUser authUser,
             @PathParam("resourceId") String resourceId,
-            @Context HttpServletRequest request) throws Exception {
+            @Context HttpServletRequest request) {
         //TODO:
         throw new APIRuntimeException(SC_NOT_IMPLEMENTED);
     }
@@ -629,15 +598,12 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             @Auth AuthUser authUser,
             @PathParam("resourceId") String resourceId,
             @Valid PostPutRequest<UserProfile> postRequest,
-            @Context HttpServletRequest request) throws Exception {
+            @Context HttpServletRequest request) {
 
         logger.info(String.format("createUserProfile(%s)", resourceId));
 
         TCID id = new TCID(resourceId);
-        // checking ID
-        checkResourceId(id);
-        // checking permission
-        checkAdminPermission(authUser, id);
+        validateResourceIdAndCheckPermission(authUser, id, CreateScopes);
         // checking param
         checkParam(postRequest);
         
@@ -655,7 +621,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         
         // to handle fake social account, adding below check before verifiying from auth0
         if(profile.getContext()==null) {
-		profile.setContext(new HashMap<String, String>());
+		profile.setContext(new HashMap<>());
         }
         profile.getContext().put("socialUserExist", "");
 
@@ -685,7 +651,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         try {
             String accessToken = auth0.getIdProviderAccessToken(auth0UserId);
             if(profile.getContext()==null) {
-                profile.setContext(new HashMap<String, String>());
+                profile.setContext(new HashMap<>());
             }
             if(accessToken!=null) {
                 profile.getContext().put("accessToken", accessToken);
@@ -703,8 +669,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             @Auth AuthUser authUser,
             @PathParam("resourceId") String resourceId,
             @PathParam("provider") String provider,
-            @Context HttpServletRequest request) throws Exception {
-
+            @Context HttpServletRequest request) {
         logger.info(String.format("deleteUserProfile(%s, %s)", resourceId, provider));
         
         if(resourceId==null)
@@ -713,10 +678,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(Constants.MSG_TEMPLATE_MANDATORY, "provider"));
         
         TCID id = new TCID(resourceId);
-        // checking ID
-        checkResourceId(id);
-        // checking permission
-        checkAdminPermission(authUser, id);
+        validateResourceIdAndCheckPermission(authUser, id, DeleteScopes);
         
         ProviderType providerType = ProviderType.getByName(provider);
         if(providerType==null)
@@ -741,11 +703,11 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     /**
      * API to authenticate users with email and password.
      * This is supposed to be called from Auth0 custom connection.
-     * @param email
-     * @param password
-     * @param request
-     * @return
-     * @throws Exception
+     * @param handleOrEmail the handle or email string
+     * @param password the password
+     * @param request the request
+     * @return the login
+     * @throws APIRuntimeException if any error occurs
      */
     @POST
     @Path("/login")
@@ -754,7 +716,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     public ApiResponse login(
             @FormParam("handleOrEmail") String handleOrEmail,
             @FormParam("password") String password,
-            @Context HttpServletRequest request) throws Exception {
+            @Context HttpServletRequest request) {
         
         logger.info(String.format("login(%s, [PASSWORD])", handleOrEmail));
         if(Utils.isEmpty(handleOrEmail))
@@ -783,7 +745,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     @Timed
     public ApiResponse activateUser(
             @QueryParam("code") String code,
-            @Context HttpServletRequest request) throws Exception {
+            @Context HttpServletRequest request) {
 
         logger.info(String.format("activateUser(%s)", code));
 
@@ -827,7 +789,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     public ApiResponse sendActivationCode(
             @PathParam("resourceId") String resourceId,
             @Valid PostPutRequest<User> postRequest,
-            @Context HttpServletRequest request) throws Exception {
+            @Context HttpServletRequest request) {
         
         logger.info(String.format("sendActivationCode(%s)", resourceId));
 
@@ -861,7 +823,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         
         // registration mail with activation code for inactive user
         String redirectUrl = postRequest.getOptionString("afterActivationURL");
-        logger.debug(String.format("sending registeration mail to: %s (%s)", user.getEmail(), user.getHandle()));
+        logger.debug(String.format("sending registration mail to: %s (%s)", user.getEmail(), user.getHandle()));
         // publish event
         notifyActivation(user, redirectUrl);
         
@@ -875,15 +837,12 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             @Auth AuthUser authUser,
             @PathParam("resourceId") String resourceId,
             @Valid PostPutRequest<User> patchRequest,
-            @Context HttpServletRequest request) throws Exception {
+            @Context HttpServletRequest request) {
         
         logger.info(String.format("updateHandle(%s)", resourceId));
 
         TCID id = new TCID(resourceId);
-        // checking ID
-        checkResourceId(id);
-        // checking permission
-        checkAdminPermission(authUser, id);
+        validateResourceIdAndCheckPermission(authUser, id, UpdateScopes);
         // checking param
         checkParam(patchRequest);
 
@@ -924,15 +883,12 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             @Auth AuthUser authUser,
             @PathParam("resourceId") String resourceId,
             @Valid PostPutRequest<User> patchRequest,
-            @Context HttpServletRequest request) throws Exception {
+            @Context HttpServletRequest request) {
         
         logger.info(String.format("updatePrimaryEmail(%s)", resourceId));
 
         TCID id = new TCID(resourceId);
-        // checking ID
-        checkResourceId(id);
-        // checking permission
-        checkAdminPermission(authUser, id);
+        validateResourceIdAndCheckPermission(authUser, id, UpdateScopes);
         // checking param
         checkParam(patchRequest);
 
@@ -974,9 +930,9 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
      * A bearer token is needed in Authorization header, which is created by getOneTimeToken().   
      * @param resourceId User ID
      * @param email    New email address
-     * @param request
-     * @return
-     * @throws Exception
+     * @param request the http request
+     * @return the api response
+     * @throws APIRuntimeException any error occurs
      */
     @POST
     @Path("/{resourceId}/email/{email}")
@@ -984,13 +940,14 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     public ApiResponse updateEmailWithOneTimeToken(
             @PathParam("resourceId") String resourceId,
             @PathParam("email") String email,
-            @Context HttpServletRequest request) throws Exception {
+            @Context HttpServletRequest request) {
         
         logger.info(String.format("updateEmailWithOneTimeToken(%s)", resourceId));
         
         String token = Utils.extractBearer(request);
-        if(token==null)
+        if(token==null) {
             throw new APIRuntimeException(SC_UNAUTHORIZED, "Valid credentials are required.");
+        }
 
         OneTimeToken onetimeToken;
         try {
@@ -1004,7 +961,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if(cache==null)
             throw new APIRuntimeException(SC_UNAUTHORIZED, "Token is expired.");
         
-        PostPutRequest<User> postRequest = new PostPutRequest<User>();
+        PostPutRequest<User> postRequest = new PostPutRequest<>();
         User user = new User();
         user.setId(authUser.getUserId());
         user.setEmail(email);
@@ -1013,7 +970,9 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         try {
             return updatePrimaryEmail(authUser, resourceId, postRequest, request);
         } finally {
-            try { cacheService.delete(getCacheKeyForOneTimeToken(user.getId())); } catch(Exception e){}
+            try { cacheService.delete(getCacheKeyForOneTimeToken(user.getId())); } catch(Exception e){
+                // ignore
+            }
         }
     }
 
@@ -1029,15 +988,12 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             @PathParam("resourceId") String resourceId,
             @Valid PostPutRequest<User> patchRequest,
             @QueryParam("comment") String comment,
-            @Context HttpServletRequest request) throws Exception {
+            @Context HttpServletRequest request) {
         
         logger.info(String.format("updateStatus(%s, %s)", resourceId, comment));
 
         TCID id = new TCID(resourceId);
-        // checking ID
-        checkResourceId(id);
-        // checking permission
-        checkAdminPermission(authUser, id);
+        validateResourceIdAndCheckPermission(authUser, id, UpdateScopes);
         // checking param
         checkParam(patchRequest);
         
@@ -1071,11 +1027,12 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         
         return ApiResponseFactory.createResponse(userInDB);
     }
-    
-    @SuppressWarnings("rawtypes")
+
+
     protected void checkParam(PostPutRequest request) {
-        if(request==null || request.getParam()==null)
+        if(request==null || request.getParam()==null) {
             throw new APIRuntimeException(SC_BAD_REQUEST, "The request does not contain param data.");
+        }
     }
 
     //TODO: should be PATCH?
@@ -1084,9 +1041,9 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     @Timed
     public ApiResponse resetPassword(
             @Valid PostPutRequest<User> postRequest,
-            @Context HttpServletRequest request) throws Exception {
+            @Context HttpServletRequest request) {
         
-        logger.info(String.format("resetPassword"));
+        logger.info("resetPassword");
 
         // checking param
         checkParam(postRequest);
@@ -1140,7 +1097,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     public ApiResponse getResetToken(
             @QueryParam("handle") String handle,
             @QueryParam("email") String email,
-            @Context HttpServletRequest request) throws Exception {
+            @Context HttpServletRequest request) {
 
         logger.info(String.format("getResetToken(%s, %s)", handle, email));
 
@@ -1204,14 +1161,11 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             @Auth AuthUser authUser,
             @PathParam("resourceId") TCID resourceId,
             @APIQueryParam(repClass = Achievement.class) QueryParameter query,
-            @Context HttpServletRequest request) throws Exception {
+            @Context HttpServletRequest request) {
         
         logger.info(String.format("getAchievements(%s)", resourceId));
-        
-        // checking ID
-        checkResourceId(resourceId);
-        // checking permission
-        checkAdminPermission(authUser, resourceId);
+
+        validateResourceIdAndCheckPermission(authUser, resourceId, ReadScopes);
         
         Long userId = Utils.toLongValue(resourceId);
         logger.debug(String.format("findUserById(%s)", userId));
@@ -1229,7 +1183,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     @Timed
     public ApiResponse validateHandle(
             @QueryParam("handle") String handle,
-            @Context HttpServletRequest request) throws Exception {
+            @Context HttpServletRequest request) {
         logger.info(String.format("validateHandle(%s)", handle));
         
         if(handle==null || handle.length()==0)
@@ -1251,7 +1205,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     @Timed
     public ApiResponse validateEmail(
             @QueryParam("email") String email,
-            @Context HttpServletRequest request) throws Exception {
+            @Context HttpServletRequest request) {
         
         logger.info(String.format("validateEmail(%s)", email));
         
@@ -1275,7 +1229,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     public ApiResponse validateSocial(
             @QueryParam("socialUserId") String socialUserId,
             @QueryParam("socialProvider") String socialProvider,
-            @Context HttpServletRequest request) throws Exception {
+            @Context HttpServletRequest request) {
         
         logger.info(String.format("validateSocial(userId=%s, provider=%s)", socialUserId, socialProvider));
         
@@ -1303,7 +1257,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     public ApiResponse getOneTimeToken(
             @FormParam("userId") String userId,
             @FormParam("password") String password,
-            @Context HttpServletRequest request) throws Exception {
+            @Context HttpServletRequest request) {
         
         logger.info(String.format("getOneTimeToken(%s)", userId));
         
@@ -1340,23 +1294,6 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         return ApiResponseFactory.createResponse(token);
     }
 
-    protected Long parseLong(String str) {
-        try {
-            return Long.parseLong(str);
-        } catch(Exception e) { logger.warn("Failed to convert String to Long. value: "+str); }
-        return null;
-    }
-
-    protected List<String> getRoleNames(Long userId) {
-        if(roleDao==null)
-            return null; // don't throw an error for the case Shiro is disabled.
-
-        List<Role> roles = roleDao.getRolesBySubjectId(userId);
-        if(roles==null)
-            return new ArrayList<String>(0);
-        return roles.stream().map(role -> role.getRoleName()).collect(Collectors.toList());
-    }
-
     protected String generateOneTimeToken(User user, String domain, Integer expirySeconds) {
         JWTToken jwt = new JWTToken();
         jwt.setHandle(user.getHandle());
@@ -1365,21 +1302,35 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         jwt.setIssuer(jwt.createIssuerFor(domain));
         if(expirySeconds!=null)
             jwt.setExpirySeconds(expirySeconds);
-        List<String> roles = new ArrayList<String>();
+        List<String> roles = new ArrayList<>();
         roles.add("Topcoder User");
         jwt.setRoles(roles);
         
         return jwt.generateToken(getSecret());
     }
     
-    protected void checkAdminPermission(AuthUser operator, TCID resourceId) {
-        if(operator==null)
+    protected void validateResourceIdAndCheckPermission(AuthUser operator, TCID resourceId, String[] allowedScopes) {
+        if(operator==null) {
             throw new IllegalArgumentException("operator should be specified.");
-        if(resourceId!=null && !resourceId.equals(operator.getUserId()) && !hasAdminRole(operator))
-            throw new APIRuntimeException(SC_FORBIDDEN, "Forbidden");
+        }
+
+        // checking ID
+        checkResourceId(resourceId);
+
+        // check permissions
+        if (resourceId.equals(operator.getUserId())) {
+            // update self.
+            return;
+        }
+
+        Utils.checkAccess(operator, allowedScopes, Utils.AdminRoles);
     }
 
     protected void checkResourceId(TCID id) {
+        if (id == null) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(Constants.MSG_TEMPLATE_MANDATORY, "resourceId"));
+        }
+
         if(!Utils.isValid(id))
             throw new APIRuntimeException(SC_BAD_REQUEST, Constants.MSG_TEMPLATE_INVALID_ID);
     }
@@ -1404,12 +1355,6 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         return "connect".equalsIgnoreCase(source) ?
                 String.format(template, "connect", domain) :
                 String.format(template, "www", domain);
-    }
-    
-    protected boolean hasAdminRole(AuthUser user) {
-        if(user==null || user.getRoles()==null)
-            return false;
-        return user.getRoles().contains("administrator");
     }
     
     protected String generateResetToken() {
@@ -1457,7 +1402,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     /**
      * Validates country#code and country#name.
      * If the country has value on these fields, the method checks they are existing in "country" table.
-     * @param country
+     * @param country the country to validate
      * @return null if country is valid. otherwise error message.
      */
     protected String validateCountry(Country country) {
@@ -1664,9 +1609,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     /**
      * Fire event
      *
-     * @param challengeId the challengeId to use
-     * @param winnerId the userId to use
-     * @param userId the user id.
+     * @param payload the payload
      */
     private void fireEvent(Object payload) {
         EventMessage msg = EventMessage.getDefault();
