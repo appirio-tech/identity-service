@@ -498,7 +498,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         }
 
         // Add business user role if needed
-        if (user.getRegSource().matches("tcBusiness")) {
+        if (user.getRegSource() != null && user.getRegSource().matches("tcBusiness")) {
             assignRoleByName("Business User", user);
         }
 
