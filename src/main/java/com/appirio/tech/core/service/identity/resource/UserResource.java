@@ -497,6 +497,11 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             assignDefaultUserRole(user); // Add Topcoder User role if the user was auto-activated
         }
 
+        // Add business user role if needed
+        if (user.getRegSource().matches("tcBusiness")) {
+            assignRoleByName("Business User", user);
+        }
+
         // publish event
         publishUserEvent("event.user.created", user);
 
@@ -1670,6 +1675,28 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             }
         } catch (Exception e) {
             logger.error("Unable to assign default user role to user " + user.getId(), e);
+        }
+    }
+
+    private void assignRoleByName(String roleName, User user) {
+        Role role = roleDao.findRoleByName(roleName);
+        if (role == null) {
+            logger.error("No role found for '" + roleName + "'");
+            throw new IllegalStateException("Unable to assign user role " + roleName);
+        }
+        long roleId = Long.parseLong(role.getId().toString());
+
+        try {
+            long userId = Long.parseLong(user.getId().toString());
+            int rows = roleDao.assignRole(roleId, userId, userId);
+
+            if (rows == 0) {
+                logger.error("No assignment row created when assigning '" + roleName + "' role to user " + userId);
+            } else if (logger.isDebugEnabled()) {
+                logger.debug(String.format("Created role assignment for user %d", userId));
+            }
+        } catch (Exception e) {
+            logger.error("Unable to assign '" + roleName + "' role to user " + user.getId(), e);
         }
     }
 }
