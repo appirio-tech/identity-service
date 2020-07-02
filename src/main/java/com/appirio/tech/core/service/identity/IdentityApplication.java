@@ -230,7 +230,7 @@ public class IdentityApplication extends APIApplication<IdentityConfiguration> {
 		        configuration.getEventBusServiceClientConfig(), configuration.getM2mAuthConfiguration());
 		// Resources::users
     	CacheService cacheService = configuration.getCache().createCacheService();
-    	UserResource userResource = new UserResource(userDao, roleDao, cacheService, eventProducer, eventBusServiceClient);
+    	UserResource userResource = new UserResource(userDao, roleDao, cacheService, eventProducer, eventBusServiceClient, configuration.getM2mAuthConfiguration().getUserProfiles());
     	userResource.setAuth0Client(configuration.getAuth0()); // TODO: constructor
     	userResource.setDomain(configuration.getAuthDomain());
     	// this secret _used_ to be different from the one used in AuthorizationResource.
@@ -250,8 +250,6 @@ public class IdentityApplication extends APIApplication<IdentityConfiguration> {
 		GroupResource groupResource = new GroupResource(groupDao, groupInformixDao);
 		environment.jersey().register(groupResource);
 		environment.jersey().register(groupDao);
-		// TODO: temporary fix.
-		userResource.setGroupDAO(groupDao);
 		
 		// Resources::authorizations
 		AuthDataStore authDataStore = configuration.getAuthStore().createAuthDataStore();

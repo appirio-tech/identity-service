@@ -21,18 +21,19 @@ import com.appirio.tech.core.service.identity.dao.SSOUserDAO;
 import com.appirio.tech.core.service.identity.dao.UserDAO;
 import com.appirio.tech.core.service.identity.representation.*;
 import com.appirio.tech.core.service.identity.resource.UserResource.ValidationResult;
+import com.appirio.tech.core.service.identity.util.Constants;
 import com.appirio.tech.core.service.identity.util.Utils;
 import com.appirio.tech.core.service.identity.util.auth.Auth0Client;
 import com.appirio.tech.core.service.identity.util.cache.CacheService;
 import com.appirio.tech.core.service.identity.util.event.MailRepresentation;
 import com.appirio.tech.core.service.identity.util.ldap.MemberStatus;
+import com.appirio.tech.core.service.identity.util.m2mscope.UserProfilesFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.dropwizard.jackson.Jackson;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.ArgumentMatcher;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -61,9 +62,12 @@ import static org.mockito.Mockito.*;
  * @version 1.1
  *
  */
+@SuppressWarnings("unchecked")
 public class UserResourceTest {
     
-    private RoleDAO mockRoleDao = mock(RoleDAO.class);
+    private final RoleDAO mockRoleDao = mock(RoleDAO.class);
+    
+    private final UserProfilesFactory userProfilesFactory = new UserProfilesFactory();
     
     @Before
     @SuppressWarnings("serial")
@@ -109,7 +113,7 @@ public class UserResourceTest {
     }
     
     @Test
-    public void testCreateObject_400WhenUTMSourceIsNotSpecifeidInReferralProgram() throws Exception {
+    public void testCreateObject_400WhenUTMSourceIsNotSpecifiedInReferralProgram() throws Exception {
         // data
         User user = createTestUser(null);
         user.setUtmCampaign("ReferralProgram");
@@ -140,7 +144,7 @@ public class UserResourceTest {
         doNothing().when(eventProducer).publish(anyString(), anyString());
         ObjectMapper objectMapper = mock(ObjectMapper.class);
         when(objectMapper.writeValueAsString(anyObject())).thenReturn("payload");
-        UserResource testee = spy(new UserResource(userDao, mockRoleDao, cache, eventProducer, null));
+        UserResource testee = spy(new UserResource(userDao, mockRoleDao, cache, eventProducer, null, userProfilesFactory));
         
         // Creating mock: PostPutRequest - give mock user
         UserProfile userProfile = new UserProfile();
@@ -149,10 +153,7 @@ public class UserResourceTest {
         PostPutRequest<UserProfile> param = (PostPutRequest<UserProfile>)mock(PostPutRequest.class);
         when(param.getParam()).thenReturn(userProfile);
         
-        AuthUser authUser = spy(new AuthUser());
-        List<String> roles = new ArrayList<String>();
-        roles.add("administrator");
-        when(authUser.getRoles()).thenReturn(roles);
+        AuthUser authUser = TestUtils.createAdminAuthUserMock(new TCID(2L));
         
         SSOUserDAO ssoUserDao = mock(SSOUserDAO.class);
         when(userDao.createSSOUserDAO()).thenReturn(ssoUserDao);
@@ -171,9 +172,98 @@ public class UserResourceTest {
         assertEquals(SC_OK, (int)result.getStatus());
         assertTrue(result.getSuccess());
         assertEquals(userProfile, result.getContent());
-        
     }
-    
+
+    /**
+     * Test CreateSSOUserLogin
+     * @throws Exception if any error occurs
+     */
+    @Test
+    public void testCreateSSOUserLogin_MachineUserWithCreateScopes() throws Exception {
+        User user = createTestUser(null);
+        user.setUtmCampaign("ReferralProgram");
+
+        UserDAO userDao = mock(UserDAO.class);
+
+        // Creating mock: Other
+        CacheService cache = mock(CacheService.class);
+        EventProducer eventProducer = mock(EventProducer.class);
+        doNothing().when(eventProducer).publish(anyString(), anyString());
+        ObjectMapper objectMapper = mock(ObjectMapper.class);
+        when(objectMapper.writeValueAsString(anyObject())).thenReturn("payload");
+        UserResource testee = spy(new UserResource(userDao, mockRoleDao, cache, eventProducer, null));
+
+        // Creating mock: PostPutRequest - give mock user
+        UserProfile userProfile = new UserProfile();
+        userProfile.setProvider("provider");
+        userProfile.setUserId("userId");
+        PostPutRequest<UserProfile> param = (PostPutRequest<UserProfile>)mock(PostPutRequest.class);
+        when(param.getParam()).thenReturn(userProfile);
+
+        AuthUser authUser = TestUtils.createMachineUserMock(userProfilesFactory.getCreateScopes());
+
+        SSOUserDAO ssoUserDao = mock(SSOUserDAO.class);
+        when(userDao.createSSOUserDAO()).thenReturn(ssoUserDao);
+
+        when(ssoUserDao.checkUserIdAndProviderId(1L, 1L)).thenReturn(0);
+        when(ssoUserDao.getSSOProviderIdByName(userProfile.getProvider())).thenReturn(1L);
+
+        // Test
+        ApiResponse resp = testee.createSSOUserLogin(authUser, 1, param);
+
+        // Checking result
+        assertNotNull(resp);
+
+        Result result = resp.getResult();
+        assertNotNull(result);
+        assertEquals(SC_OK, (int)result.getStatus());
+        assertTrue(result.getSuccess());
+        assertEquals(userProfile, result.getContent());
+    }
+
+    /**
+     * Test CreateSSOUserLogin
+     * @throws Exception if any error occurs
+     */
+    @Test
+    public void testCreateSSOUserLogin_MachineUserWithoutCreateScopes() throws Exception {
+        User user = createTestUser(null);
+        user.setUtmCampaign("ReferralProgram");
+
+        UserDAO userDao = mock(UserDAO.class);
+
+        // Creating mock: Other
+        CacheService cache = mock(CacheService.class);
+        EventProducer eventProducer = mock(EventProducer.class);
+        doNothing().when(eventProducer).publish(anyString(), anyString());
+        ObjectMapper objectMapper = mock(ObjectMapper.class);
+        when(objectMapper.writeValueAsString(anyObject())).thenReturn("payload");
+        UserResource testee = spy(new UserResource(userDao, mockRoleDao, cache, eventProducer, null));
+
+        // Creating mock: PostPutRequest - give mock user
+        UserProfile userProfile = new UserProfile();
+        userProfile.setProvider("provider");
+        userProfile.setUserId("userId");
+        PostPutRequest<UserProfile> param = (PostPutRequest<UserProfile>)mock(PostPutRequest.class);
+        when(param.getParam()).thenReturn(userProfile);
+
+        AuthUser authUser = TestUtils.createMachineUserMock(new String[0]);
+
+        SSOUserDAO ssoUserDao = mock(SSOUserDAO.class);
+        when(userDao.createSSOUserDAO()).thenReturn(ssoUserDao);
+
+        when(ssoUserDao.checkUserIdAndProviderId(1L, 1L)).thenReturn(0);
+        when(ssoUserDao.getSSOProviderIdByName(userProfile.getProvider())).thenReturn(1L);
+
+        try {
+            // Test
+            testee.createSSOUserLogin(authUser, 1, param);
+        } catch (APIRuntimeException e) {
+            assertEquals(SC_FORBIDDEN, e.getHttpStatus());
+            assertEquals("Forbidden", e.getMessage());
+        }
+    }
+
     /**
      * Test UpdateSSOUserLogin with update logic
      * @throws Exception if any error occurs
@@ -200,10 +290,7 @@ public class UserResourceTest {
         PostPutRequest<UserProfile> param = (PostPutRequest<UserProfile>)mock(PostPutRequest.class);
         when(param.getParam()).thenReturn(userProfile);
         
-        AuthUser authUser = spy(new AuthUser());
-        List<String> roles = new ArrayList<String>();
-        roles.add("administrator");
-        when(authUser.getRoles()).thenReturn(roles);
+        AuthUser authUser = TestUtils.createAdminAuthUserMock(new TCID(2));
         
         SSOUserDAO ssoUserDao = mock(SSOUserDAO.class);
         when(userDao.createSSOUserDAO()).thenReturn(ssoUserDao);
@@ -222,7 +309,95 @@ public class UserResourceTest {
         assertTrue(result.getSuccess());
         assertEquals(userProfile, result.getContent());
     }
-    
+
+    /**
+     * Test UpdateSSOUserLogin with update logic
+     * @throws Exception if any error occurs
+     */
+    @Test
+    public void testUpdateSSOUserLogin_MachineUserWithUpdateScopes() throws Exception {
+        User user = createTestUser(null);
+        user.setUtmCampaign("ReferralProgram");
+
+        UserDAO userDao = mock(UserDAO.class);
+
+        // Creating mock: Other
+        CacheService cache = mock(CacheService.class);
+        EventProducer eventProducer = mock(EventProducer.class);
+        doNothing().when(eventProducer).publish(anyString(), anyString());
+        ObjectMapper objectMapper = mock(ObjectMapper.class);
+        when(objectMapper.writeValueAsString(anyObject())).thenReturn("payload");
+        UserResource testee = spy(new UserResource(userDao, mockRoleDao, cache, eventProducer, null));
+
+        // Creating mock: PostPutRequest - give mock user
+        UserProfile userProfile = new UserProfile();
+        userProfile.setProvider("provider");
+        userProfile.setUserId("userId");
+        PostPutRequest<UserProfile> param = (PostPutRequest<UserProfile>)mock(PostPutRequest.class);
+        when(param.getParam()).thenReturn(userProfile);
+
+        AuthUser authUser = TestUtils.createMachineUserMock(userProfilesFactory.getUpdateScopes());
+
+        SSOUserDAO ssoUserDao = mock(SSOUserDAO.class);
+        when(userDao.createSSOUserDAO()).thenReturn(ssoUserDao);
+        when(ssoUserDao.checkUserIdAndProviderId(1L, 1L)).thenReturn(1);
+        when(ssoUserDao.getSSOProviderIdByName(userProfile.getProvider())).thenReturn(1L);
+
+        // Test
+        ApiResponse resp = testee.updateSSOUserLogin(authUser, 1, param);
+
+        // Checking result
+        assertNotNull(resp);
+
+        Result result = resp.getResult();
+        assertNotNull(result);
+        assertEquals(SC_OK, (int)result.getStatus());
+        assertTrue(result.getSuccess());
+        assertEquals(userProfile, result.getContent());
+    }
+
+    /**
+     * Test UpdateSSOUserLogin with update logic
+     * @throws Exception if any error occurs
+     */
+    @Test
+    public void testUpdateSSOUserLogin_MachineUserWithoutUpdateScopes() throws Exception {
+        User user = createTestUser(null);
+        user.setUtmCampaign("ReferralProgram");
+
+        UserDAO userDao = mock(UserDAO.class);
+
+        // Creating mock: Other
+        CacheService cache = mock(CacheService.class);
+        EventProducer eventProducer = mock(EventProducer.class);
+        doNothing().when(eventProducer).publish(anyString(), anyString());
+        ObjectMapper objectMapper = mock(ObjectMapper.class);
+        when(objectMapper.writeValueAsString(anyObject())).thenReturn("payload");
+        UserResource testee = spy(new UserResource(userDao, mockRoleDao, cache, eventProducer, null));
+
+        // Creating mock: PostPutRequest - give mock user
+        UserProfile userProfile = new UserProfile();
+        userProfile.setProvider("provider");
+        userProfile.setUserId("userId");
+        PostPutRequest<UserProfile> param = (PostPutRequest<UserProfile>)mock(PostPutRequest.class);
+        when(param.getParam()).thenReturn(userProfile);
+
+        AuthUser authUser = TestUtils.createMachineUserMock(new String[0]);
+
+        SSOUserDAO ssoUserDao = mock(SSOUserDAO.class);
+        when(userDao.createSSOUserDAO()).thenReturn(ssoUserDao);
+        when(ssoUserDao.checkUserIdAndProviderId(1L, 1L)).thenReturn(1);
+        when(ssoUserDao.getSSOProviderIdByName(userProfile.getProvider())).thenReturn(1L);
+
+        // Test
+        try {
+            testee.updateSSOUserLogin(authUser, 1, param);
+        } catch (APIRuntimeException e) {
+            assertEquals(SC_FORBIDDEN, e.getHttpStatus());
+            assertEquals("Forbidden", e.getMessage());
+        }
+    }
+
     /**
      * Test DeleteSSOUserLogin 
      * @throws Exception if any error occurs
@@ -241,12 +416,8 @@ public class UserResourceTest {
         ObjectMapper objectMapper = mock(ObjectMapper.class);
         when(objectMapper.writeValueAsString(anyObject())).thenReturn("payload");
         UserResource testee = spy(new UserResource(userDao, mockRoleDao, cache, eventProducer, null));
-        
-        
-        AuthUser authUser = spy(new AuthUser());
-        List<String> roles = new ArrayList<String>();
-        roles.add("administrator");
-        when(authUser.getRoles()).thenReturn(roles);
+
+        AuthUser authUser = TestUtils.createAdminAuthUserMock(new TCID(2L));
         
         SSOUserDAO ssoUserDao = mock(SSOUserDAO.class);
         when(userDao.createSSOUserDAO()).thenReturn(ssoUserDao);
@@ -265,7 +436,81 @@ public class UserResourceTest {
         assertTrue(result.getSuccess());
         verify(ssoUserDao).deleteSSOUser(any(Long.class), any(Long.class));
     }
-    
+
+    /**
+     * Test DeleteSSOUserLogin
+     * @throws Exception if any error occurs
+     */
+    @Test
+    public void testDeleteSSOUserLoginWithProviderId_MachineUserWithDeleteScopes() throws Exception {
+        User user = createTestUser(null);
+        user.setUtmCampaign("ReferralProgram");
+
+        UserDAO userDao = mock(UserDAO.class);
+
+        // Creating mock: Other
+        CacheService cache = mock(CacheService.class);
+        EventProducer eventProducer = mock(EventProducer.class);
+        doNothing().when(eventProducer).publish(anyString(), anyString());
+        ObjectMapper objectMapper = mock(ObjectMapper.class);
+        when(objectMapper.writeValueAsString(anyObject())).thenReturn("payload");
+        UserResource testee = spy(new UserResource(userDao, mockRoleDao, cache, eventProducer, null));
+
+        AuthUser authUser = TestUtils.createMachineUserMock(userProfilesFactory.getDeleteScopes());
+
+        SSOUserDAO ssoUserDao = mock(SSOUserDAO.class);
+        when(userDao.createSSOUserDAO()).thenReturn(ssoUserDao);
+        when(ssoUserDao.checkUserIdAndProviderId(1L, 1L)).thenReturn(1);
+        when(ssoUserDao.getSSOProviderIdByName("provider")).thenReturn(1L);
+
+        // Test
+        ApiResponse resp = testee.deleteSSOUserLogin(authUser, 1, null, 1L);
+
+        // Checking result
+        assertNotNull(resp);
+
+        Result result = resp.getResult();
+        assertNotNull(result);
+        assertEquals(SC_OK, (int)result.getStatus());
+        assertTrue(result.getSuccess());
+        verify(ssoUserDao).deleteSSOUser(any(Long.class), any(Long.class));
+    }
+
+    /**
+     * Test DeleteSSOUserLogin
+     * @throws Exception if any error occurs
+     */
+    @Test
+    public void testDeleteSSOUserLoginWithProviderId_MachineUserWithoutDeleteScopes() throws Exception {
+        User user = createTestUser(null);
+        user.setUtmCampaign("ReferralProgram");
+
+        UserDAO userDao = mock(UserDAO.class);
+
+        // Creating mock: Other
+        CacheService cache = mock(CacheService.class);
+        EventProducer eventProducer = mock(EventProducer.class);
+        doNothing().when(eventProducer).publish(anyString(), anyString());
+        ObjectMapper objectMapper = mock(ObjectMapper.class);
+        when(objectMapper.writeValueAsString(anyObject())).thenReturn("payload");
+        UserResource testee = spy(new UserResource(userDao, mockRoleDao, cache, eventProducer, null));
+
+        AuthUser authUser = TestUtils.createMachineUserMock(new String[0]);
+
+        SSOUserDAO ssoUserDao = mock(SSOUserDAO.class);
+        when(userDao.createSSOUserDAO()).thenReturn(ssoUserDao);
+        when(ssoUserDao.checkUserIdAndProviderId(1L, 1L)).thenReturn(1);
+        when(ssoUserDao.getSSOProviderIdByName("provider")).thenReturn(1L);
+
+        // Test
+        try {
+            ApiResponse resp = testee.deleteSSOUserLogin(authUser, 1, null, 1L);
+        } catch (APIRuntimeException e) {
+            assertEquals(SC_FORBIDDEN, e.getHttpStatus());
+            assertEquals("Forbidden", e.getMessage());
+        }
+    }
+
     /**
      * Test DeleteSSOUserLogin
      * @throws Exception if any error occurs
@@ -286,10 +531,7 @@ public class UserResourceTest {
         UserResource testee = spy(new UserResource(userDao, mockRoleDao, cache, eventProducer, null));
         
         
-        AuthUser authUser = spy(new AuthUser());
-        List<String> roles = new ArrayList<String>();
-        roles.add("administrator");
-        when(authUser.getRoles()).thenReturn(roles);
+        AuthUser authUser = TestUtils.createAdminAuthUserMock(new TCID(2L));
         
         SSOUserDAO ssoUserDao = mock(SSOUserDAO.class);
         when(userDao.createSSOUserDAO()).thenReturn(ssoUserDao);
@@ -332,13 +574,10 @@ public class UserResourceTest {
         UserProfile userProfile = new UserProfile();
         userProfile.setProvider("provider");
         userProfile.setUserId("userId");
-        List<UserProfile> profiles = new ArrayList<UserProfile>();
+        List<UserProfile> profiles = new ArrayList<>();
         profiles.add(userProfile);
         
-        AuthUser authUser = spy(new AuthUser());
-        List<String> roles = new ArrayList<String>();
-        roles.add("administrator");
-        when(authUser.getRoles()).thenReturn(roles);
+        AuthUser authUser = TestUtils.createAdminAuthUserMock(new TCID(2L));
         
         SSOUserDAO ssoUserDao = mock(SSOUserDAO.class);
         when(ssoUserDao.findProfilesByUserId(1L)).thenReturn(profiles);
@@ -355,6 +594,92 @@ public class UserResourceTest {
         assertEquals(SC_OK, (int)result.getStatus());
         assertTrue(result.getSuccess());
         assertEquals(userProfile, ((List<UserProfile>) result.getContent()).get(0));
+    }
+
+    /**
+     * Test getSSOUserLogin with update logic
+     * @throws Exception if any error occurs
+     */
+    @Test
+    public void testGetSSOUserLoginsByUserId_MachineUserWithReadScopes() throws Exception {
+        User user = createTestUser(null);
+        user.setUtmCampaign("ReferralProgram");
+
+        UserDAO userDao = mock(UserDAO.class);
+
+        // Creating mock: Other
+        CacheService cache = mock(CacheService.class);
+        EventProducer eventProducer = mock(EventProducer.class);
+        doNothing().when(eventProducer).publish(anyString(), anyString());
+        ObjectMapper objectMapper = mock(ObjectMapper.class);
+        when(objectMapper.writeValueAsString(anyObject())).thenReturn("payload");
+        UserResource testee = spy(new UserResource(userDao, mockRoleDao, cache, eventProducer, null));
+
+        // Creating mock: PostPutRequest - give mock user
+        UserProfile userProfile = new UserProfile();
+        userProfile.setProvider("provider");
+        userProfile.setUserId("userId");
+        List<UserProfile> profiles = new ArrayList<>();
+        profiles.add(userProfile);
+
+        AuthUser authUser = TestUtils.createMachineUserMock(userProfilesFactory.getReadScopes());
+
+        SSOUserDAO ssoUserDao = mock(SSOUserDAO.class);
+        when(ssoUserDao.findProfilesByUserId(1L)).thenReturn(profiles);
+        when(userDao.createSSOUserDAO()).thenReturn(ssoUserDao);
+
+        // Test
+        ApiResponse resp = testee.getSSOUserLoginsByUserId(authUser, 1);
+
+        // Checking result
+        assertNotNull(resp);
+
+        Result result = resp.getResult();
+        assertNotNull(result);
+        assertEquals(SC_OK, (int)result.getStatus());
+        assertTrue(result.getSuccess());
+        assertEquals(userProfile, ((List<UserProfile>) result.getContent()).get(0));
+    }
+
+    /**
+     * Test getSSOUserLogin with update logic
+     * @throws Exception if any error occurs
+     */
+    @Test
+    public void testGetSSOUserLoginsByUserId_MachineUserWithoutReadScopes() throws Exception {
+        User user = createTestUser(null);
+        user.setUtmCampaign("ReferralProgram");
+
+        UserDAO userDao = mock(UserDAO.class);
+
+        // Creating mock: Other
+        CacheService cache = mock(CacheService.class);
+        EventProducer eventProducer = mock(EventProducer.class);
+        doNothing().when(eventProducer).publish(anyString(), anyString());
+        ObjectMapper objectMapper = mock(ObjectMapper.class);
+        when(objectMapper.writeValueAsString(anyObject())).thenReturn("payload");
+        UserResource testee = spy(new UserResource(userDao, mockRoleDao, cache, eventProducer, null));
+
+        // Creating mock: PostPutRequest - give mock user
+        UserProfile userProfile = new UserProfile();
+        userProfile.setProvider("provider");
+        userProfile.setUserId("userId");
+        List<UserProfile> profiles = new ArrayList<>();
+        profiles.add(userProfile);
+
+        AuthUser authUser = TestUtils.createMachineUserMock(new String[0]);
+
+        SSOUserDAO ssoUserDao = mock(SSOUserDAO.class);
+        when(ssoUserDao.findProfilesByUserId(1L)).thenReturn(profiles);
+        when(userDao.createSSOUserDAO()).thenReturn(ssoUserDao);
+
+        // Test
+        try {
+            testee.getSSOUserLoginsByUserId(authUser, 1);
+        } catch (APIRuntimeException e) {
+            assertEquals(SC_FORBIDDEN, e.getHttpStatus());
+            assertEquals("Forbidden", e.getMessage());
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -430,7 +755,7 @@ public class UserResourceTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    public void testCreateObject_400WhenHandleIsInvalid() throws Exception {
+    public void testCreateObject_400WhenHandleIsInvalid() {
 
         // Creating mock: User - always validated
         User user = spy(createTestUser(null));
@@ -466,7 +791,7 @@ public class UserResourceTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    public void testCreateObject_400WhenHandleIsDuplicated() throws Exception {
+    public void testCreateObject_400WhenHandleIsDuplicated() {
 
         // Creating mock: User - always validated
         User user = spy(createTestUser(null));
@@ -502,7 +827,7 @@ public class UserResourceTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    public void testCreateObject_400WhenEmailIsAlreadyRegistered() throws Exception {
+    public void testCreateObject_400WhenEmailIsAlreadyRegistered() {
 
         // Creating mock: User - always validated
         User user = spy(createTestUser(null));
@@ -541,11 +866,11 @@ public class UserResourceTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    public void testCreateObject_400WhenSocialProfileIsAlreadyInUse() throws Exception {
+    public void testCreateObject_400WhenSocialProfileIsAlreadyInUse() {
 
         // data
         User user = spy(createTestUser(null));
-        List<UserProfile> profiles = new ArrayList<UserProfile>();
+        List<UserProfile> profiles = new ArrayList<>();
         user.setProfiles(profiles);
         UserProfile profile = new UserProfile();
         profiles.add(profile);
@@ -589,7 +914,7 @@ public class UserResourceTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    public void testCreateObject_400WhenCountryIsInvalid() throws Exception {
+    public void testCreateObject_400WhenCountryIsInvalid() {
 
         // data
         User user = spy(createTestUser(null));
@@ -697,7 +1022,7 @@ public class UserResourceTest {
         
         // confirm check methods are passed
         verify(testee).checkResourceId(id);
-        verify(testee).checkAdminPermission(authUser, id);
+        verify(testee).validateResourceIdAndCheckPermission(authUser, id, userProfilesFactory.getUpdateScopes());
         verify(testee).checkParam(param);
     }
 
@@ -766,7 +1091,7 @@ public class UserResourceTest {
         
         // confirm check methods are passed
         verify(testee).checkResourceId(id);
-        verify(testee).checkAdminPermission(authUser, id);
+        verify(testee).validateResourceIdAndCheckPermission(authUser, id, userProfilesFactory.getUpdateScopes());
         verify(testee).checkParam(param);
     }
     
@@ -815,10 +1140,7 @@ public class UserResourceTest {
         String msg = "DUMMY-ERROR-FIRST-NAME-IS-TOO-LONG";
         doReturn(msg).when(user).validateFirstName();
 
-        testUpdateObject_ErrorWhenUserIsInvalid(user, SC_BAD_REQUEST, msg, new UserVerifyer() {
-            @Override public void doVerify(User user) {
-                verify(user).validateFirstName();
-            }});
+        testUpdateObject_ErrorWhenUserIsInvalid(user, SC_BAD_REQUEST, msg, user1 -> verify(user1).validateFirstName());
     }
 
     @Test
@@ -831,10 +1153,7 @@ public class UserResourceTest {
         String msg = "DUMMY-ERROR-LAST-NAME-IS-TOO-LONG";
         doReturn(msg).when(user).validateLastName();
 
-        testUpdateObject_ErrorWhenUserIsInvalid(user, SC_BAD_REQUEST, msg, new UserVerifyer() {
-            @Override public void doVerify(User user) {
-                verify(user).validateLastName();
-            }});
+        testUpdateObject_ErrorWhenUserIsInvalid(user, SC_BAD_REQUEST, msg, user1 -> verify(user1).validateLastName());
     }
 
     @Test
@@ -849,10 +1168,7 @@ public class UserResourceTest {
         String msg = "DUMMY-ERROR-PASSWORD-IS-INVALID";
         doReturn(msg).when(user).validatePassoword();
 
-        testUpdateObject_ErrorWhenUserIsInvalid(user, SC_BAD_REQUEST, msg, new UserVerifyer() {
-            @Override public void doVerify(User user) {
-                verify(user).validatePassoword();
-            }});
+        testUpdateObject_ErrorWhenUserIsInvalid(user, SC_BAD_REQUEST, msg, user1 -> verify(user1).validatePassoword());
     }
 
     @Test
@@ -868,8 +1184,7 @@ public class UserResourceTest {
         doReturn(null).when(user).validatePassoword();
 
         String msg = String.format(MSG_TEMPLATE_MANDATORY, "Current password");
-        testUpdateObject_ErrorWhenUserIsInvalid(user, SC_BAD_REQUEST, msg, new UserVerifyer() {
-            @Override public void doVerify(User user) {}});
+        testUpdateObject_ErrorWhenUserIsInvalid(user, SC_BAD_REQUEST, msg, user1 -> {});
     }
 
     @Test
@@ -884,13 +1199,10 @@ public class UserResourceTest {
         // mock
         doReturn(null).when(user).validatePassoword();
 
-        String msg = MSG_TEMPLATE_INVALID_CURRENT_PASSWORD;
-        testUpdateObject_ErrorWhenUserIsInvalid(user, SC_BAD_REQUEST, msg, new UserVerifyer() {
-            @Override public void doVerify(User user) {}});
+        testUpdateObject_ErrorWhenUserIsInvalid(user, SC_BAD_REQUEST, MSG_TEMPLATE_INVALID_CURRENT_PASSWORD, user1 -> {});
     }
 
-
-    static interface UserVerifyer { void doVerify(User user); }
+    interface UserVerifyer { void doVerify(User user); }
 
     @SuppressWarnings("unchecked")
     public void testUpdateObject_ErrorWhenUserIsInvalid(User user, int statusCode, String message, UserVerifyer verifyer) throws Exception {
@@ -937,7 +1249,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testCreateUserProfile() throws Exception {
+    public void testCreateUserProfile() {
         // data - input
         String socialUserId = "DUMMY-SOCIAL-USER-ID";
         UserProfile profile = new UserProfile();
@@ -1000,12 +1312,12 @@ public class UserResourceTest {
 
         // confirm check methods are passed
         verify(testee).checkResourceId(id);
-        verify(testee).checkAdminPermission(authUser, id);
+        verify(testee).validateResourceIdAndCheckPermission(authUser, id, userProfilesFactory.getCreateScopes());
         verify(testee).checkParam(param);
     }
 
     @Test
-    public void testCreateUserProfile_400WhenPayloadIsInvalid() throws Exception {
+    public void testCreateUserProfile_400WhenPayloadIsInvalid() {
 
         // data - input
         UserProfile profile = new UserProfile();
@@ -1048,7 +1360,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testCreateUserProfile_404WhenSpecifiedUserDoesNotExist() throws Exception {
+    public void testCreateUserProfile_404WhenSpecifiedUserDoesNotExist() {
         // data - input
         UserProfile profile = new UserProfile();
 
@@ -1095,7 +1407,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testDeleteUserProfile() throws Exception {
+    public void testDeleteUserProfile() {
         // data - input
         long userId = 123456L;
         ProviderType provider = ProviderType.GITHUB;
@@ -1106,7 +1418,7 @@ public class UserResourceTest {
         UserProfile profile = new UserProfile();
         profile.setUserId(socialUserId);
         profile.setProviderType(provider.name);
-        List<UserProfile> profiles = new ArrayList<UserProfile>();
+        List<UserProfile> profiles = new ArrayList<>();
         profiles.add(profile);
 
         // mock: request/response
@@ -1143,11 +1455,11 @@ public class UserResourceTest {
         
         // confirm check methods are passed
         verify(testee).checkResourceId(id);
-        verify(testee).checkAdminPermission(authUser, id);
+        verify(testee).validateResourceIdAndCheckPermission(authUser, id, userProfilesFactory.getDeleteScopes());
     }
 
     @Test
-    public void testDeleteUserProfile_400WhenUserIdIsNotSpecified() throws Exception {
+    public void testDeleteUserProfile_400WhenUserIdIsNotSpecified() {
         // data - input
         ProviderType provider = ProviderType.GITHUB;
         assertTrue("Provider should be social", provider.isSocial);
@@ -1172,7 +1484,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testDeleteUserProfile_400WhenProviderIsNotSpecified() throws Exception {
+    public void testDeleteUserProfile_400WhenProviderIsNotSpecified() {
         // data - input
         long userId = 123456L;
 
@@ -1196,7 +1508,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testDeleteUserProfile_400WhenSpecifiedProviderIsNotSupported() throws Exception {
+    public void testDeleteUserProfile_400WhenSpecifiedProviderIsNotSupported() {
         // data - input
         long userId = 123456L;
         String provider = "UNSUPPORTED-PROVIDER";
@@ -1226,7 +1538,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testDeleteUserProfile_404WhenSpecifiedProfileDoesNotExist() throws Exception {
+    public void testDeleteUserProfile_404WhenSpecifiedProfileDoesNotExist() {
         // data - input
         long userId = 123456L;
         ProviderType provider = ProviderType.GITHUB;
@@ -1315,7 +1627,6 @@ public class UserResourceTest {
         UserDAO userDao = mock(UserDAO.class);
         EventProducer eventProducer = mock(EventProducer.class);
 
-
         // Test
         try {
             UserResource testee = new UserResource(userDao, mockRoleDao, null, eventProducer, null);
@@ -1394,12 +1705,12 @@ public class UserResourceTest {
     }
     
     @Test
-    public void testGetObjects() throws Exception {
+    public void testGetObjects() {
         // Setup
         APIApplication.JACKSON_OBJECT_MAPPER = Jackson.newObjectMapper();
 
         // Test data
-        List<User> users = new ArrayList<User>();
+        List<User> users = new ArrayList<>();
         users.add(new User());
         users.add(new User());
 
@@ -1440,7 +1751,7 @@ public class UserResourceTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    public void testGetObjects_403WhenUserDoesNotHavePermission() throws Exception {
+    public void testGetObjects_403WhenUserDoesNotHavePermission() {
 
         // mock: Parameters
         AuthUser authUser = mock(AuthUser.class);
@@ -1454,7 +1765,6 @@ public class UserResourceTest {
         
         // Test
         UserResource testee = spy(new UserResource(userDao, mockRoleDao, null, eventProducer, null));
-        doReturn(false).when(testee).hasAdminRole(authUser); // user does not have permission
         try {
             testee.getObjects(authUser, queryParam, request);
         } catch (APIRuntimeException e) {
@@ -1462,16 +1772,16 @@ public class UserResourceTest {
         }
 
         // verify
-        verify(testee).hasAdminRole(authUser);
         verify(userDao, never()).findUsers(any(FilterParameter.class), any(List.class), any(LimitQuery.class));
     }
     
     @SuppressWarnings("unchecked")
     @Test
-    public void testGetObjects_400WhenParameterIsInvalid() throws Exception {
+    public void testGetObjects_400WhenParameterIsInvalid() {
 
         // mock: Parameters
-        AuthUser authUser = mock(AuthUser.class);
+        TCID userId = new TCID(123456789L);
+        AuthUser authUser = TestUtils.createAdminAuthUserMock(userId);
         HttpServletRequest request = mock(HttpServletRequest.class);
         FieldSelector fields = new FieldSelector();
         FilterParameter filter = new FilterParameter(null);
@@ -1489,7 +1799,6 @@ public class UserResourceTest {
         
         // Test
         UserResource testee = spy(new UserResource(userDao, mockRoleDao, null, eventProducer, null));
-        doReturn(true).when(testee).hasAdminRole(authUser); // treat as an administrator
         try {
             testee.getObjects(authUser, queryParam, request);
         } catch (APIRuntimeException e) {
@@ -1497,7 +1806,6 @@ public class UserResourceTest {
         }
 
         // verify
-        verify(testee).hasAdminRole(authUser);
         verify(userDao).findUsers(any(FilterParameter.class), any(List.class), any(LimitQuery.class));
     }
     
@@ -1533,8 +1841,8 @@ public class UserResourceTest {
         assertEquals(SC_OK, (int)apiResult.getStatus());
         assertTrue("apiResult#getSuccess() should be true.", apiResult.getSuccess());
         assertEquals(user, apiResult.getContent());
-        assertEquals("user#isActive() should be true.", true, user.isActive());
-        assertEquals("user#isEmailActive() should be true.", true, user.isEmailActive());
+        assertTrue("user#isActive() should be true.", user.isActive());
+        assertTrue("user#isEmailActive() should be true.", user.isEmailActive());
 
         // verify
         verify(userDao).findUserById(userId);
@@ -1545,7 +1853,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testActivateUser_403WhenCodeIsInvalid() throws Exception {
+    public void testActivateUser_403WhenCodeIsInvalid() {
         // data
         User user = createTestUser(123456L);
         // wrong code
@@ -1555,7 +1863,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testActivateUser_403WhenUserHasBeenActivated() throws Exception {
+    public void testActivateUser_403WhenUserHasBeenActivated() {
 
         // data
         User user = createTestUser(123456L);
@@ -1564,7 +1872,7 @@ public class UserResourceTest {
         testActivateUser_403ErrorCase(user, user.getCredential().getActivationCode());
     }
 
-    private void testActivateUser_403ErrorCase(User user, String activationCode) throws Exception {
+    private void testActivateUser_403ErrorCase(User user, String activationCode) {
         
         // mock
         HttpServletRequest request = mock(HttpServletRequest.class);
@@ -1747,7 +2055,7 @@ public class UserResourceTest {
     
     
     @Test
-    public void testGetOneTimeToken() throws Exception {
+    public void testGetOneTimeToken() {
         
         long userId = 1234567L;
         String password = "DUMMY-PASSWORD";
@@ -1794,7 +2102,7 @@ public class UserResourceTest {
     }
     
     @Test
-    public void testGetOneTimeToken_400WhenUserIdOrPasswordNotSpecified() throws Exception {
+    public void testGetOneTimeToken_400WhenUserIdOrPasswordNotSpecified() {
 
         // testee
         UserResource testee = new UserResource(null, mockRoleDao, null, null, null);
@@ -1814,7 +2122,7 @@ public class UserResourceTest {
     }
     
     @Test
-    public void testGetOneTimeToken_403WhenAuthenticationFailed() throws Exception {
+    public void testGetOneTimeToken_403WhenAuthenticationFailed() {
         
         long userId = 1234567L;
         String password = "DUMMY-PASSWORD";
@@ -1840,7 +2148,7 @@ public class UserResourceTest {
     }
     
     @Test
-    public void testGetOneTimeToken_400WhenTokenHasBeenIssued() throws Exception {
+    public void testGetOneTimeToken_400WhenTokenHasBeenIssued() {
         
         long userId = 1234567L;
         String password = "DUMMY-PASSWORD";
@@ -1947,7 +2255,7 @@ public class UserResourceTest {
         
         // confirm check methods are passed
         verify(testee).checkResourceId(id);
-        verify(testee).checkAdminPermission(authUser, id);
+        verify(testee).validateResourceIdAndCheckPermission(authUser, id, userProfilesFactory.getUpdateScopes());
         verify(testee).checkParam(param);
     }
     
@@ -2024,7 +2332,7 @@ public class UserResourceTest {
     
     @Test
     @SuppressWarnings("unchecked")
-    public void testUpdateHandle_400_WhenHandleIsInvalid() throws Exception {
+    public void testUpdateHandle_400_WhenHandleIsInvalid() {
         // data
         long userId = 123456L;
         String resourceId = String.valueOf(userId);
@@ -2062,7 +2370,7 @@ public class UserResourceTest {
     
     @Test
     @SuppressWarnings("unchecked")
-    public void testUpdateHandle_400_WhenHandleIsInvalid2() throws Exception {
+    public void testUpdateHandle_400_WhenHandleIsInvalid2() {
         // data
         long userId = 123456L;
         String resourceId = String.valueOf(userId);
@@ -2105,7 +2413,7 @@ public class UserResourceTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void testUpdateHandle_404_WhenUserIsNotFound() throws Exception {
+    public void testUpdateHandle_404_WhenUserIsNotFound() {
     
         // parameter
         String newHandle = "NEW-HANDLE";
@@ -2216,7 +2524,7 @@ public class UserResourceTest {
         
         // confirm check methods are passed
         verify(testee).checkResourceId(id);
-        verify(testee).checkAdminPermission(authUser, id);
+        verify(testee).validateResourceIdAndCheckPermission(authUser, id, userProfilesFactory.getUpdateScopes());
         verify(testee).checkParam(param);
     }
     
@@ -2254,7 +2562,7 @@ public class UserResourceTest {
         // testee
         UserResource testee = spy(new UserResource(userDao, mockRoleDao, null, eventProducer, null));
         doNothing().when(testee).checkResourceId(any(TCID.class));
-        doNothing().when(testee).checkAdminPermission(any(AuthUser.class), any(TCID.class));
+        doNothing().when(testee).validateResourceIdAndCheckPermission(authUser, new TCID(resourceId), userProfilesFactory.getUpdateScopes());
         doNothing().when(testee).checkParam(any(PostPutRequest.class));
         doReturn(null).when(testee).validateEmail(newEmail); // mock: always valid
 
@@ -2284,9 +2592,8 @@ public class UserResourceTest {
         verify(eventProducer, never()).publish(eq("event.user.updated"), anyString());
         
         // confirm check methods are passed
-        TCID uid = new TCID(userId);
-        verify(testee).checkResourceId(uid);
-        verify(testee).checkAdminPermission(authUser, uid);
+        TCID uid = new TCID(resourceId);
+        verify(testee).validateResourceIdAndCheckPermission(authUser, uid, userProfilesFactory.getUpdateScopes());
         verify(testee).checkParam(param);
     }
     
@@ -2312,7 +2619,7 @@ public class UserResourceTest {
         // testee
         UserResource testee = spy(new UserResource(null, null, null, null, null));
         doNothing().when(testee).checkResourceId(any(TCID.class));
-        doNothing().when(testee).checkAdminPermission(any(AuthUser.class), any(TCID.class));
+        doNothing().when(testee).validateResourceIdAndCheckPermission(authUser, new TCID(resourceId), userProfilesFactory.getUpdateScopes());
         doNothing().when(testee).checkParam(any(PostPutRequest.class));
         //doReturn(null).when(testee).validateEmail(newEmail); // mock: always valid
 
@@ -2329,15 +2636,14 @@ public class UserResourceTest {
         verify(param, atLeastOnce()).getParam();
         
         // confirm check methods are passed
-        TCID uid = new TCID(userId);
-        verify(testee).checkResourceId(uid);
-        verify(testee).checkAdminPermission(authUser, uid);
+        TCID uid = new TCID(resourceId);
+        verify(testee).validateResourceIdAndCheckPermission(authUser, uid, userProfilesFactory.getUpdateScopes());
         verify(testee).checkParam(param);
     }
     
     @Test
     @SuppressWarnings("unchecked")
-    public void testUpdatePrimaryEmail_400_WhenEmailIsInvalid2() throws Exception {
+    public void testUpdatePrimaryEmail_400_WhenEmailIsInvalid2() {
         // data
         long userId = 123456L;
         String resourceId = String.valueOf(userId);
@@ -2356,7 +2662,7 @@ public class UserResourceTest {
         // testee
         UserResource testee = spy(new UserResource(null, null, null, null, null));
         doNothing().when(testee).checkResourceId(any(TCID.class));
-        doNothing().when(testee).checkAdminPermission(any(AuthUser.class), any(TCID.class));
+        doNothing().when(testee).validateResourceIdAndCheckPermission(authUser, new TCID(resourceId), userProfilesFactory.getUpdateScopes());
         doNothing().when(testee).checkParam(any(PostPutRequest.class));
         String error = "ERROR";
         doReturn(error).when(testee).validateEmail(newEmail); // mock: invalid
@@ -2375,15 +2681,14 @@ public class UserResourceTest {
         verify(testee).validateEmail(newEmail);
         
         // confirm check methods are passed
-        TCID uid = new TCID(userId);
-        verify(testee).checkResourceId(uid);
-        verify(testee).checkAdminPermission(authUser, uid);
+        TCID uid = new TCID(resourceId);
+        verify(testee).validateResourceIdAndCheckPermission(authUser, uid, userProfilesFactory.getUpdateScopes());
         verify(testee).checkParam(param);
     }
     
     @Test
     @SuppressWarnings("unchecked")
-    public void testUpdatePrimaryEmail_404_WhenUserIsNotFound() throws Exception {
+    public void testUpdatePrimaryEmail_404_WhenUserIsNotFound() {
         // data
         long userId = 123456L;
         String resourceId = String.valueOf(userId);
@@ -2406,7 +2711,7 @@ public class UserResourceTest {
         // testee
         UserResource testee = spy(new UserResource(userDao, mockRoleDao, null, null, null));
         doNothing().when(testee).checkResourceId(any(TCID.class));
-        doNothing().when(testee).checkAdminPermission(any(AuthUser.class), any(TCID.class));
+        doNothing().when(testee).validateResourceIdAndCheckPermission(authUser, new TCID(resourceId), userProfilesFactory.getUpdateScopes());
         doNothing().when(testee).checkParam(any(PostPutRequest.class));
         doReturn(null).when(testee).validateEmail(newEmail); // mock: valid
 
@@ -2425,14 +2730,13 @@ public class UserResourceTest {
         verify(testee).validateEmail(newEmail);
         
         // confirm check methods are passed
-        TCID uid = new TCID(userId);
-        verify(testee).checkResourceId(uid);
-        verify(testee).checkAdminPermission(authUser, uid);
+        TCID uid = new TCID(resourceId);
+        verify(testee).validateResourceIdAndCheckPermission(authUser, uid, userProfilesFactory.getUpdateScopes());
         verify(testee).checkParam(param);
     }
 
     @Test
-    public void testUpdateEmailWithOneTimeToken() throws Exception {
+    public void testUpdateEmailWithOneTimeToken() {
         // user
         long userId = 1234567L;
         User user = createTestUser(userId);
@@ -2487,7 +2791,7 @@ public class UserResourceTest {
     }
     
     @Test
-    public void testUpdateEmailWithOneTimeToken_401WhenHeaderIsInvalid() throws Exception {
+    public void testUpdateEmailWithOneTimeToken_401WhenHeaderIsInvalid() {
         // user
         long userId = 1234567L;
         // email
@@ -2526,7 +2830,7 @@ public class UserResourceTest {
     }
     
     @Test
-    public void testUpdateEmailWithOneTimeToken_401WhenTokenIsInvalid() throws Exception {
+    public void testUpdateEmailWithOneTimeToken_401WhenTokenIsInvalid() {
         // user
         long userId = 1234567L;
         // email
@@ -2559,7 +2863,7 @@ public class UserResourceTest {
     
     
     @Test
-    public void testUpdateEmailWithOneTimeToken_401WhenTokenIsExpiredOrAlreadyInUse() throws Exception {
+    public void testUpdateEmailWithOneTimeToken_401WhenTokenIsExpiredOrAlreadyInUse() {
         // user
         long userId = 1234567L;
         User user = createTestUser(userId);
@@ -2737,7 +3041,7 @@ public class UserResourceTest {
         
         // confirm check methods are passed
         verify(testee).checkResourceId(id);
-        verify(testee).checkAdminPermission(authUser, id);
+        verify(testee).validateResourceIdAndCheckPermission(authUser, id, userProfilesFactory.getUpdateScopes());
         verify(testee).checkParam(param);
     }
     
@@ -2746,14 +3050,13 @@ public class UserResourceTest {
     public void testUpdateStatus_EventIsNotPublishedWhenStatusIsNotChanged() throws Exception {
         
         // parameter
-        String newStatus = MemberStatus.INACTIVE_DUPLICATE_ACCOUNT.getValue();
         String comment = "DUPLICATE_ACCOUNT";
         
         // data
         long userId = 123456L;
         String resourceId = String.valueOf(userId);
         User user = createTestUser(userId);
-        newStatus = user.getStatus(); // new status is the same status as old one.
+        String newStatus = user.getStatus(); // new status is the same status as old one.
         assertEquals(newStatus, user.getStatus());
 
         // mock: UserDAO
@@ -2816,7 +3119,7 @@ public class UserResourceTest {
     
     @Test
     @SuppressWarnings("unchecked")
-    public void testUpdateStatus_400_WhenStatusIsInvalid() throws Exception {
+    public void testUpdateStatus_400_WhenStatusIsInvalid() {
     
         // parameter
         String newStatus = "INVALID-STATUS";
@@ -2848,7 +3151,7 @@ public class UserResourceTest {
     
     @Test
     @SuppressWarnings("unchecked")
-    public void testUpdateStatus_404_WhenUserIsNotFound() throws Exception {
+    public void testUpdateStatus_404_WhenUserIsNotFound() {
     
         // parameter
         String newStatus = MemberStatus.INACTIVE_DUPLICATE_ACCOUNT.getValue();
@@ -2881,7 +3184,7 @@ public class UserResourceTest {
         verify(userDao, never()).updateStatus(any(User.class), anyString());
     }
 
-    protected void testLogin(String handle, String email, String password) throws Exception {
+    protected void testLogin(String handle, String email, String password) {
         // data
         User user = new User();
         user.setHandle(handle);
@@ -2933,7 +3236,7 @@ public class UserResourceTest {
     
     
     @Test
-    public void testLoginWithEmail() throws Exception {
+    public void testLoginWithEmail() {
         // data
         String email = "jdoe@example.com";
         String password = "PASSWORD";
@@ -2943,7 +3246,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testLoginWithHandle() throws Exception {
+    public void testLoginWithHandle() {
         // data
         String handle = "jdoe";
         String password = "PASSWORD";
@@ -2953,7 +3256,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testLogin_400WhenPasswordIsMissing() throws Exception {
+    public void testLogin_400WhenPasswordIsMissing() {
 
         // mock: UserDAO
         UserDAO userDao = mock(UserDAO.class);
@@ -2976,7 +3279,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testLogin_401WhenAuthenticationFailed() throws Exception {
+    public void testLogin_401WhenAuthenticationFailed() {
         // data
         String handle = "jdoe";
         String email = "jdoe@example.com";
@@ -3016,7 +3319,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testLoginWithEmail_400WhenBothHandleAndEmailAreMissing() throws Exception {
+    public void testLoginWithEmail_400WhenBothHandleAndEmailAreMissing() {
 
         // mock: UserDAO
         UserDAO userDao = mock(UserDAO.class);
@@ -3039,21 +3342,21 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testGetResetToken_ByHandle() throws Exception {
+    public void testGetResetToken_ByHandle() {
         
         String handle = "jdoe";
         testGetResetToken(handle, null, null, null);
     }
 
     @Test
-    public void testGetResetToken_ByEmail() throws Exception {
+    public void testGetResetToken_ByEmail() {
 
         String email = "jdoe@example.com";
         testGetResetToken(null, email, null, null);
     }
 
     @Test
-    public void testGetResetToken_ForConnect() throws Exception {
+    public void testGetResetToken_ForConnect() {
         
         String handle = "jdoe";
         String source = "connect";
@@ -3061,7 +3364,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testGetResetToken_ForUserAssociatedWithSocialAccount() throws Exception {
+    public void testGetResetToken_ForUserAssociatedWithSocialAccount() {
 
         String email = "jdoe@example.com";
         String socialUserId = "SOCIAL_USER_ID";
@@ -3069,7 +3372,7 @@ public class UserResourceTest {
         testGetResetToken(null, email, socialUserId, null);
     }
 
-    protected void testGetResetToken(String handle, String email, String socialUserId, String source) throws Exception {
+    protected void testGetResetToken(String handle, String email, String socialUserId, String source) {
         // data
         long userId = 123456L;
         User user = createTestUser(userId);
@@ -3087,7 +3390,7 @@ public class UserResourceTest {
             when(userDao.findUserByEmail(email)).thenReturn(user);
         }
         if(socialUserId!=null) {
-            List<UserProfile> profiles = new ArrayList<UserProfile>();
+            List<UserProfile> profiles = new ArrayList<>();
             UserProfile profile = new UserProfile();
             profile.setUserId(socialUserId);
             profile.setProviderType(ProviderType.FACEBOOK.name);
@@ -3132,7 +3435,7 @@ public class UserResourceTest {
             assertNull(profile);
             // reset token should not be generated for social account.
             // reset token now should _not_ be in the response due to SPA use of this call (10/13/2017)
-            assertEquals(null, user.getCredential().getResetToken());
+            assertNull(user.getCredential().getResetToken());
         }
         // verify
         if(user.getHandle()!=null) {
@@ -3154,7 +3457,7 @@ public class UserResourceTest {
 
 
     @Test
-    public void testGetResetToken_403ForUserAssociatedWithSSOAccount() throws Exception {
+    public void testGetResetToken_403ForUserAssociatedWithSSOAccount() {
 
         // data: user
         long userId = 123456L;
@@ -3164,7 +3467,7 @@ public class UserResourceTest {
         user.setEmail(email);
 
         // data: profile
-        List<UserProfile> profiles = new ArrayList<UserProfile>();
+        List<UserProfile> profiles = new ArrayList<>();
         UserProfile profile = new UserProfile();
         profile.setUserId(ssoUserId);
         profile.setProviderType(ProviderType.SAMLP.name);
@@ -3203,7 +3506,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testGetResetToken_400WhenHandleAndEmailAreNull() throws Exception {
+    public void testGetResetToken_400WhenHandleAndEmailAreNull() {
 
         // mock: UserDAO
         UserDAO userDao = mock(UserDAO.class);
@@ -3231,7 +3534,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testGetResetToken_404WhenUserDoesNotExist() throws Exception {
+    public void testGetResetToken_404WhenUserDoesNotExist() {
         // data
         long userId = 123456L;
         User user = createTestUser(userId);
@@ -3264,7 +3567,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testGetResetToken_400WhenTokenHasAlreadyBeenIssuedAndNotExpiredYet() throws Exception {
+    public void testGetResetToken_400WhenTokenHasAlreadyBeenIssuedAndNotExpiredYet() {
         // data
         long userId = 123456L;
         User user = createTestUser(userId);
@@ -3299,7 +3602,7 @@ public class UserResourceTest {
     
     
     @Test
-    public void testGetResetPasswordUrlPrefix_Default() throws Exception {
+    public void testGetResetPasswordUrlPrefix_Default() {
         // mock
         HttpServletRequest request = mock(HttpServletRequest.class);
 
@@ -3315,7 +3618,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testGetResetPasswordUrlPrefix_Connect() throws Exception {
+    public void testGetResetPasswordUrlPrefix_Connect() {
         
         // mock
         String source = "connect";
@@ -3334,7 +3637,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testGetResetPasswordUrlPrefix_SpecificDomain() throws Exception {
+    public void testGetResetPasswordUrlPrefix_SpecificDomain() {
         // mock
         String domain = "DUMMY-DOMAIN";
         HttpServletRequest request = mock(HttpServletRequest.class);
@@ -3352,7 +3655,7 @@ public class UserResourceTest {
     }
     
     @Test
-    public void testGetResetPasswordUrlPrefix_SpecificDomain_Connect() throws Exception {
+    public void testGetResetPasswordUrlPrefix_SpecificDomain_Connect() {
         // mock
         String domain = "DUMMY-DOMAIN";
         String source = "connect";
@@ -3372,7 +3675,7 @@ public class UserResourceTest {
     }
     
     @Test
-    public void testGetResetPasswordUrlPrefix_UrlSpecified() throws Exception {
+    public void testGetResetPasswordUrlPrefix_UrlSpecified() {
         // mock
         String source = "connect";
         String prefix = "DUMMY-PREFIX";
@@ -3392,7 +3695,7 @@ public class UserResourceTest {
 
 
     @Test
-    public void testResetPassword_ResetWithEmail() throws Exception {
+    public void testResetPassword_ResetWithEmail() {
         // data
         long userId = 123456L;
         String resetToken = "ABC123";
@@ -3446,7 +3749,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testResetPassword_ResetWithHandle() throws Exception {
+    public void testResetPassword_ResetWithHandle() {
         // data
         long userId = 123456L;
         String resetToken = "ABC123";
@@ -3498,7 +3801,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testResetPassword_400WhenNewPasswordIsInvalid() throws Exception {
+    public void testResetPassword_400WhenNewPasswordIsInvalid() {
         // data
         String resetToken = "ABC123", newPassword = "passowrd"; // weak password
         User paramUser = createUserForResetPasswordTest("jdoe", resetToken, newPassword);
@@ -3509,7 +3812,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testResetPassword_400WhenTokenIsNotSpecified() throws Exception {
+    public void testResetPassword_400WhenTokenIsNotSpecified() {
         // data
         String newPassword = "passowrd123[]";
         User paramUser = createUserForResetPasswordTest("jdoe", null, newPassword); // token is null
@@ -3520,7 +3823,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testResetPassword_404WhenUserDoesNotExist() throws Exception {
+    public void testResetPassword_404WhenUserDoesNotExist() {
         // data
         String newPassword = "passowrd123[]", resetToken = "ABC123";
         User paramUser = createUserForResetPasswordTest("jdoe", resetToken, newPassword); // token is null
@@ -3535,7 +3838,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testResetPassword_400WhenTokenIsExpired() throws Exception {
+    public void testResetPassword_400WhenTokenIsExpired() {
         // data
         long userId = 123456L;
         String resetToken = "ABC123";
@@ -3558,7 +3861,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testResetPassword_400WhenTokenIsIncorrect() throws Exception {
+    public void testResetPassword_400WhenTokenIsIncorrect() {
         // data
         long userId = 123456L;
         String resetToken = "ABC123";
@@ -3582,7 +3885,7 @@ public class UserResourceTest {
     }
 
 
-    private void testResetPassword_ErrorCase(User user, UserDAO userDao, CacheService cacheService, int expectedStatus, String expectedMessage) throws Exception {
+    private void testResetPassword_ErrorCase(User user, UserDAO userDao, CacheService cacheService, int expectedStatus, String expectedMessage) {
         // mock: other
         @SuppressWarnings("unchecked")
         PostPutRequest<User> postRequest = (PostPutRequest<User>)mock(PostPutRequest.class);
@@ -3607,7 +3910,7 @@ public class UserResourceTest {
     }
     
     @Test
-    public void testGetAchievements() throws Exception {
+    public void testGetAchievements() {
         // setup
         APIApplication.JACKSON_OBJECT_MAPPER = Jackson.newObjectMapper();
 
@@ -3616,7 +3919,7 @@ public class UserResourceTest {
         User user = createTestUser(uid);
         
         int dataSize = 2;
-        List<Achievement> achievements = new ArrayList<Achievement>();
+        List<Achievement> achievements = new ArrayList<>();
         for(int i=0; i<dataSize; i++) {
             Achievement achievement = new Achievement();
             achievements.add(achievement);
@@ -3624,7 +3927,7 @@ public class UserResourceTest {
         
         // mock: Parameters
         TCID userId = new TCID(uid);
-        AuthUser authUser = mock(AuthUser.class);
+        AuthUser authUser = TestUtils.createAdminAuthUserMock(userId);
         HttpServletRequest request = mock(HttpServletRequest.class);
         
         // mock: UserDAO
@@ -3642,7 +3945,6 @@ public class UserResourceTest {
 
         // testee
         UserResource testee = spy(new UserResource(userDao, mockRoleDao, null, null, null));
-        doReturn(true).when(testee).hasAdminRole(authUser); // mock: treat as admin user
         
         // test
         ApiResponse result = testee.getAchievements(authUser, userId, queryParam, request);
@@ -3660,11 +3962,10 @@ public class UserResourceTest {
         // verify
         verify(userDao).findUserById(uid);
         verify(userDao).findAchievements(uid);
-        verify(testee).hasAdminRole(authUser);
     }
     
     @Test
-    public void testGetAchievements_404_WhenUserIsNotFound() throws Exception {
+    public void testGetAchievements_404_WhenUserIsNotFound() {
     
         // parameter
         long uid = 123456L;
@@ -3703,11 +4004,11 @@ public class UserResourceTest {
         verify(userDao, never()).findAchievements(anyLong());
         
         verify(testee).checkResourceId(userId);
-        verify(testee).checkAdminPermission(authUser, userId);
+        verify(testee).validateResourceIdAndCheckPermission(authUser, userId, userProfilesFactory.getReadScopes());
     }
 
     @Test
-    public void testValidateHandle() throws Exception {
+    public void testValidateHandle() {
         // data
         String handle = "validhandle";
 
@@ -3737,7 +4038,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testValidateHandle_InvalidResponse_WhenHandleContainsBlank() throws Exception {
+    public void testValidateHandle_InvalidResponse_WhenHandleContainsBlank() {
         // data
         String handle = "with blank"; // blank is not allowed.
         // test
@@ -3746,7 +4047,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testValidateHandle_InvalidResponse_WhenHandleContainsForbiddenChar() throws Exception {
+    public void testValidateHandle_InvalidResponse_WhenHandleContainsForbiddenChar() {
         // data
         String handle = "Handle123!"; // ! is not allowed.
         // test
@@ -3755,16 +4056,14 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testValidateHandle_InvalidResponse_WhenHandleContainsOnlyPunctuation() throws Exception {
-        // data
-        String handle = HANDLE_PUNCTUATION;
+    public void testValidateHandle_InvalidResponse_WhenHandleContainsOnlyPunctuation() {
         // test
-        testValidateHandle_InvalidResponseCase(handle,
+        testValidateHandle_InvalidResponseCase(HANDLE_PUNCTUATION,
                 REASON_INVALID_FORMAT, MSG_TEMPLATE_INVALID_HANDLE_CONTAINS_ONLY_PUNCTUATION);
     }
 
     @Test
-    public void testValidateHandle_InvalidResponse_WhenHandleStartsWithAdmin() throws Exception {
+    public void testValidateHandle_InvalidResponse_WhenHandleStartsWithAdmin() {
         // data
         String handle = "administrator";
         // test
@@ -3772,7 +4071,7 @@ public class UserResourceTest {
                 REASON_INVALID_HANDLE, MSG_TEMPLATE_INVALID_HANDLE_STARTS_WITH_ADMIN);
     }
 
-    public void testValidateHandle_InvalidResponseCase(String handle, String expectedCode, String expectedReson) throws Exception {
+    public void testValidateHandle_InvalidResponseCase(String handle, String expectedCode, String expectedReason) {
 
         // testee
         UserResource testee = spy(new UserResource(null, null, null, null, null));
@@ -3794,11 +4093,11 @@ public class UserResourceTest {
         ValidationResult vr = (ValidationResult)apiResult.getContent();
         assertFalse(vr.valid);
         assertEquals(expectedCode, vr.reasonCode);
-        assertEquals(expectedReson, vr.reason);
+        assertEquals(expectedReason, vr.reason);
     }
 
     @Test
-    public void testValidateHandle_InvalidResponse_WhenHandleIsInvalid() throws Exception {
+    public void testValidateHandle_InvalidResponse_WhenHandleIsInvalid() {
         // data
         String handle = "invalidhandle";
 
@@ -3830,7 +4129,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testValidateHandle_InvalidResponse_WhenHandleIsAldreadyTaken() throws Exception {
+    public void testValidateHandle_InvalidResponse_WhenHandleIsAldreadyTaken() {
         // data
         String handle = "already-taken";
 
@@ -3863,7 +4162,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testValidateHandle_400WhenNoHandleSpecified() throws Exception {
+    public void testValidateHandle_400WhenNoHandleSpecified() {
         // data
         String handle = null;
 
@@ -3882,7 +4181,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testValidateEmail() throws Exception {
+    public void testValidateEmail() {
         // data
         String email = "validemail@example.com";
 
@@ -3912,7 +4211,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testValidateEmail_InvalidResponse_WhenEmailIsInvalid() throws Exception {
+    public void testValidateEmail_InvalidResponse_WhenEmailIsInvalid() {
         // data
         String email = "invalid email"; // not email
 
@@ -3944,7 +4243,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testValidateEmail_InvalidResponse_WhenEmailHasAlreadyUsed() throws Exception {
+    public void testValidateEmail_InvalidResponse_WhenEmailHasAlreadyUsed() {
         // data
         String email = "usedemail@example.com";
 
@@ -3977,7 +4276,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testValidateEmail_400WhenNoEmailSpecified() throws Exception {
+    public void testValidateEmail_400WhenNoEmailSpecified() {
         // data
         String email = null;
 
@@ -3996,7 +4295,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testValidateSocial() throws Exception {
+    public void testValidateSocial() {
         // data
         String socialUserId = "validSocialUserId";
         String socialProvider = "facebook";
@@ -4029,9 +4328,8 @@ public class UserResourceTest {
         verify(testee).validateSocialProfile(any(UserProfile.class));
     }
 
-
     @Test
-    public void testValidateSocial_InvalidResponse_WhenSocialAccountAlreadyInUse() throws Exception {
+    public void testValidateSocial_InvalidResponse_WhenSocialAccountAlreadyInUse() {
         // data
         String socialUserId = "validSocialUserId";
         String socialProvider = ProviderType.FACEBOOK.name;
@@ -4067,7 +4365,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testValidateSocial_400WhenProviderIsNotSupported() throws Exception {
+    public void testValidateSocial_400WhenProviderIsNotSupported() {
         // data
         String socialUserId = "validSocialUserId";
         String socialProvider = ProviderType.SAMLP.name; // non-social
@@ -4090,7 +4388,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testValidateSocialProfile() throws Exception {
+    public void testValidateSocialProfile() {
         // data: valid social user profile
         UserProfile profile = new UserProfile();
         profile.setUserId("AVAILABLE-SOCIAL-USER-ID");
@@ -4114,7 +4412,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testValidateSocialProfile_WhenProfileHasNoUserId() throws Exception {
+    public void testValidateSocialProfile_WhenProfileHasNoUserId() {
         // data
         UserProfile profile = new UserProfile();
         profile.setUserId(null); // no user id
@@ -4138,7 +4436,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testValidateSocialProfile_WhenProvderIsNotForSocial() throws Exception {
+    public void testValidateSocialProfile_WhenProvderIsNotForSocial() {
         // data
         UserProfile profile = new UserProfile();
         profile.setUserId("VALID-SOCIAL-USER-ID");
@@ -4162,7 +4460,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testValidateSocialProfile_WhenSocialAccountAlreadyInUse() throws Exception {
+    public void testValidateSocialProfile_WhenSocialAccountAlreadyInUse() {
         // data
         UserProfile profile = new UserProfile();
         profile.setUserId("INVALID-SOCIAL-USER-ID");
@@ -4187,7 +4485,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testValidateSocialProfile_WithUser() throws Exception {
+    public void testValidateSocialProfile_WithUser() {
         // data: ID of related user who own the following profile
         long userId = 123456L;
 
@@ -4216,7 +4514,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testValidateSocialProfile_WithUser_WhenSpecifiedProviderIsAlreadyBoundWithUser() throws Exception {
+    public void testValidateSocialProfile_WithUser_WhenSpecifiedProviderIsAlreadyBoundWithUser() {
         // data: ID of related user who own the following profile
         long userId = 123456L;
 
@@ -4226,7 +4524,7 @@ public class UserResourceTest {
         profile.setProviderType(ProviderType.GITHUB.name);
 
         // data: profiles stored in database
-        List<UserProfile> dbProfiles = new ArrayList<UserProfile>();
+        List<UserProfile> dbProfiles = new ArrayList<>();
         UserProfile profileBoundWithUser = new UserProfile();
         profileBoundWithUser.setUserId("ANOTHER-SOCIAL-USER-ID");
         profileBoundWithUser.setProviderType(ProviderType.GITHUB.name);
@@ -4251,7 +4549,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testValidateSSOProfile() throws Exception {
+    public void testValidateSSOProfile() {
         // data
         UserProfile profile = new UserProfile();
         profile.setUserId("AVAILABLE-SSO-USER-ID");
@@ -4276,7 +4574,7 @@ public class UserResourceTest {
 
 
     @Test
-    public void testValidateSSOProfile_WhenSSOAccountAlreadyInUse() throws Exception {
+    public void testValidateSSOProfile_WhenSSOAccountAlreadyInUse() {
         // data
         UserProfile profile = new UserProfile();
         profile.setUserId("AVAILABLE-SSO-USER-ID");
@@ -4300,7 +4598,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testValidateSSOProfile_WhenProfileHasNoUserIdAndEmail() throws Exception {
+    public void testValidateSSOProfile_WhenProfileHasNoUserIdAndEmail() {
         // data
         UserProfile profile = new UserProfile();
         profile.setUserId(null);
@@ -4325,7 +4623,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testValidateSSOProfile_WhenProvderIsNotForEnterprise() throws Exception {
+    public void testValidateSSOProfile_WhenProvderIsNotForEnterprise() {
         // data
         UserProfile profile = new UserProfile();
         profile.setUserId(null);
@@ -4349,7 +4647,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testValidateReferral() throws Exception {
+    public void testValidateReferral() {
 
         String referrer = "HANDLE";
 
@@ -4369,10 +4667,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testValidateReferral_WhenSourceIsNotSpecified() throws Exception {
-
-        String referrer = null;
-
+    public void testValidateReferral_WhenSourceIsNotSpecified() {
         // mock
         UserDAO userDao = mock(UserDAO.class);
 
@@ -4380,7 +4675,7 @@ public class UserResourceTest {
         UserResource testee = new UserResource(userDao, mockRoleDao, null, null, null);
 
         // test
-        String result = testee.validateReferral(referrer);
+        String result = testee.validateReferral(null);
 
         // verify
         assertEquals(MSG_TEMPLATE_MISSING_UTMSOURCE, result);
@@ -4388,7 +4683,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testValidateReferral_WhenSourceIsNotAnExistingHandle() throws Exception {
+    public void testValidateReferral_WhenSourceIsNotAnExistingHandle() {
 
         String referrer = "HANDLE";
 
@@ -4408,7 +4703,7 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testValidateCountry() throws Exception {
+    public void testValidateCountry() {
 
         // data
         Country country = new Country();
@@ -4443,7 +4738,7 @@ public class UserResourceTest {
 
 
     @Test
-    public void testValidateCountry_InvalidWhenAnyCountryIsNotFoundForInput() throws Exception {
+    public void testValidateCountry_InvalidWhenAnyCountryIsNotFoundForInput() {
 
         // data
         Country country = new Country();
@@ -4483,7 +4778,7 @@ public class UserResourceTest {
             testee.checkResourceId(null);
         } catch(APIRuntimeException e) {
             assertEquals(SC_BAD_REQUEST, e.getHttpStatus());
-            assertEquals(MSG_TEMPLATE_INVALID_ID, e.getMessage());
+            assertEquals(String.format(Constants.MSG_TEMPLATE_MANDATORY, "resourceId"), e.getMessage());
         }
 
     }
@@ -4500,7 +4795,7 @@ public class UserResourceTest {
         
         UserResource testee = new UserResource(null, null, null, null, null);
         
-        testee.checkAdminPermission(authUser, resourceId);
+        testee.validateResourceIdAndCheckPermission(authUser, resourceId, null);
         
         verify(authUser).getUserId();
     }
@@ -4511,16 +4806,11 @@ public class UserResourceTest {
         TCID operatorId = new TCID(123457L);
         assertNotEquals(resourceId, operatorId);
 
-        AuthUser authUser = spy(new AuthUser());
-        doReturn(operatorId).when(authUser).getUserId();
+        AuthUser authUser = TestUtils.createAdminAuthUserMock(operatorId);
         
         UserResource testee = spy(new UserResource(null, null, null, null, null));
-        doReturn(true).when(testee).hasAdminRole(authUser);
         
-        testee.checkAdminPermission(authUser, resourceId);
-        
-        verify(authUser).getUserId();
-        verify(testee).hasAdminRole(authUser);
+        testee.validateResourceIdAndCheckPermission(authUser, resourceId, null);
     }
 
     @Test
@@ -4533,17 +4823,15 @@ public class UserResourceTest {
         doReturn(operatorId).when(authUser).getUserId();
         
         UserResource testee = spy(new UserResource(null, null, null, null, null));
-        doReturn(false).when(testee).hasAdminRole(authUser); // operator does not have admin access
         
         try {
-            testee.checkAdminPermission(authUser, resourceId);
+            testee.validateResourceIdAndCheckPermission(authUser, resourceId, null);
             fail("APIRuntimeException(403) should be thrown in the previous step.");
         } catch (APIRuntimeException e) {
             assertEquals(SC_FORBIDDEN, e.getHttpStatus());
         }
         
         verify(authUser).getUserId();
-        verify(testee).hasAdminRole(authUser);
     }
 
     @Test
@@ -4587,7 +4875,7 @@ public class UserResourceTest {
         String auth0UserId = "DUMMY-AUTH0-USER-ID";
         
         UserProfile profile = new UserProfile();
-        profile.setContext(new HashMap<String, String>());
+        profile.setContext(new HashMap<>());
         profile.getContext().put("auth0UserId", auth0UserId);
         
         // mock
@@ -4672,7 +4960,6 @@ public class UserResourceTest {
         testSetAccessToken_CaseToGetNull(userId, providerType, auth0);
     }
 
-    
     public void testSetAccessToken_CaseToGetNull(String userId, String providerType, Auth0Client auth0) throws Exception {
         // data
         String auth0UserId = providerType + "|" + userId;
@@ -4728,7 +5015,7 @@ public class UserResourceTest {
     }
 
     AuthUser createMockAdminAuthUser(TCID userId) {
-        return createMockAuthUser(userId, Arrays.asList(new String[]{"administrator"}));
+        return createMockAuthUser(userId, Arrays.asList(Utils.AdminRoles));
     }
     
     AuthUser createMockAuthUser(TCID userId, List<String> roles) {
