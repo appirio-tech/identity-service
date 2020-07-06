@@ -3678,7 +3678,7 @@ public class UserResourceTest {
     public void testGetResetPasswordUrlPrefix_UrlSpecified() {
         // mock
         String source = "connect";
-        String prefix = "DUMMY-PREFIX";
+        String prefix = "DUMMY-HOST.topcoder-dev.com";
         HttpServletRequest request = mock(HttpServletRequest.class);
         doReturn(source).when(request).getParameter("source");
         doReturn(prefix).when(request).getParameter("resetPasswordUrlPrefix");

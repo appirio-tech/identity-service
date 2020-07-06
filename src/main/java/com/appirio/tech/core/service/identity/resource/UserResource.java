@@ -1360,9 +1360,24 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     
     protected String getResetPasswordUrlPrefix(HttpServletRequest request) {
         String resetPasswordUrlPrefix = request.getParameter("resetPasswordUrlPrefix");
-        if(resetPasswordUrlPrefix!=null)
+        if(resetPasswordUrlPrefix!=null) {
+            // Sanitize / ensure domains other than topcoder.com or topcoder-dev.com can't be used.
+            int i = resetPasswordUrlPrefix.indexOf("://");
+            i = i < 0 ? 0 : i + 3;
+            String domainName = resetPasswordUrlPrefix.substring(i);
+            i = domainName.indexOf("/");
+            i = i < 0 ? domainName.length() : i;
+            domainName = domainName.substring(0, i);
+            i = domainName.lastIndexOf(".");
+            i = domainName.lastIndexOf(".", i - 1);
+            domainName = domainName.substring(i + 1);
+            if (!(domainName.equals("topcoder.com") || domainName.equals("topcoder-dev.com"))) {
+                resetPasswordUrlPrefix = null;
+            }
+
             return resetPasswordUrlPrefix;
-        
+        }
+
         String source = request.getParameter("source");
         String domain = getDomain()!=null ? getDomain() : "topcoder.com";
         String template = "https://%s.%s/reset-password";
