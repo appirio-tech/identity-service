@@ -1362,7 +1362,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         String resetPasswordUrlPrefix = request.getParameter("resetPasswordUrlPrefix");
         if(resetPasswordUrlPrefix!=null) {
             // Sanitize / ensure domains other than topcoder.com or topcoder-dev.com can't be used.
-            int i = resetPasswordUrlPrefix.indexOf("://") + 3;
+            int i = resetPasswordUrlPrefix.indexOf("://");
+            i = i < 0 ? 0 : i + 3;
             String domainName = resetPasswordUrlPrefix.substring(i);
             i = domainName.indexOf("/");
             domainName = domainName.substring(0, i);
