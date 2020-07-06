@@ -1366,6 +1366,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             i = i < 0 ? 0 : i + 3;
             String domainName = resetPasswordUrlPrefix.substring(i);
             i = domainName.indexOf("/");
+            i = i < 0 ? domainName.length() : i;
             domainName = domainName.substring(0, i);
             i = domainName.lastIndexOf(".");
             i = domainName.lastIndexOf(".", i - 1);
