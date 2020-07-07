@@ -4,7 +4,7 @@
 package com.appirio.tech.core.service.identity.util;
 
 import static com.appirio.tech.core.service.identity.util.Constants.*;
-import static javax.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
+import static javax.servlet.http.HttpServletResponse.*;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -68,7 +68,12 @@ public class Utils {
 	public static final String CONTEXT_KEY_PASSWORD_HASH = "passwordHashKey";
 
 	private static final Map<String, Object> applicationContext = new LinkedHashMap<String, Object>();
-	
+
+	/**
+	 * Represents the admin roles
+	 */
+	public static final String[] AdminRoles = {"administrator"};
+
 	/**
      * The VALID_ISSUERS field 
      */
@@ -489,12 +494,19 @@ public class Utils {
      * @param user the user.
      * @return if the user admin role.
      */
-    public static boolean hasAdminRole(AuthUser user) {
-        if (user == null || user.getRoles() == null)
-            return false;
-        return user.getRoles().contains("administrator");
-    }
-    
+	public static boolean hasAdminRole(AuthUser authUser) {
+		if (authUser == null || authUser.getRoles() == null) {
+			return false;
+		}
+
+		for (String role : AdminRoles) {
+			if (authUser.getRoles().contains(role)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
     
     public static JWTToken extractJWT(String token, String domain, String secret) {
     	if(token==null)
@@ -545,5 +557,35 @@ public class Utils {
 		}
 
 		return fullURL;
+	}
+
+	public static void checkAccess(AuthUser authUser, String[] allowedScopes, String[] allowedRoles) {
+		if (authUser == null) {
+			throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Authentication user"));
+		}
+
+		if (authUser.isMachine()) {
+			if (allowedScopes == null || allowedScopes.length == 0) {
+				return;
+			}
+
+			for (String allowedScope : allowedScopes) {
+				if (authUser.getScope().contains(allowedScope)) {
+					return;
+				}
+			}
+		} else {
+			if (allowedRoles == null || allowedRoles.length == 0) {
+				return;
+			}
+
+			for (String role : allowedRoles) {
+				if (authUser.getRoles() != null && authUser.getRoles().contains(role)) {
+					return;
+				}
+			}
+		}
+
+		throw new APIRuntimeException(SC_FORBIDDEN, "Forbidden");
 	}
 }

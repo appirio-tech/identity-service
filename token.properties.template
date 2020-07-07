@@ -76,3 +76,7 @@
 @m2mAuthConfig.tokenExpireTimeInMinutes@={{M2MAUTHCONFIG_TOKENEXPIRETIME}}
 @m2mAuthConfig.userId@={{M2MAUTHCONFIG_USERID}}
 @m2mAuthConfig.authProxyServerUrl@={{M2MAUTHCONFIG_AUTHPROXYSERVERURL}}
+@m2mAuthConfig.userProfiles.create@={{M2MAUTHCONFIG_USERPROFILES_CREATE}}
+@m2mAuthConfig.userProfiles.read@={{M2MAUTHCONFIG_USERPROFILES_READ}}
+@m2mAuthConfig.userProfiles.update@={{M2MAUTHCONFIG_USERPROFILES_UPDATE}}
+@m2mAuthConfig.userProfiles.delete@={{M2MAUTHCONFIG_USERPROFILES_DELETE}}

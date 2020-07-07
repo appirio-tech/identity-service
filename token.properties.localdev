@@ -55,3 +55,7 @@
 @m2mAuthConfig.m2mAuthDomain@=dummy.auth0.com
 @m2mAuthConfig.tokenExpireTimeInMinutes@=60
 @m2mAuthConfig.userId@=dummy
+@m2mAuthConfig.userProfiles.create@=create:user_profiles,all:user_profiles
+@m2mAuthConfig.userProfiles.read@=read:user_profiles,all:user_profiles
+@m2mAuthConfig.userProfiles.update@=update:user_profiles,all:user_profiles
+@m2mAuthConfig.userProfiles.delete@=delete:user_profiles,all:user_profiles
