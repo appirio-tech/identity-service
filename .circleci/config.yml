@@ -97,7 +97,7 @@ build_deploy_steps: &build_deploy_steps
           name: Build Image
           command: |
             echo "Building image"
-            ./build/build-image.sh /home/circleci/project $TEMP_ENV
+            ./build/build-image.sh /home/circleci/project $LOGICAL_ENV
       - run:
           name: Deploying Application.
           command: |
@@ -105,7 +105,7 @@ build_deploy_steps: &build_deploy_steps
             source awsenvconf
             source buildenvvar
             # ./master_deploy.sh -d EBS -e $DEPLOY_ENV -t "${LOGICAL_ENV}.${VER}"
-            ./master_deploy.sh -d ECS -e $DEPLOY_ENV -t "${TEMP_ENV}.${VER}" -s ${LOGICAL_ENV}_identity_ecs_appvar -i ap-identity-microservice
+            ./master_deploy.sh -d ECS -e $DEPLOY_ENV -t "${LOGICAL_ENV}.${VER}" -s ${LOGICAL_ENV}_identity_ecs_appvar -i ap-identity-microservice
 
 
 jobs:
@@ -114,7 +114,7 @@ jobs:
     <<: *defaults
     environment:
       DEPLOY_ENV: "DEV"
-      LOGICAL_ENV: "dev"
+      LOGICAL_ENV: "dev-pg"
     steps: *build_deploy_steps
     
   "build-dev-pg":
@@ -143,13 +143,7 @@ workflows:
           context : org-global
           filters:
             branches:
-              only: [dev, test]
-      - "build-dev-pg":
-          context : org-global
-          filters:
-            branches:
-              only: [dev-pg]
-              
+              only: [dev, test,dev-pg]              
       # Production build is executed on "master" branch only.
       - "build-prod":
           context : org-global
