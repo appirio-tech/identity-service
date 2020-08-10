@@ -8,7 +8,7 @@ import org.skife.jdbi.v2.sqlobject.stringtemplate.UseStringTemplate3StatementLoc
 public abstract class SequenceDAO {
 
 	@SqlQuery(
-			"SELECT <sequenceName>.nextval AS nextVal FROM systables WHERE tabid = 1"
+			"SELECT nextval('common_oltp.<sequenceName>'::regclass)"
 		)
 	public abstract Long nextVal(@Define("sequenceName") String sequenceName);
 }

@@ -21,30 +21,30 @@ public abstract class EmailDAO implements Transactional<EmailDAO> {
 
 	@RegisterMapperFactory(TCBeanMapperFactory.class)
 	@SqlQuery(
-		"SELECT " + EMAIL_COLUMNS + " FROM email e WHERE user_id = :userId and email_type_id = :typeId"
+		"SELECT " + EMAIL_COLUMNS + " FROM common_oltp.email e WHERE user_id = :userId and email_type_id = :typeId"
 	)
 	protected abstract Email findEmail(@Bind("userId") long userId, @Bind("typeId") int typeId);
 	
 	@SqlQuery(
-		"SELECT COUNT(user_id) FROM email WHERE LOWER(address)=LOWER(:email)"
+		"SELECT COUNT(user_id) FROM common_oltp.email WHERE LOWER(address)=LOWER(:email)"
 	)
 	protected abstract int countEmail(@Bind("email") String email);
 
 	@SqlUpdate(
-		"INSERT INTO email " +
+		"INSERT INTO common_oltp.email " +
 		"(user_id, email_id, email_type_id, address, primary_ind, status_id) VALUES " +
 		"(:userId, :emailId, 1, :email, 1, :statusId)")
 	protected abstract int createEmail(@Bind("userId") long userId, @Bind("emailId") long emailId, @Bind("email") String email, @Bind("statusId") int statusId);
 
 	@SqlUpdate(
-		"UPDATE email SET " +
-		"email_type_id = :e.typeId, address = :e.address, primary_ind = DECODE(:e.typeId, 1, 1, 0) " +
+		"UPDATE common_oltp.email SET " +
+		"email_type_id = :e.typeId, address = :e.address, primary_ind = (CASE WHEN :e.typeId = 1 THEN 1 ELSE 0 END) " +
 		"WHERE email_id = :e.id"
 	)
 	protected abstract int updateEmail(@BindBean("e") Email email); 
 	
 	@SqlUpdate(
-		"UPDATE email SET status_id = 1 WHERE user_id = :userId AND email_type_id = 1"
+		"UPDATE common_oltp.email SET status_id = 1 WHERE user_id = :userId AND email_type_id = 1"
 	)
 	protected abstract int activateEmail(@Bind("userId") long userId);
 

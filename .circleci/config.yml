@@ -14,7 +14,7 @@ install_dependency: &install_dependency
 install_deploysuite_latest: &install_deploysuite_latest
           name: Installation of install_deploysuite.
           command: |
-            git clone --branch v1.4.1 https://github.com/topcoder-platform/tc-deploy-scripts ../buildscript
+            git clone --branch master https://github.com/topcoder-platform/tc-deploy-scripts ../buildscript
             cp ./../buildscript/master_deploy.sh .
             cp ./../buildscript/buildenv.sh .
             cp ./../buildscript/awsconfiguration.sh .
@@ -114,8 +114,16 @@ jobs:
     <<: *defaults
     environment:
       DEPLOY_ENV: "DEV"
-      LOGICAL_ENV: "dev"
+      LOGICAL_ENV: "dev-pg"
     steps: *build_deploy_steps
+    
+  "build-dev-pg":
+    <<: *defaults
+    environment:
+      DEPLOY_ENV: "DEV"
+      LOGICAL_ENV: "test-pg"
+      TEMP_ENV: "dev"
+    steps: *build_deploy_steps  
 
   # Build & Deploy against development backend
   "build-prod":
@@ -135,8 +143,7 @@ workflows:
           context : org-global
           filters:
             branches:
-              only: [dev, test]
-
+              only: [dev, test,dev-pg]              
       # Production build is executed on "master" branch only.
       - "build-prod":
           context : org-global
