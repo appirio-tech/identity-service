@@ -788,30 +788,20 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         
         User dbUser = null;
         if(dbUser==null && user.getEmail()!=null) {
-            logger.debug(String.format("findUserByEmail(%s)", user.getEmail()));
+            logger.debug(String.format("Auth0: findUserByEmail(%s)", user.getEmail()));
             dbUser = this.userDao.findUserByEmail(user.getEmail());
         }
+
         if(dbUser==null) {
               throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
         }
-        String tokenCacheKey = getCacheKeyForResetToken(dbUser);
-        String cachedToken = this.cacheService.get(tokenCacheKey);
-        logger.debug(String.format("cache[%s]: %s", tokenCacheKey, cachedToken));
-        if(cachedToken==null) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, MSG_TEMPLATE_EXPIRED_RESET_TOKEN);
-        }
-        if(!cachedToken.equals(user.getCredential().getResetToken())) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, MSG_TEMPLATE_INVALID_RESET_TOKEN);
-        }
+
         if(dbUser.getCredential()==null)
             dbUser.setCredential(new Credential());
         dbUser.getCredential().setPassword(user.getCredential().getPassword());
           
-        logger.debug(String.format("updating password for user: %s", dbUser.getHandle()));
+        logger.debug(String.format("Auth0: updating password for user: %s", dbUser.getHandle()));
         userDao.updatePassword(dbUser);
-          
-        logger.debug(String.format("cache[%s] -> deleted", tokenCacheKey));
-        this.cacheService.delete(tokenCacheKey);
           
         return ApiResponseFactory.createResponse(dbUser);
     }
