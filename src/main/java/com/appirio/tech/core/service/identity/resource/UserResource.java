@@ -803,7 +803,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         logger.debug(String.format("Auth0: updating password for user: %s", dbUser.getHandle()));
         userDao.updatePassword(dbUser);
           
-        return ApiResponseFactory.createResponse(dbUser);
+        return ApiResponseFactory.createResponse("password updated successfully.");
     }
   
     /**
