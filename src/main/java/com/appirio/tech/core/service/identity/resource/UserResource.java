@@ -750,7 +750,72 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
         return ApiResponseFactory.createResponse(user);
     }
- 
+   
+    /**
+     * API to change password for a user (by email)
+     * This is supposed to be called from Auth0 custom connection.
+     * @param email
+     * @param password
+     * @param request
+     * @return
+     * @throws Exception
+     */
+      @POST
+      @Path("/changePassword")
+      @Timed
+      public ApiResponse changePassword(
+            @FormParam("email") String email,
+            @FormParam("password") String password,
+            @Context HttpServletRequest request) throws Exception {
+          
+        logger.info("auth0 change password request");
+         
+        if(Utils.isEmpty(email))
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "email"));
+
+        User user = userDao.findUserByEmail(email);
+        user.setCredential(new Credential());
+		user.getCredential().setPassword(password);
+
+        if(user==null) {
+            throw new APIRuntimeException(SC_UNAUTHORIZED, "Credentials are incorrect.");
+        }
+
+        String error = user.validatePassoword();
+        if (error != null) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, error);
+        }
+        
+        User dbUser = null;
+        if(dbUser==null && user.getEmail()!=null) {
+            logger.debug(String.format("findUserByEmail(%s)", user.getEmail()));
+            dbUser = this.userDao.findUserByEmail(user.getEmail());
+        }
+        if(dbUser==null) {
+              throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
+        }
+        String tokenCacheKey = getCacheKeyForResetToken(dbUser);
+        String cachedToken = this.cacheService.get(tokenCacheKey);
+        logger.debug(String.format("cache[%s]: %s", tokenCacheKey, cachedToken));
+        if(cachedToken==null) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, MSG_TEMPLATE_EXPIRED_RESET_TOKEN);
+        }
+        if(!cachedToken.equals(user.getCredential().getResetToken())) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, MSG_TEMPLATE_INVALID_RESET_TOKEN);
+        }
+        if(dbUser.getCredential()==null)
+            dbUser.setCredential(new Credential());
+        dbUser.getCredential().setPassword(user.getCredential().getPassword());
+          
+        logger.debug(String.format("updating password for user: %s", dbUser.getHandle()));
+        userDao.updatePassword(dbUser);
+          
+        logger.debug(String.format("cache[%s] -> deleted", tokenCacheKey));
+        this.cacheService.delete(tokenCacheKey);
+          
+        return ApiResponseFactory.createResponse(dbUser);
+    }
+  
     /**
      * API to authenticate users with email and password.
      * This is supposed to be called from Auth0 custom connection.
@@ -768,7 +833,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             @FormParam("handleOrEmail") String handleOrEmail,
             @FormParam("password") String password,
             @Context HttpServletRequest request) {
-        
+
         logger.info(String.format("login(%s, [PASSWORD])", handleOrEmail));
         if(Utils.isEmpty(handleOrEmail))
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Handle or Email"));
@@ -777,7 +842,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
         logger.debug(String.format("authenticating user by '%s'", handleOrEmail));
         User user = userDao.authenticate(handleOrEmail, password);
-        
+
         if (user != null && user.getId() != null) {
             List<Role> roles = roleDao.getRolesBySubjectId(Long.parseLong(user.getId().getId()));
             user.setRoles(roles);
