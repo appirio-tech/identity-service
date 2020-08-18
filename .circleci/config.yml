@@ -131,7 +131,8 @@ jobs:
     <<: *defaults
     environment:
       DEPLOY_ENV: "PROD"
-      LOGICAL_ENV: "prod"
+      LOGICAL_ENV: "prod_pg"
+      PLATFORM_ENV: "prod"
     steps: *build_deploy_steps
 
 
