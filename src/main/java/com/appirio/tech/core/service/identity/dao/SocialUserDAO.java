@@ -28,7 +28,7 @@ public abstract class SocialUserDAO implements Transactional<SocialUserDAO> {
 					"social_email AS email, " +
 					"social_email_verified AS isEmailVerified, " + 
 					"social_user_id AS userId " +
-			"FROM user_social_login " +
+			"FROM common_oltp.user_social_login " +
 			"WHERE user_id = :userId"
 	)
 	abstract List<UserProfile> findProfilesByUserId(@Bind("userId") Long userId);
@@ -42,33 +42,33 @@ public abstract class SocialUserDAO implements Transactional<SocialUserDAO> {
 					"social_email AS email, " +
 					"social_email_verified AS isEmailVerified, " + 
 					"social_user_id AS userId " +
-			"FROM user_social_login " +
+			"FROM common_oltp.user_social_login " +
 			"WHERE user_id = :userId " +
 			"AND social_login_provider_id = :providerTypeId"
 	)
 	abstract List<UserProfile> findProfilesByUserIdAndProvider(@Bind("userId") Long userId,  @Bind("providerTypeId") int providerTypeId);
 	
 	@SqlQuery(
-			"SELECT user_id FROM user_social_login " +
+			"SELECT user_id FROM common_oltp.user_social_login " +
 			"WHERE social_user_id = :socialId AND social_login_provider_id = :providerTypeId"
 	)
 	abstract Long getUserIdBySocialId(@Bind("socialId") String socialId, @Bind("providerTypeId") int providerTypeId);
 
 	@SqlQuery(
-			"SELECT user_id FROM user_social_login " +
+			"SELECT user_id FROM common_oltp.user_social_login " +
 			"WHERE social_email = :socialEmail AND social_login_provider_id = :providerTypeId AND social_email_verified = :emailVarified"
 	)
 	abstract Long getUserIdBySocialEmail(@Bind("socialEmail") String socialEmail, @Bind("emailVarified") boolean emailVarified, @Bind("providerTypeId") int providerTypeId);
 
 	
 	@SqlQuery(
-			"SELECT user_id FROM user_social_login " + 
+			"SELECT user_id FROM common_oltp.user_social_login " +
 			"WHERE social_user_name = :socialName AND social_login_provider_id = :providerTypeId"
 	)
 	abstract Long getUserIdBySocialName(@Bind("socialName") String socialName, @Bind("providerTypeId") int providerTypeId);
 
 	@SqlUpdate(
-			"INSERT INTO user_social_login(" +
+			"INSERT INTO common_oltp.user_social_login(" +
 					"user_id," + 
 					"social_login_provider_id," +
 					"social_user_name," +
@@ -86,11 +86,11 @@ public abstract class SocialUserDAO implements Transactional<SocialUserDAO> {
 	public abstract int createSocialUser(@Bind("userId") Long userId, @BindBean("p") UserProfile profile);
 	
 	@SqlUpdate(
-			"UPDATE user_social_login set social_user_id = :socialId WHERE user_id = :userId")
+			"UPDATE common_oltp.user_social_login set social_user_id = :socialId WHERE user_id = :userId")
 	abstract int updateSocialId(@Bind("socialId") String socialId, @Bind("userId") Long userId);
 	
 	@SqlUpdate(
-			"DELETE FROM user_social_login WHERE user_id = :userId AND social_login_provider_id = :providerTypeId")
+			"DELETE FROM common_oltp.user_social_login WHERE user_id = :userId AND social_login_provider_id = :providerTypeId")
 	abstract int deleteSocialUser(@Bind("userId") Long userId, @Bind("providerTypeId") int providerTypeId);
 
 	

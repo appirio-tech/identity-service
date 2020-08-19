@@ -14,7 +14,7 @@ install_dependency: &install_dependency
 install_deploysuite_latest: &install_deploysuite_latest
           name: Installation of install_deploysuite.
           command: |
-            git clone --branch v1.4.1 https://github.com/topcoder-platform/tc-deploy-scripts ../buildscript
+            git clone --branch master https://github.com/topcoder-platform/tc-deploy-scripts ../buildscript
             cp ./../buildscript/master_deploy.sh .
             cp ./../buildscript/buildenv.sh .
             cp ./../buildscript/awsconfiguration.sh .
@@ -97,15 +97,15 @@ build_deploy_steps: &build_deploy_steps
           name: Build Image
           command: |
             echo "Building image"
-            ./build/build-image.sh /home/circleci/project $LOGICAL_ENV
+            ./build/build-image.sh /home/circleci/project $PLATFORM_ENV
       - run:
           name: Deploying Application.
           command: |
             pwd
             source awsenvconf
             source buildenvvar
-            # ./master_deploy.sh -d EBS -e $DEPLOY_ENV -t "${LOGICAL_ENV}.${VER}"
-            ./master_deploy.sh -d ECS -e $DEPLOY_ENV -t "${LOGICAL_ENV}.${VER}" -s ${LOGICAL_ENV}_identity_ecs_appvar -i ap-identity-microservice
+            # ./master_deploy.sh -d EBS -e $DEPLOY_ENV -t "${PLATFORM_ENV}.${VER}"
+            ./master_deploy.sh -d ECS -e $DEPLOY_ENV -t "${PLATFORM_ENV}.${VER}" -s ${LOGICAL_ENV}_identity_ecs_appvar -i ap-identity-microservice
 
 
 jobs:
@@ -114,15 +114,25 @@ jobs:
     <<: *defaults
     environment:
       DEPLOY_ENV: "DEV"
-      LOGICAL_ENV: "dev"
+      LOGICAL_ENV: "dev-pg"
+      PLATFORM_ENV: "dev"
     steps: *build_deploy_steps
+    
+  "build-dev-pg":
+    <<: *defaults
+    environment:
+      DEPLOY_ENV: "DEV"
+      LOGICAL_ENV: "test-pg"
+      TEMP_ENV: "dev"
+    steps: *build_deploy_steps  
 
   # Build & Deploy against development backend
   "build-prod":
     <<: *defaults
     environment:
       DEPLOY_ENV: "PROD"
-      LOGICAL_ENV: "prod"
+      LOGICAL_ENV: "prod_pg"
+      PLATFORM_ENV: "prod"
     steps: *build_deploy_steps
 
 
@@ -135,8 +145,7 @@ workflows:
           context : org-global
           filters:
             branches:
-              only: [dev, test]
-
+              only: [dev, test,dev-pg]              
       # Production build is executed on "master" branch only.
       - "build-prod":
           context : org-global

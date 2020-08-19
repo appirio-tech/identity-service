@@ -168,9 +168,9 @@
       <version>3.2.1</version>
     </dependency>
     <dependency>
-        <groupId>com.informix.jdbc</groupId>
-        <artifactId>com.springsource.com.informix.jdbc</artifactId>
-        <version>3.0.0.JC3</version>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>42.2.8</version>
     </dependency>
     <dependency>
         <groupId>redis.clients</groupId>

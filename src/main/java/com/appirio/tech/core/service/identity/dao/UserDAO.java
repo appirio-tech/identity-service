@@ -97,9 +97,9 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
     @SqlQuery(
             "SELECT " + USER_COLUMNS + ", " +
             "s.password AS credential$encodedPassword, e.address AS email, e.status_id AS emailStatus " +
-            "FROM user AS u " +
-            "LEFT OUTER JOIN email AS e ON u.user_id = e.user_id AND e.email_type_id = 1 AND e.primary_ind = 1 " +
-            "LEFT OUTER JOIN security_user AS s ON u.user_id = s.login_id " +
+            "FROM common_oltp.user AS u " +
+            "LEFT OUTER JOIN common_oltp.email AS e ON u.user_id = e.user_id AND e.email_type_id = 1 AND e.primary_ind = 1 " +
+            "LEFT OUTER JOIN common_oltp.security_user AS s ON u.user_id = s.login_id " +
             "WHERE u.user_id = :id"
     )
     public abstract User findUserById(@Bind("id") long id);
@@ -108,8 +108,8 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
     @SqlQuery(
             "SELECT " + USER_COLUMNS + ", " +
             "e.address AS email, e.status_id AS emailStatus " +
-            "FROM user AS u " +
-            "LEFT OUTER JOIN email AS e ON u.user_id = e.user_id AND e.email_type_id = 1 " +
+            "FROM common_oltp.user AS u " +
+            "LEFT OUTER JOIN common_oltp.email AS e ON u.user_id = e.user_id AND e.email_type_id = 1 " +
             "WHERE u.handle_lower = LOWER(:handle)"
     )
     public abstract User findUserByHandle(@Bind("handle") String handle);
@@ -118,19 +118,20 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
     @SqlQuery(
             "SELECT " + USER_COLUMNS + ", " +
             "e.address AS email, e.status_id AS emailStatus " +
-            "FROM user AS u JOIN email AS e ON e.user_id = u.user_id " +
+            "FROM common_oltp.user AS u JOIN common_oltp.email AS e ON e.user_id = u.user_id " +
             "WHERE LOWER(e.address) = LOWER(:email)"
     )
     public abstract List<User> findUsersByEmail(@Bind("email") String email);
 
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
-            "SELECT <offset> <limit> " + USER_COLUMNS + ", " +
+            "SELECT " + USER_COLUMNS + ", " +
             "e.address AS email, e.status_id AS emailStatus " +
-            "FROM user AS u " +
-            "<joinOnEmail> email AS e ON u.user_id = e.user_id AND e.primary_ind = 1 " +
+            "FROM common_oltp.user AS u " +
+            "<joinOnEmail> common_oltp.email AS e ON u.user_id = e.user_id AND e.primary_ind = 1 " +
             "<condition> " +
-            "<order>"
+            "<order> " +
+            "<offset> <limit>"
     )
     protected abstract List<User> findUsers(@BindBean("u") User user, @Define("joinOnEmail") String joinOnEmail, @Define("condition") String condition, @Define("order") String order, @Define("offset") String offset, @Define("limit") String limit);
     
@@ -140,28 +141,28 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
     
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
-            "SELECT " + COUNTRY_COLUMNS + " FROM 'informix'.country " + 
+            "SELECT " + COUNTRY_COLUMNS + " FROM common_oltp.country " +
             "WHERE LOWER(country_name) = lower(:name) OR LOWER(iso_name) = lower(:name)"
     )
     public abstract Country findCountryByName(@Bind("name") String countryName);
 
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
-            "SELECT " + COUNTRY_COLUMNS + " FROM 'informix'.country " + 
+            "SELECT " + COUNTRY_COLUMNS + " FROM common_oltp.country " +
             "WHERE country_code = :code"
     )
     public abstract Country findCountryByCode(@Bind("code") String countryCode);
 
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
-            "SELECT " + COUNTRY_COLUMNS + " FROM 'informix'.country " + 
+            "SELECT " + COUNTRY_COLUMNS + " FROM common_oltp.country " +
             "WHERE iso_alpha3_code = :code"
     )
     public abstract Country findCountryByISOAlpha3Code(@Bind("code") String isoAlpha3Code);
 
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
-            "SELECT " + COUNTRY_COLUMNS + " FROM 'informix'.country " + 
+            "SELECT " + COUNTRY_COLUMNS + " FROM common_oltp.country " +
             "WHERE iso_alpha2_code = :code"
     )
     public abstract Country findCountryByISOAlpha2Code(@Bind("code") String isoAlpha2Code);
@@ -169,15 +170,15 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
             "SELECT " + COUNTRY_COLUMNS + " " + 
-            "FROM 'informix'.country AS c" +
-            "JOIN 'informixoltp'\\:coder AS u ON u.comp_country_code = c.country_code " +
+            "FROM common_oltp.country AS c" +
+            "JOIN informixoltp.coder AS u ON u.comp_country_code = c.country_code " +
             "WHERE u.coder_id = :coderId"
     )
     public abstract Country findCountryByCoderId(@Bind("coderId") long coderId);
     
     @SqlQuery(
             "SELECT count(*) AS count " +
-            "FROM 'informix'.invalid_handles " +
+            "FROM common_oltp.invalid_handles " +
             "WHERE invalid_handle = LOWER(:handle)"
     )
     abstract int checkInvalidHandle(@Bind("handle") String handle);
@@ -187,21 +188,21 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
             "SELECT " +
             "a.description AS description, a.achievement_type_id AS typeId, t.achievement_type_desc AS type, " +
             "a.achievement_date AS achievementDate, a.create_date AS createdAt " +
-            "FROM user_achievement AS a " +
-            "LEFT OUTER JOIN achievement_type_lu AS t ON a.achievement_type_id = t.achievement_type_id " +
+            "FROM common_oltp.user_achievement AS a " +
+            "LEFT OUTER JOIN common_oltp.achievement_type_lu AS t ON a.achievement_type_id = t.achievement_type_id " +
             "WHERE a.user_id = :userId " +
             "ORDER BY a.create_date DESC"
     )
     public abstract List<Achievement> findAchievements(@Bind("userId") long userId);
     
     @SqlUpdate(
-            "INSERT INTO user " +
+            "INSERT INTO common_oltp.user " +
             "(user_id, first_name, last_name, handle, status, activation_code, reg_source, utm_source, utm_medium, utm_campaign) VALUES " +
             "(:u.id, :u.firstName, :u.lastName, :u.handle, :u.status, :activationCode, :u.regSource, :u.utmSource, :u.utmMedium, :u.utmCampaign)")
     abstract int createUser(@BindBean("u") User user, @Bind("activationCode") String activationCode);
 
     @SqlUpdate(
-            "UPDATE user SET " +
+            "UPDATE common_oltp.user SET " +
             "first_name=:u.firstName, last_name=:u.lastName, " +
             "reg_source=:u.regSource, utm_source=:u.utmSource, " +
             "utm_medium=:u.utmMedium, utm_campaign=:u.utmCampaign " +
@@ -210,37 +211,37 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
 
     
     @SqlUpdate(
-            "INSERT INTO security_user" +
+            "INSERT INTO common_oltp.security_user" +
             "(login_id, user_id, password) VALUES " +
             "(:loginId, :userId, :encodedPassword)")
     abstract int createSecurityUser(@Bind("loginId") long userId, @Bind("userId") String handle, @Bind("encodedPassword") String encodedPassword);
 
     @SqlUpdate(
-            "INSERT INTO 'informixoltp'\\:coder" +
+            "INSERT INTO informixoltp.coder" +
             "(coder_id, quote, coder_type_id, comp_country_code, display_quote, quote_location, quote_color, display_banner, banner_style) VALUES " +
             "(:coderId, '', 2, :countryCode,  1, 'md', '#000000', 1, 'bannerStyle4')")
     abstract int createCoder(@Bind("coderId") long coderId, @Bind("countryCode") String countryCode);
 
     @SqlUpdate(
-            "INSERT INTO 'informixoltp'\\:algo_rating " +
+            "INSERT INTO informixoltp.algo_rating " +
             "(coder_id, rating, vol, round_id, num_ratings, algo_rating_type_id, modify_date) VALUES " +
-            "(:userId, 0, 0, 0, 0, 1, CURRENT)"
+            "(:userId, 0, 0, 0, 0, 1, current_timestamp)"
             )
     abstract int cretateAlgoRating(@Bind("userId") long userId);
 
     @SqlUpdate(
-            "INSERT INTO user_group_xref " +
+            "INSERT INTO common_oltp.user_group_xref " +
             "(user_group_id, login_id, group_id, create_user_id, security_status_id) VALUES " +
             "(:userGroupId, :userId, :groupId, 1, 1)"
             )
     abstract int cretateUserGroupReference(@Bind("userGroupId") long userGroupId, @Bind("userId") long userId, @Bind("groupId") long groupId);
 
     @SqlUpdate(
-            "UPDATE user SET handle = :handle WHERE user_id = :userId")
+            "UPDATE common_oltp.user SET handle = :handle WHERE user_id = :userId")
     abstract int updateHandle(@Bind("userId") long userId, @Bind("handle") String handle);
 
     @SqlUpdate(
-            "UPDATE user SET status = :status WHERE user_id = :userId and status != \"6\"")
+            "UPDATE common_oltp.user SET status = :status WHERE user_id = :userId and status != '6'")
     abstract int updateStatus(@Bind("userId") long userId, @Bind("status") String status);
 
     protected int activateUser(long userId) {
@@ -248,28 +249,28 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
     }
     
     @SqlUpdate(
-            "INSERT INTO user_achievement " +
+            "INSERT INTO common_oltp.user_achievement " +
             "(user_id, achievement_date, achievement_type_id, description, create_date) VALUES " +
-            "(:userId, today, 2, :comment, current)")
+            "(:userId, current_date, 2, :comment, current_timestamp)")
     abstract int createUserAchievement(@Bind("userId") long userId, @Bind("comment") String comment);
 
 
     @SqlUpdate(
-            "UPDATE user set last_login = CURRENT WHERE user_id = :userId")
+            "UPDATE common_oltp.user set last_login = current_timestamp WHERE user_id = :userId")
     abstract int updateLastLogin(@Bind("userId") long userId);
 
     @SqlUpdate(
-            "UPDATE security_user SET password = :encodedPassword WHERE user_id = :handle")
+            "UPDATE common_oltp.security_user SET password = :encodedPassword WHERE user_id = :handle")
     abstract int updatePassword(@Bind("handle") String handle, @Bind("encodedPassword") String encodedPassword);
 
     @SqlUpdate(
-            "UPDATE security_user SET user_id = :userId WHERE login_id = :loginId")
+            "UPDATE common_oltp.security_user SET user_id = :userId WHERE login_id = :loginId")
     abstract int updateSecurityUserHandle(@Bind("loginId") long userId, @Bind("userId") String handle);
 
     @SqlUpdate(
-            "INSERT INTO 'informixoltp'\\:coder_referral " +
+            "INSERT INTO informixoltp.coder_referral " +
             "(coder_id, referral_id, reference_id, other) VALUES " +
-            "(:userId, 40, (SELECT user_id FROM user WHERE handle_lower = LOWER(:handle)), :handle)")
+            "(:userId, 40, (SELECT user_id FROM common_oltp.user WHERE handle_lower = LOWER(:handle)), :handle)")
     abstract int createReferral(@Bind("userId") long userId, @Bind("handle") String handle);
     
     @CreateSqlObject
@@ -1040,7 +1041,7 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
             throw new IllegalArgumentException("limit must be a positive integer. specified: "+ lim);
         
         return new StringBuilder()
-                .append("FIRST ")
+                .append("LIMIT ")
                 .append(lim).toString();
     }
 
@@ -1051,7 +1052,7 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
             throw new IllegalArgumentException("offset must be a positive integer or zero. specified: "+ limit.getOffset());
             
         return new StringBuilder()
-                .append("SKIP ")
+                .append("OFFSET ")
                 .append(limit.getOffset()).toString();
     }
     

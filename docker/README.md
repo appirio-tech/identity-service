@@ -98,7 +98,8 @@ Run Identity service with the following comamnd-line.
 Configure your IDE with the following information if you want to run/debug on it.
 
 - Main class: com.appirio.tech.core.service.identity.IdentityApplication
-- Arguments: server target/classes/config.yml
+-
+Arguments: server target/classes/config.yml
 - Environment variables:
     - DOCKER_IP=[YOUR DOCKER'S IP ADRESS]
     - ZOOKEEPER_HOSTS_LIST=[YOUR DOCKER'S IP ADRESS]:2181

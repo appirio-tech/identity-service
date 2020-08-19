@@ -28,7 +28,7 @@ public abstract class GroupInformixDAO implements Transactional<GroupInformixDAO
      * @return the int value
      */
     @RegisterMapperFactory(TCBeanMapperFactory.class)
-    @SqlUpdate("INSERT INTO security_groups ("
+    @SqlUpdate("INSERT INTO common_oltp.security_groups ("
             + "group_id, description, create_user_id"
             + ") VALUES ("
             + ":g.id, :g.name, :g.createUserId)")
@@ -44,7 +44,7 @@ public abstract class GroupInformixDAO implements Transactional<GroupInformixDAO
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
             "SELECT group_id as id, description as name, create_user_id as createUserId " +
-            "FROM security_groups WHERE description = :name"
+            "FROM common_oltp.security_groups WHERE description = :name"
     )
     public abstract SecurityGroup findGroupByName(@Bind("name") String name);
     
@@ -57,7 +57,7 @@ public abstract class GroupInformixDAO implements Transactional<GroupInformixDAO
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
             "SELECT group_id as id, description as name, create_user_id as createUserId " +
-            "FROM security_groups WHERE group_id = :id"
+            "FROM common_oltp.security_groups WHERE group_id = :id"
     )
     public abstract SecurityGroup findGroupById(@Bind("id") long id);
 }
