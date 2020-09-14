@@ -790,6 +790,61 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         return ApiResponseFactory.createResponse(user);
     }
 
+    /**
+     * API to change password for a user (by email)
+     * This is supposed to be called from Auth0 custom connection.
+     * @param email
+     * @param password
+     * @param request
+     * @return
+     * @throws Exception
+     */
+    @POST
+    @Path("/changePassword")
+    @Timed
+    public ApiResponse changePassword(
+          @FormParam("email") String email,
+          @FormParam("password") String password,
+          @Context HttpServletRequest request) throws Exception {
+
+      logger.info("auth0 change password request");
+
+      if(Utils.isEmpty(email))
+          throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "email"));
+
+      User user = userDao.findUserByEmail(email);
+      user.setCredential(new Credential());
+      user.getCredential().setPassword(password);
+
+      if(user==null) {
+          throw new APIRuntimeException(SC_UNAUTHORIZED, "Credentials are incorrect.");
+      }
+
+      String error = user.validatePassoword();
+      if (error != null) {
+          throw new APIRuntimeException(SC_BAD_REQUEST, error);
+      }
+
+      User dbUser = null;
+      if(dbUser==null && user.getEmail()!=null) {
+          logger.debug(String.format("Auth0: findUserByEmail(%s)", user.getEmail()));
+          dbUser = this.userDao.findUserByEmail(user.getEmail());
+      }
+
+      if(dbUser==null) {
+            throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
+      }
+
+      if(dbUser.getCredential()==null)
+          dbUser.setCredential(new Credential());
+      dbUser.getCredential().setPassword(user.getCredential().getPassword());
+
+      logger.debug(String.format("Auth0: updating password for user: %s", dbUser.getHandle()));
+      userDao.updatePassword(dbUser);
+
+      return ApiResponseFactory.createResponse("password updated successfully.");
+   }
+
     //TODO: should be PATCH?
     @PUT
     @Path("/activate")
