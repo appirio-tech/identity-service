@@ -820,6 +820,11 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
           throw new APIRuntimeException(SC_UNAUTHORIZED, "Credentials are incorrect.");
       }
 
+      // SSO users can't reset their password.
+      List<UserProfile> ssoProfiles = userDao.getSSOProfiles(Utils.toLongValue(user.getId()));
+      if(ssoProfiles!=null && ssoProfiles.size()>0)
+          throw new APIRuntimeException(HttpURLConnection.HTTP_FORBIDDEN, MSG_TEMPLATE_NOT_ALLOWED_TO_RESET_PASSWORD);
+
       String error = user.validatePassoword();
       if (error != null) {
           throw new APIRuntimeException(SC_BAD_REQUEST, error);
