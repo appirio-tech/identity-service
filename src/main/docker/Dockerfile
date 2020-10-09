@@ -1,4 +1,4 @@
-FROM appiriodevops/ap-microservice-base:0.0.1
+FROM appiriodevops/ap-microservice-base:0.0.2
 
 MAINTAINER devops@appirio.com
 
