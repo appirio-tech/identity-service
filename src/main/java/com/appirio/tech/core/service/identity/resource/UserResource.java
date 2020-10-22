@@ -767,12 +767,18 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     @Timed
     public ApiResponse roles(
             @FormParam("email") String email,
+            @FormParam("handle") String handle,
             @Context HttpServletRequest request) throws Exception {
 
-        if(Utils.isEmpty(email))
-            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "email"));
+        if(Utils.isEmpty(email) &&  Utils.isEmpty(handle))
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "email/handle"));
 
-        User user = userDao.findUserByEmail(email);
+        User user = null;
+        if (!Utils.isEmpty(handle)) {
+            user = userDao.findUserByHandle(handle);
+        } else{
+            user = userDao.findUserByEmail(email);
+        }
 
         if(user==null) {
             throw new APIRuntimeException(SC_UNAUTHORIZED, "Credentials are incorrect.");
