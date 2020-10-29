@@ -418,6 +418,81 @@ public class AuthorizationResource implements GetResource<Authorization> {
         return ApiResponseFactory.createResponse(auth);
     }
 
+    /**
+     * Update the access token for the user.
+     *
+     * @param postRequest the postRequest to use
+     * @param request the request to use
+     * @param response the response to use
+     * @throws Exception if any error occurs
+     * @return the ApiResponse result
+     */
+    @POST
+    @Path("/arenaauth")
+    @Timed
+    public ApiResponse createObject(
+            @Valid PostPutRequest<Authorization> postRequest,
+            @Context HttpServletRequest request,
+            @Context HttpServletResponse response) throws Exception {
+        
+        Authorization auth = postRequest != null ? postRequest.getParam() : null;
+        boolean isRs256Token = false;
+        if (auth == null) {
+            // Creating Authorization with Auth0 access token
+            String authCode = HttpUtil.getAuthorizationParam("Auth0Code", request);
+            if (authCode == null || authCode.length() == 0) {
+                throw new APIRuntimeException(HttpServletResponse.SC_BAD_REQUEST, "Bad Request");
+            }
+            auth = createAuthorization(authCode, request);
+        } else {
+            // Creating Authorization with Auth0 JWT token
+            if (auth.getExternalToken() == null || auth.getExternalToken().length() == 0) {
+                throw new APIRuntimeException(HttpServletResponse.SC_BAD_REQUEST,
+                        "The external token should be non-null and non-empty.");
+            }
+            
+            if (auth.getId() == null) {
+                auth.setId(new TCID(auth.hashCode()));
+            }
+            
+            // the external token might be expired, hence, decode it and get the algorithm name from the header
+            Map<String, Object> header = Utils.parseJWTHeader(auth.getExternalToken());
+            if ("RS256".equals(header.get("alg"))) {
+                isRs256Token = true;
+                
+                String refreshToken = auth.getRefreshToken();
+                Auth0Credential cred = this.auth0New.refreshToken(refreshToken);
+                this.cacheService.delete(auth.getExternalToken());
+                this.cacheService.put(cred.getAccessToken(), refreshToken);
+                auth.setToken(cred.getAccessToken());
+                
+            } else {
+                auth.setToken(createJWTToken(auth.getExternalToken()));
+            }
+            auth.setTarget("1");
+        }
+        
+        // Zendesk
+        addZendeskInfo(auth);
+        
+        // Last Login Date
+        updateLastLoginDate(auth);
+        
+        // Creating cookies (tcjwt, tcsso) for compatibility
+        if (response != null) {
+            processArenaTCCookies(auth, request, response, isRs256Token);
+        }
+        
+        // Saving authorization
+        if(getAuthDataStore()==null) {
+            throw new IllegalStateException("authDataStore is not specified.");
+        }
+            
+        getAuthDataStore().put(auth);
+        
+        return ApiResponseFactory.createResponse(auth);
+    }
+
     protected void addZendeskInfo(Authorization auth) {
         if(auth==null)
             return;
@@ -921,6 +996,36 @@ public class AuthorizationResource implements GetResource<Authorization> {
         if (auth != null && auth.getToken() != null) {
             Long userId = extractUserId(auth);
             Cookie tcsso = createCookie("tcsso", userDao.generateSSOToken(userId), maxAge);
+            response.addCookie(tcsso);
+        }
+    }
+
+    /**
+     * Process arena tc cookies
+     *
+     * @param auth the auth to use
+     * @param request the request to use
+     * @param response the response to use
+     * @param isRs256Token the isRs256Token indicates the token in the auth is a RS256 token
+     * @throws Exception if any error occurs
+     */
+    protected void processArenaTCCookies(Authorization auth, HttpServletRequest request, HttpServletResponse response, boolean isRs256Token) throws Exception {
+        if (response == null) {
+            throw new IllegalArgumentException("response must be specified.");
+        }
+
+        Integer maxAge = this.cookieExpirySeconds;
+        
+        boolean rememberMe = request!=null ? getRememberMe(request) : false;
+        if(rememberMe) {
+            maxAge = MAX_COOKIE_EXPIRY_SECONDS;
+        }
+        Cookie tcjwt = createCookie("arenajwttc", isRs256Token ? auth.getToken() : auth.getExternalToken(), maxAge);
+        response.addCookie(tcjwt);
+        
+        if (auth != null && auth.getToken() != null) {
+            Long userId = extractUserId(auth);
+            Cookie tcsso = createCookie("arenasso", userDao.generateSSOToken(userId), maxAge);
             response.addCookie(tcsso);
         }
     }
