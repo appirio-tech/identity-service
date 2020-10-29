@@ -430,7 +430,7 @@ public class AuthorizationResource implements GetResource<Authorization> {
     @POST
     @Path("/arenaauth")
     @Timed
-    public ApiResponse createObject(
+    public ApiResponse createArenaAuthObject(
             @Valid PostPutRequest<Authorization> postRequest,
             @Context HttpServletRequest request,
             @Context HttpServletResponse response) throws Exception {
