@@ -76,10 +76,14 @@ public class UserTest {
 
 		User testee = new User();
 		
-		// First Name
-		assertNull("First name should not be mandatory", testee.validateFirstName());
-		testee.setFirstName("");
-		assertNull("First name should not be mandatory", testee.validateFirstName());
+		// First Name Mandatory
+		assertEquals(
+				String.format(MSG_TEMPLATE_MANDATORY, "First name"),
+				testee.validateHandle());
+		testee.setHandle("");
+		assertEquals(
+				String.format(MSG_TEMPLATE_MANDATORY, "First name"),
+				testee.validateHandle());
 
 		testee.setFirstName(genText(MAX_LENGTH_FIRST_NAME));
 		assertNull("First name should receive "+MAX_LENGTH_FIRST_NAME+" length string.",
@@ -91,10 +95,14 @@ public class UserTest {
 				testee.validateFirstName());
 		
 		
-		// Last Name
-		assertNull("Last name should not be mandatory", testee.validateLastName());
-		testee.setLastName("");
-		assertNull("Last name should not be mandatory", testee.validateLastName());
+		// Last Name Mandatory
+		assertEquals(
+				String.format(MSG_TEMPLATE_MANDATORY, "Last name"),
+				testee.validateHandle());
+		testee.setHandle("");
+		assertEquals(
+				String.format(MSG_TEMPLATE_MANDATORY, "Last name"),
+				testee.validateHandle());
 
 		testee.setLastName(genText(MAX_LENGTH_LAST_NAME));
 		assertNull("Last name should receive "+MAX_LENGTH_LAST_NAME+" length string.",
