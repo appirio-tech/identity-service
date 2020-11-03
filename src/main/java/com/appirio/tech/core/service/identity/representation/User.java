@@ -247,7 +247,7 @@ public class User extends AbstractIdResource {
 	public String validateFirstName() {
 		// Not mandatory
 		if (this.firstName==null || this.firstName.length()==0)
-			return null;
+			return String.format(MSG_TEMPLATE_MANDATORY, "First name");
 		// Range check
 		if (this.firstName.length() > MAX_LENGTH_FIRST_NAME) {
 			return String.format(MSG_TEMPLATE_INVALID_MAX_LENGTH, "first name", MAX_LENGTH_FIRST_NAME);
@@ -258,7 +258,7 @@ public class User extends AbstractIdResource {
 	public String validateLastName() {
 		// Not mandatory
 		if (this.lastName==null || this.lastName.length()==0)
-			return null;
+			return String.format(MSG_TEMPLATE_MANDATORY, "Last name");
 		// Range check
 		if (this.lastName.length() > MAX_LENGTH_LAST_NAME) {
 			return String.format(MSG_TEMPLATE_INVALID_MAX_LENGTH, "last name", MAX_LENGTH_LAST_NAME);
