@@ -127,6 +127,15 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
     @SqlQuery(
             "SELECT " + USER_COLUMNS + ", " +
             "e.address AS email, e.status_id AS emailStatus " +
+            "FROM common_oltp.user AS u JOIN common_oltp.email AS e ON e.user_id = u.user_id " +
+            "WHERE e.address = :email"
+    )
+    public abstract List<User> findUsersByEmailCS(@Bind("email") String email);
+
+    @RegisterMapperFactory(TCBeanMapperFactory.class)
+    @SqlQuery(
+            "SELECT " + USER_COLUMNS + ", " +
+            "e.address AS email, e.status_id AS emailStatus " +
             "FROM common_oltp.user AS u " +
             "<joinOnEmail> common_oltp.email AS e ON u.user_id = e.user_id AND e.primary_ind = 1 " +
             "<condition> " +
@@ -356,6 +365,23 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
         return users.get(0);
     }
     
+    /**
+     *
+     * @param email - case sensitive search
+     * @return an user object or null
+     */
+    public User findUserByEmailCS(String email) {
+        if(email==null || email.length()==0)
+            throw new IllegalArgumentException("email must be specified.");
+
+        List<User> users = findUsersByEmailCS(email);
+        if(users==null || users.size()==0)
+            return null;
+
+        // if found multiple, retuning first one
+        return users.get(0);
+    }
+
     @Transaction(TransactionIsolationLevel.READ_COMMITTED)
     public TCID register(User user) {
         if(user==null)
