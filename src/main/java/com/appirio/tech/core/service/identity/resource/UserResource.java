@@ -776,8 +776,9 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         User user = null;
         if (!Utils.isEmpty(handle)) {
             user = userDao.findUserByHandle(handle);
-        } else{
-            user = userDao.findUserByEmail(email);
+        } else {
+            // email address - case sensitive - for auth0 sepecific
+            user = userDao.findUserByEmailCS(email);
         }
 
         if(user==null) {
