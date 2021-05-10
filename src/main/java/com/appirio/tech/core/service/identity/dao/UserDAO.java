@@ -227,8 +227,8 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
 
     @SqlUpdate(
             "INSERT INTO informixoltp.coder" +
-            "(coder_id, quote, coder_type_id, comp_country_code, display_quote, quote_location, quote_color, display_banner, banner_style) VALUES " +
-            "(:coderId, '', 2, :countryCode,  1, 'md', '#000000', 1, 'bannerStyle4')")
+            "(coder_id, quote, coder_type_id, home_country_code, comp_country_code, display_quote, quote_location, quote_color, display_banner, banner_style) VALUES " +
+            "(:coderId, '', 2, :countryCode, :countryCode,  1, 'md', '#000000', 1, 'bannerStyle4')")
     abstract int createCoder(@Bind("coderId") long coderId, @Bind("countryCode") String countryCode);
 
     @SqlUpdate(
