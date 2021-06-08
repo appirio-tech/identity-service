@@ -893,7 +893,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         EventMessage msg = EventMessage.getDefault();
         msg.setTopic("identity.action.email.resend");
         msg.setPayload(user);
-        this.eventBusServiceClient.fireEvent(msg);
+        this.eventBusServiceClient.reFireEvent(msg);
 
         return ApiResponseFactory.createResponse(user);
     }
