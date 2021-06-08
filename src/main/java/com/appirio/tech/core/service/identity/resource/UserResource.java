@@ -890,7 +890,11 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         }
 
         //user.setRoles(roles);
-        publishEvent("identity.action.resend.email", user);
+        EventMessage msg = EventMessage.getDefault();
+        msg.setTopic("identity.action.email.resend");
+        msg.setPayload(user);
+        this.eventBusServiceClient.fireEvent(msg);
+
         return ApiResponseFactory.createResponse(user);
     }
 
