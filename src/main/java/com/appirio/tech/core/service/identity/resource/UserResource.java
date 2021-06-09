@@ -893,7 +893,23 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if(!user.isActive()) {
             EventMessage msg = EventMessage.getDefault();
             msg.setTopic("identity.action.email.resend");
-            msg.setPayload(user);
+
+            Map<String,Object> payload = new LinkedHashMap<Integer,Object>();
+
+            Map<String,Object> data = new LinkedHashMap<String,Object>();
+            data.put("handle", user.getHandle());
+            data.put("code", user.getCredential().getActivationCode());
+
+            payload.put("data", data);
+            payload.put("version", "v3");
+            payload.put("sendgrid_template_id", "ddd");
+
+            ArrayList<String> recipients = new ArrayList<String>();
+            recipients.add(user.getEmail());
+
+            payload.put("recipients", recipients);
+
+            msg.setPayload(payload);
             this.eventBusServiceClient.reFireEvent(msg);
         }
         return ApiResponseFactory.createResponse(user);
