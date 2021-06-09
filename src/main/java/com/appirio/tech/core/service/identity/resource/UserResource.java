@@ -896,7 +896,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             EventMessage msg = EventMessage.getDefault();
             msg.setTopic("identity.action.email.resend");
 
-            Map<String,Object> payload = new LinkedHashMap<Integer,Object>();
+            Map<String,Object> payload = new LinkedHashMap<String,Object>();
 
             Map<String,Object> data = new LinkedHashMap<String,Object>();
             data.put("handle", user.getHandle());
