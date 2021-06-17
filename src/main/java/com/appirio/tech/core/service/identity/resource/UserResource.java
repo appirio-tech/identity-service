@@ -102,6 +102,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     private int oneTimeTokenExpirySeconds = 10 * 60; //10min
 
     private String domain;
+
+    private String sendgridTemplateId;
     
     protected UserDAO userDao;
     
@@ -891,29 +893,32 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             throw new APIRuntimeException(SC_UNAUTHORIZED, "Credentials are incorrect.");
         }
 
-        //user.setRoles(roles);
-        if(!user.isActive()) {
-            EventMessage msg = EventMessage.getDefault();
-            msg.setTopic("identity.action.email.resend");
+        // return 400 if user has been activated
+        if(user.isActive())
+            throw new APIRuntimeException(SC_BAD_REQUEST, MSG_TEMPLATE_USER_ALREADY_ACTIVATED);
 
-            Map<String,Object> payload = new LinkedHashMap<String,Object>();
+        EventMessage msg = EventMessage.getDefault();
+        msg.setTopic("external.action.email");
 
-            Map<String,Object> data = new LinkedHashMap<String,Object>();
-            data.put("handle", user.getHandle());
-            data.put("code", user.getCredential().getActivationCode());
+        Map<String,Object> payload = new LinkedHashMap<String,Object>();
 
-            payload.put("data", data);
-            payload.put("version", "v3");
-            payload.put("sendgrid_template_id", "ddd");
+        Map<String,Object> data = new LinkedHashMap<String,Object>();
+        data.put("handle", user.getHandle());
+        data.put("code", user.getCredential().getActivationCode());
+        data.put("domain", getDomain());
 
-            ArrayList<String> recipients = new ArrayList<String>();
-            recipients.add(user.getEmail());
+        payload.put("data", data);
+        payload.put("version", "v3");
+        payload.put("sendgrid_template_id", this.getSendgridTemplateId());
 
-            payload.put("recipients", recipients);
+        ArrayList<String> recipients = new ArrayList<String>();
+        recipients.add(user.getEmail());
 
-            msg.setPayload(payload);
-            this.eventBusServiceClient.reFireEvent(msg);
-        }
+        payload.put("recipients", recipients);
+
+        msg.setPayload(payload);
+        this.eventBusServiceClient.reFireEvent(msg);
+
         return ApiResponseFactory.createResponse(user);
     }
 
@@ -1719,6 +1724,14 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
     public void setDomain(String domain) {
         this.domain = domain;
+    }
+
+    public String getSendgridTemplateId() {
+        return sendgridTemplateId;
+    }
+
+    public void setSendgridTemplateId(String sendgridTemplateId) {
+        this.sendgridTemplateId = sendgridTemplateId;
     }
 
     public String getSecret() {
