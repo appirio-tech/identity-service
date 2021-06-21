@@ -7,6 +7,9 @@
 @application.database.host@={{DB_HOST_IP}}
 @application.database.port@=5432
 
+#sendgrid
+@application.sendgrid.template.id@={{SENDGRID_RESEND_ACTIVATION_EMAIL_TEMPLATE_ID}}
+
 @ldap.host@={{LDAP_SERVER}}
 @ldap.port@=389
 @ldap.password@={{LDAP_PASSWORD}}
