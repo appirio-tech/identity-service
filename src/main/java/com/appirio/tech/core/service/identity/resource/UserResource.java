@@ -906,6 +906,11 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         data.put("handle", user.getHandle());
         data.put("code", user.getCredential().getActivationCode());
         data.put("domain", getDomain());
+        data.put("subDomain", "www");
+
+        if (user.getRegSource() != null && user.getRegSource().matches("tcBusiness")) {
+            data.put("subDomain", "connect");
+        }
 
         payload.put("data", data);
         payload.put("version", "v3");
