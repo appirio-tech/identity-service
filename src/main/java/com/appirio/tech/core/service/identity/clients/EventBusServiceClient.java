@@ -44,7 +44,7 @@ public class EventBusServiceClient extends BaseClient {
     }
 
     /**
-     * Fire event
+     * reFire event
      *
      * @param eventMessage the eventMessage to use
      */
@@ -57,6 +57,30 @@ public class EventBusServiceClient extends BaseClient {
 
             eventMessage.setOriginator(this.config.getAdditionalConfiguration().get("originator"));
             eventMessage.setTopic(this.config.getAdditionalConfiguration().get("topic"));
+            Response response = request.header("Authorization", "Bearer " + authToken).post(Entity.entity(eventMessage.getData(), MediaType.APPLICATION_JSON_TYPE));
+
+            LOGGER.info("refiring event {}", new ObjectMapper().writer().writeValueAsString(eventMessage));
+            if (response.getStatusInfo().getStatusCode() != HttpStatus.OK_200 &&  response.getStatusInfo().getStatusCode()!= HttpStatus.NO_CONTENT_204) {
+                LOGGER.error("Unable to fire the event: {}", response);
+            }
+        }  catch (Exception e) {
+            LOGGER.error("Failed to fire the event: {}", e);
+        }
+    }
+
+    /**
+     * Fire event
+     *
+     * @param eventMessage the eventMessage to use
+     */
+    public void reFireEvent(EventMessage eventMessage) {
+        try {
+            String url = this.config.getEndpoint();
+            WebTarget target = this.client.target(url);
+            final Invocation.Builder request = target.request(MediaType.APPLICATION_JSON_TYPE);
+            String authToken = Utils.generateAuthToken(m2mAuthConfiguration);
+
+            eventMessage.setOriginator(this.config.getAdditionalConfiguration().get("originator"));
             Response response = request.header("Authorization", "Bearer " + authToken).post(Entity.entity(eventMessage.getData(), MediaType.APPLICATION_JSON_TYPE));
 
             LOGGER.info("Fire event {}", new ObjectMapper().writer().writeValueAsString(eventMessage));
