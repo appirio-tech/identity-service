@@ -913,6 +913,11 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         }
 
         payload.put("data", data);
+
+        Map<String,Object> from = new LinkedHashMap<String,Object>();
+        from.put("email", String.format("Topcoder <noreply@%s>", getDomain()));
+        payload.put("from", from);
+
         payload.put("version", "v3");
         payload.put("sendgrid_template_id", this.getSendgridTemplateId());
 
