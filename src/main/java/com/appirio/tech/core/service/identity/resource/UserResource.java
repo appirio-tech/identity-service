@@ -911,7 +911,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
         if (user.getRegSource() != null && user.getRegSource().matches("tcBusiness")) {
             data.put("subDomain", "connect");
-            data.put("path", "");
+            data.put("path", "/");
         }
 
         payload.put("data", data);
