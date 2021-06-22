@@ -11,6 +11,7 @@ context:
   defaultPassword: @application.password.default@
   passwordHashKey: @application.password.key@
   ssoTokenSalt: @application.ssotoken.salt@
+  sendGridTemplateId: @application.sendgrid.template.id@
   jwtExpirySeconds: 600
   cookieExpirySeconds: 7776000
 

@@ -11,6 +11,8 @@ import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.LinkedHashMap;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -100,6 +102,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     private int oneTimeTokenExpirySeconds = 10 * 60; //10min
 
     private String domain;
+
+    private String sendgridTemplateId;
     
     protected UserDAO userDao;
     
@@ -856,6 +860,78 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
       return ApiResponseFactory.createResponse("password updated successfully.");
    }
+
+   /**
+     * API to resend activation email
+     * This is supposed to be called from Auth0 custom connection.
+     * @param email
+     * @param request
+     * @return
+     * @throws Exception
+     */
+    @POST
+    @Path("/resendEmail")
+    @Consumes("application/x-www-form-urlencoded")
+    @Timed
+    public ApiResponse resendEmail(
+            @FormParam("email") String email,
+            @FormParam("handle") String handle,
+            @Context HttpServletRequest request) throws Exception {
+
+        if(Utils.isEmpty(email) &&  Utils.isEmpty(handle))
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "email/handle"));
+
+        User user = null;
+        if (!Utils.isEmpty(handle)) {
+            user = userDao.findUserByHandle(handle);
+        } else {
+            // email address - case sensitive - for auth0 sepecific
+            user = userDao.findUserByEmailCS(email);
+        }
+
+        if(user==null) {
+            throw new APIRuntimeException(SC_UNAUTHORIZED, "Credentials are incorrect.");
+        }
+
+        // return 400 if user has been activated
+        if(user.isActive())
+            throw new APIRuntimeException(SC_BAD_REQUEST, MSG_TEMPLATE_USER_ALREADY_ACTIVATED);
+
+        EventMessage msg = EventMessage.getDefault();
+        msg.setTopic("external.action.email");
+
+        Map<String,Object> payload = new LinkedHashMap<String,Object>();
+
+        Map<String,Object> data = new LinkedHashMap<String,Object>();
+        data.put("handle", user.getHandle());
+        data.put("code", user.getCredential().getActivationCode());
+        data.put("domain", getDomain());
+        data.put("subDomain", "www");
+
+        if (user.getRegSource() != null && user.getRegSource().matches("tcBusiness")) {
+            data.put("subDomain", "connect");
+        }
+
+        payload.put("data", data);
+
+        Map<String,Object> from = new LinkedHashMap<String,Object>();
+        from.put("email", String.format("Topcoder <noreply@%s>", getDomain()));
+        payload.put("from", from);
+
+        payload.put("version", "v3");
+        payload.put("sendgrid_template_id", this.getSendgridTemplateId());
+
+        ArrayList<String> recipients = new ArrayList<String>();
+        recipients.add(user.getEmail());
+
+        payload.put("recipients", recipients);
+
+        msg.setPayload(payload);
+        this.eventBusServiceClient.reFireEvent(msg);
+
+        return ApiResponseFactory.createResponse(user);
+    }
+
 
     //TODO: should be PATCH?
     @PUT
@@ -1658,6 +1734,14 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
     public void setDomain(String domain) {
         this.domain = domain;
+    }
+
+    public String getSendgridTemplateId() {
+        return sendgridTemplateId;
+    }
+
+    public void setSendgridTemplateId(String sendgridTemplateId) {
+        this.sendgridTemplateId = sendgridTemplateId;
     }
 
     public String getSecret() {
