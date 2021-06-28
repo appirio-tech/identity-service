@@ -894,7 +894,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         }
 
         // return 400 if user has been activated
-        if(user.isActive())
+        if(user.getStatus()!=null && !user.getStatus().equals("U"))
             throw new APIRuntimeException(SC_BAD_REQUEST, MSG_TEMPLATE_USER_ALREADY_ACTIVATED);
 
         EventMessage msg = EventMessage.getDefault();
