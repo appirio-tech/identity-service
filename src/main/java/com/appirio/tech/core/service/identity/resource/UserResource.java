@@ -1765,6 +1765,52 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     protected void notifyActivation(User user, String redirectUrl) {
     	NotificationPayload payload = createActivationNotificationPayload(user, redirectUrl);
     	publishNotificationEvent(payload.getMailRepresentation());
+
+        /**
+         * trigger event for new kafka
+         */
+        sendActivationEmailEvent(user, redirectUrl);
+    }
+
+    protected void sendActivationEmailEvent(User user, String redirectUrl) {
+
+        EventMessage msg = EventMessage.getDefault();
+        msg.setTopic("external.action.email");
+
+        Map<String,Object> payload = new LinkedHashMap<String,Object>();
+
+        Map<String,Object> data = new LinkedHashMap<String,Object>();
+        data.put("handle", user.getHandle());
+        data.put("code", user.getCredential().getActivationCode());
+        data.put("domain", getDomain());
+        data.put("redirectUrl", redirectUrl);
+
+        if (redirectUrl.isEmpty()) {
+            data.put("subDomain", "platform");
+            data.put("path", "/onboard");
+
+            if (user.getRegSource() != null && user.getRegSource().matches("tcBusiness")) {
+                data.put("subDomain", "connect");
+                data.put("path", "/");
+            }
+        }
+
+        payload.put("data", data);
+
+        Map<String,Object> from = new LinkedHashMap<String,Object>();
+        from.put("email", String.format("Topcoder <noreply@%s>", getDomain()));
+        payload.put("from", from);
+
+        payload.put("version", "v3");
+        payload.put("sendgrid_template_id", this.getSendgridTemplateId());
+
+        ArrayList<String> recipients = new ArrayList<String>();
+        recipients.add(user.getEmail());
+
+        payload.put("recipients", recipients);
+
+        msg.setPayload(payload);
+        this.eventBusServiceClient.reFireEvent(msg);
     }
     
     protected NotificationPayload createActivationNotificationPayload(User user, String redirectUrl) {
