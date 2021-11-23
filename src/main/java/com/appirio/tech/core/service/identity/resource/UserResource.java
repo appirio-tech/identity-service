@@ -1785,7 +1785,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         data.put("domain", getDomain());
         data.put("redirectUrl", redirectUrl);
 
-        if (redirectUrl.isEmpty()) {
+        if ((redirectUrl ==null) || (redirectUrl.isEmpty())) {
             data.put("subDomain", "platform");
             data.put("path", "/onboard");
 
