@@ -104,6 +104,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     private String domain;
 
     private String sendgridTemplateId;
+
+    private String sendgridWelcomeTemplateId;
     
     protected UserDAO userDao;
     
@@ -1742,9 +1744,18 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         return sendgridTemplateId;
     }
 
+    public void setSendgridWelcomeTemplateId(String sendgridWelcomeTemplateId) {
+        this.sendgridWelcomeTemplateId = sendgridWelcomeTemplateId;
+    }
+
+    public String getSendgridWelcomeTemplateId() {
+        return sendgridWelcomeTemplateId;
+    }
+
     public void setSendgridTemplateId(String sendgridTemplateId) {
         this.sendgridTemplateId = sendgridTemplateId;
     }
+
 
     public String getSecret() {
         return secret;
@@ -1816,6 +1827,38 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             logger.error("Error occured while publishing the events to new kafka.");
         }
     }
+
+    private void sendWelcomeEmailEvent(User user) {
+
+        EventMessage msg = EventMessage.getDefault();
+        msg.setTopic("external.action.email");
+
+        Map<String,Object> payload = new LinkedHashMap<String,Object>();
+
+        Map<String,Object> data = new LinkedHashMap<String,Object>();
+        data.put("handle", user.getHandle());
+
+        payload.put("data", data);
+
+        Map<String,Object> from = new LinkedHashMap<String,Object>();
+        from.put("email", String.format("Topcoder <noreply@%s>", getDomain()));
+        payload.put("from", from);
+
+        payload.put("version", "v3");
+        payload.put("sendgrid_template_id", this.getSendgridWelcomeTemplateId());
+
+        ArrayList<String> recipients = new ArrayList<String>();
+        recipients.add(user.getEmail());
+
+        payload.put("recipients", recipients);
+
+        msg.setPayload(payload);
+        try {
+            this.eventBusServiceClient.reFireEvent(msg);
+        } catch (Exception e) {
+            logger.error("Error occured while publishing the events to new kafka.");
+        }
+    }
     
     protected NotificationPayload createActivationNotificationPayload(User user, String redirectUrl) {
     	//If for Connect registration, send activation email with activation code only.
@@ -1834,6 +1877,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     protected void notifyWelcome(User user) {
         publishNotificationEvent(
                 new NotificationPayload.WelcomePayload(user).getMailRepresentation());
+        sendWelcomeEmailEvent(user);
     }
 
     protected void publishNotificationEvent(MailRepresentation mail) {
@@ -1870,8 +1914,6 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         } catch (Exception e) {
             logger.error(String.format("Failed to convert the payload - %s", payload), e);
         }
-
-
 
     }
     
