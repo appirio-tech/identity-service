@@ -1846,6 +1846,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
         payload.put("version", "v3");
         payload.put("sendgrid_template_id", this.getSendgridWelcomeTemplateId());
+        logger.debug(String.format("Welcome Template id is: %s", Utils.getString("sendGridWelcomeTemplateId")));
+
 
         ArrayList<String> recipients = new ArrayList<String>();
         recipients.add(user.getEmail());
