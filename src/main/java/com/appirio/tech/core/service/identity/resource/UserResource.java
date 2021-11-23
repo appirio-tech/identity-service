@@ -1772,7 +1772,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         sendActivationEmailEvent(user, redirectUrl);
     }
 
-    protected void sendActivationEmailEvent(User user, String redirectUrl) {
+    private void sendActivationEmailEvent(User user, String redirectUrl) {
 
         EventMessage msg = EventMessage.getDefault();
         msg.setTopic("external.action.email");
