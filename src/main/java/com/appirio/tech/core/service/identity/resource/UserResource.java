@@ -1810,7 +1810,11 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         payload.put("recipients", recipients);
 
         msg.setPayload(payload);
-        this.eventBusServiceClient.reFireEvent(msg);
+        try {
+            this.eventBusServiceClient.reFireEvent(msg);
+        } catch (Exception e) {
+            logger.error("Error occured while publishing the events to new kafka.");
+        }
     }
     
     protected NotificationPayload createActivationNotificationPayload(User user, String redirectUrl) {
