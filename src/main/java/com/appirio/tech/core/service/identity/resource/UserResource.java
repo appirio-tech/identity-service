@@ -1769,6 +1769,10 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if(user==null)
             return;
         logger.info(String.format("Publishing a user event to '%s'. userId: %s, handle: %s", topic, user.getId(), user.getHandle()));
+
+        /**
+         * trigger event for new kafka
+         */
         publishEvent(topic, user);
     }
     
@@ -1846,8 +1850,6 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
         payload.put("version", "v3");
         payload.put("sendgrid_template_id", this.getSendgridWelcomeTemplateId());
-        logger.info(String.format("Welcome Template id is: %s", Utils.getString("sendGridWelcomeTemplateId")));
-
 
         ArrayList<String> recipients = new ArrayList<String>();
         recipients.add(user.getEmail());
