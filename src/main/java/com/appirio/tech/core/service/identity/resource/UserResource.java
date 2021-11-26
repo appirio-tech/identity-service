@@ -910,12 +910,12 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         data.put("domain", getDomain());
         data.put("subDomain", "platform");
         data.put("path", "/onboard");
-        data.put("redirectUrl", "https%3A%2F%2Fplatform."+getDomain()+".com%2Fonboard");
+        data.put("redirectUrl", "https%3A%2F%2Fplatform."+getDomain()+"%2Fonboard");
 
         if (user.getRegSource() != null && user.getRegSource().matches("tcBusiness")) {
             data.put("subDomain", "connect");
             data.put("path", "/");
-            data.put("redirectUrl", "https%3A%2F%2Fconnect."+getDomain()+".com%2F");
+            data.put("redirectUrl", "https%3A%2F%2Fconnect."+getDomain()+"%2F");
         }
 
 
