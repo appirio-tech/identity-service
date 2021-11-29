@@ -234,6 +234,7 @@ public class IdentityApplication extends APIApplication<IdentityConfiguration> {
     	userResource.setAuth0Client(configuration.getAuth0()); // TODO: constructor
     	userResource.setDomain(configuration.getAuthDomain());
 		userResource.setSendgridTemplateId(Utils.getString("sendGridTemplateId"));
+		userResource.setSendgridWelcomeTemplateId(Utils.getString("sendGridWelcomeTemplateId"));
     	// this secret _used_ to be different from the one used in AuthorizationResource.
     	// it _was_ the secret x2. (userResource.setSecret(getSecret()+getSecret());)
 		// we assume this was done to further limit the usability of the oneTimeToken generated in userResource
