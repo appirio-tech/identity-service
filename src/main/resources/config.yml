@@ -12,6 +12,7 @@ context:
   passwordHashKey: @application.password.key@
   ssoTokenSalt: @application.ssotoken.salt@
   sendGridTemplateId: @application.sendgrid.template.id@
+  sendGridWelcomeTemplateId: @application.sendgrid.welcome.template.id@
   jwtExpirySeconds: 600
   cookieExpirySeconds: 7776000
 
