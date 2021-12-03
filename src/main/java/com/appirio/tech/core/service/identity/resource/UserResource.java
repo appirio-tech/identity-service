@@ -1898,8 +1898,15 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             return;
         if(topic==null)
             throw new IllegalArgumentException("topic must be specified.");
-        if(this.eventProducer==null)
-            throw new IllegalStateException("eventProducer must be configured.");
+        if(this.eventProducer==null) {
+             // JIRA-Plat-130
+             logger.info("eventProducer null, hard cut to publish on leagcy kafka");
+             if (topic != null) { 
+             	logger.debug(String.format("Publishing an event to '%s'.", topic));
+             }
+            //throw new IllegalStateException("eventProducer must be configured.");
+            return;
+        }
         if(this.objectMapper==null)
             throw new IllegalStateException("objectMapper must be configured.");
 
