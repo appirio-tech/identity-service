@@ -161,6 +161,7 @@ public class IdentityApplication extends APIApplication<IdentityConfiguration> {
 		EventProducer eventProducer;
  
                 // JIRA-Plat-130, stop initializing the zookeeper
+                eventProducer = null;
                 /* JIRA-Plat-130
 		try {
 			eventProducer = configuration.getEventSystem().getProducerFactory().createProducer();
