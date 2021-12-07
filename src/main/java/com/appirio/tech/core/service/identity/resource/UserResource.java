@@ -1905,19 +1905,22 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
              	logger.debug(String.format("Publishing an event to '%s'.", topic));
              }
             //throw new IllegalStateException("eventProducer must be configured.");
-            return;
+            //return;
         }
         if(this.objectMapper==null)
             throw new IllegalStateException("objectMapper must be configured.");
 
         try {
             logger.debug(String.format("Publishing an event to '%s'.", topic));
-            String strPayload = this.objectMapper.writeValueAsString(payload);
+          
+          /* JIRA-Plat-130  
+          String strPayload = this.objectMapper.writeValueAsString(payload);
             try {
                 this.eventProducer.publish(topic, strPayload);
             } catch (Exception e) {
                 logger.error(String.format("Failed to publish an event. topic: %s, payload: %s", topic, strPayload), e);
             }
+           */
 
             try {
                 this.fireEvent(payload);
