@@ -1912,9 +1912,9 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
         try {
             logger.debug(String.format("Publishing an event to '%s'.", topic));
-          
+            String strPayload = this.objectMapper.writeValueAsString(payload);
+
           /* JIRA-Plat-130  
-          String strPayload = this.objectMapper.writeValueAsString(payload);
             try {
                 this.eventProducer.publish(topic, strPayload);
             } catch (Exception e) {
