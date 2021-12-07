@@ -1905,7 +1905,13 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
              	logger.debug(String.format("Publishing an event to '%s'.", topic));
              }
             //throw new IllegalStateException("eventProducer must be configured.");
-            //return;
+
+            try {
+                this.fireEvent(payload);
+            } catch (Exception e) {
+                logger.error(String.format("Failed to fire an event to event bus. topic: %s", topic), e);
+            }
+            return;
         }
         if(this.objectMapper==null)
             throw new IllegalStateException("objectMapper must be configured.");
@@ -1922,11 +1928,6 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             }
            */
 
-            try {
-                this.fireEvent(payload);
-            } catch (Exception e) {
-                logger.error(String.format("Failed to fire an event to event bus. topic: %s, payload: %s", topic, strPayload), e);
-            }
 
         } catch (Exception e) {
             logger.error(String.format("Failed to convert the payload - %s", payload), e);
