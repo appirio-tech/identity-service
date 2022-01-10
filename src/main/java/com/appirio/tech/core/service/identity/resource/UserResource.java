@@ -908,9 +908,9 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         data.put("handle", user.getHandle());
         data.put("code", user.getCredential().getActivationCode());
         data.put("domain", getDomain());
-        data.put("subDomain", "platform");
-        data.put("path", "/onboard");
-        data.put("redirectUrl", "https%3A%2F%2Fplatform."+getDomain()+"%2Fonboard");
+        data.put("subDomain", "www");
+        data.put("path", "/home");
+        data.put("redirectUrl", "https%3A%2F%2Fwww."+getDomain()+"%2Fhome");
 
         if (user.getRegSource() != null && user.getRegSource().matches("tcBusiness")) {
             data.put("subDomain", "connect");
@@ -1804,8 +1804,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         data.put("redirectUrl", redirectUrl);
 
         if ((redirectUrl ==null) || (redirectUrl.isEmpty())) {
-            data.put("subDomain", "platform");
-            data.put("path", "/onboard");
+            data.put("subDomain", "www");
+            data.put("path", "/home");
 
             if (user.getRegSource() != null && user.getRegSource().matches("tcBusiness")) {
                 data.put("subDomain", "connect");
