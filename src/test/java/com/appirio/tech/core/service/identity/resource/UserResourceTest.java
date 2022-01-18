@@ -746,10 +746,13 @@ public class UserResourceTest {
                 user.isReferralProgramCampaign() ? times(1) : never()
                 ).validateReferral(user.getUtmSource());
 
+        /* 
+        //jira-plat-130 
         verify(eventProducer).publish("event.user.created", "payload");
         verify(eventProducer,
                 isUserActive? never() : times(1)).
                 publish("event.notification.send", "payload");
+       */
         verify(objectMapper).writeValueAsString(user);
     }
 
@@ -1847,9 +1850,12 @@ public class UserResourceTest {
         // verify
         verify(userDao).findUserById(userId);
         verify(userDao).activate(user);
-        verify(eventProducer).publish("event.user.activated", "payload");
-        verify(eventProducer).publish("event.notification.send", "payload"); // welcome mail
-        verify(objectMapper).writeValueAsString(user);
+        /* 
+       	//jira-plat-130 
+        	verify(eventProducer).publish("event.user.activated", "payload");
+        	verify(eventProducer).publish("event.notification.send", "payload"); // welcome mail
+       */ 
+       verify(objectMapper).writeValueAsString(user);
     }
 
     @Test
@@ -1937,7 +1943,7 @@ public class UserResourceTest {
         verify(cacheService).put(cacheKey, user.getCredential().getActivationCode(), testee.getResendActivationCodeExpirySeconds());
         
         verify(param).getOptionString(optionKey);
-        verify(eventProducer).publish("event.notification.send", "payload");
+        // jira-plat-130  verify(eventProducer).publish("event.notification.send", "payload");
     }
     
     @Test
@@ -2247,7 +2253,7 @@ public class UserResourceTest {
         // verify
         verify(userDao).findUserById(userId);
         verify(userDao).updateHandle(user);
-        verify(eventProducer).publish("event.user.updated", "payload");
+        // jira-plat-130 verify(eventProducer).publish("event.user.updated", "payload");
         verify(objectMapper).writeValueAsString(user);
         verify(authUser, atLeastOnce()).getUserId();
         verify(param, atLeastOnce()).getParam();
@@ -2517,7 +2523,7 @@ public class UserResourceTest {
         // verify
         verify(userDao).findUserById(userId);
         verify(userDao).updatePrimaryEmail(user);
-        verify(eventProducer).publish("event.user.updated", "payload");
+        // jira-plat-130 verify(eventProducer).publish("event.user.updated", "payload");
         verify(objectMapper).writeValueAsString(user);
         verify(authUser, atLeastOnce()).getUserId();
         verify(param, atLeastOnce()).getParam();
@@ -3026,13 +3032,13 @@ public class UserResourceTest {
             topic = "event.user.activated";
         else
             topic = "event.user.deactivated";
-        verify(eventProducer).publish(topic, "payload");
+        // jira-plat-130 verify(eventProducer).publish(topic, "payload");
         
         if(MemberStatus.UNVERIFIED == MemberStatus.getByValue(oldStatus) &&
                 MemberStatus.ACTIVE == MemberStatus.getByValue(newStatus) ) {
-            verify(eventProducer).publish("event.notification.send", "payload");
+           // jira-plat-130 verify(eventProducer).publish("event.notification.send", "payload");
         } else {
-            verify(eventProducer, never()).publish(eq("event.notification.send"), anyString());
+            // jira-plat-130 verify(eventProducer, never()).publish(eq("event.notification.send"), anyString());
         }
         
         verify(objectMapper).writeValueAsString(user);

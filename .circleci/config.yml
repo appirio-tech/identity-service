@@ -146,7 +146,7 @@ workflows:
           context : org-global
           filters:
             branches:
-              only: [dev, 'feature/jira-plat-28']
+              only: [dev, 'feature/jira-plat-152']
       # Production build is executed on "master" branch only.
       - "build-prod":
           context : org-global

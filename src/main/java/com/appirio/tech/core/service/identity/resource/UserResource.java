@@ -1898,25 +1898,36 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             return;
         if(topic==null)
             throw new IllegalArgumentException("topic must be specified.");
-        if(this.eventProducer==null)
-            throw new IllegalStateException("eventProducer must be configured.");
+        if(this.eventProducer==null) {
+             // JIRA-Plat-130
+             logger.info("eventProducer null, hard cut to publish on leagcy kafka");
+             if (topic != null) { 
+             	logger.debug(String.format("Publishing an event to '%s'.", topic));
+             }
+            //throw new IllegalStateException("eventProducer must be configured.");
+
+            try {
+                this.fireEvent(payload);
+            } catch (Exception e) {
+                logger.error(String.format("Failed to fire an event to event bus. topic: %s", topic), e);
+            }
+            return;
+        }
         if(this.objectMapper==null)
             throw new IllegalStateException("objectMapper must be configured.");
 
         try {
             logger.debug(String.format("Publishing an event to '%s'.", topic));
             String strPayload = this.objectMapper.writeValueAsString(payload);
+
+          /* JIRA-Plat-130  
             try {
                 this.eventProducer.publish(topic, strPayload);
             } catch (Exception e) {
                 logger.error(String.format("Failed to publish an event. topic: %s, payload: %s", topic, strPayload), e);
             }
+           */
 
-            try {
-                this.fireEvent(payload);
-            } catch (Exception e) {
-                logger.error(String.format("Failed to fire an event to event bus. topic: %s, payload: %s", topic, strPayload), e);
-            }
 
         } catch (Exception e) {
             logger.error(String.format("Failed to convert the payload - %s", payload), e);
