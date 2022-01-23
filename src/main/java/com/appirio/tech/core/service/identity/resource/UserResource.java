@@ -998,6 +998,11 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         // assign a default user role
         assignDefaultUserRole(user);
 
+
+        if (user.getRegSource() != null && user.getRegSource().matches("selfService")) {
+            assignRoleByName("Self-Service Customer", user);
+        }
+
         return ApiResponseFactory.createResponse(user);
     }
 
