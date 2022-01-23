@@ -10,6 +10,8 @@
 #sendgrid
 @application.sendgrid.template.id@={{SENDGRID_RESEND_ACTIVATION_EMAIL_TEMPLATE_ID}}
 @application.sendgrid.welcome.template.id@={{SENDGRID_WELCOME_EMAIL_TEMPLATE_ID}}
+@application.sendgrid.selfservice.template.id@={{SENDGRID_SELF_SERVICE_RESEND_ACTIVATION_EMAIL_TEMPLATE_ID}}
+@application.sendgrid.selfservice.welcome.template.id@={{SENDGRID_SELF_SERVICE_WELCOME_EMAIL_TEMPLATE_ID}}
 
 @ldap.host@={{LDAP_SERVER}}
 @ldap.port@=389
