@@ -941,6 +941,9 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
         payload.put("version", "v3");
         payload.put("sendgrid_template_id", this.getSendgridTemplateId());
+        if (user.getRegSource() != null && user.getRegSource().matches("selfService")) {
+            payload.put("sendgrid_template_id", this.getSendgridSelfServiceTemplateId());
+        }
 
         ArrayList<String> recipients = new ArrayList<String>();
         recipients.add(user.getEmail());
@@ -1856,6 +1859,9 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
         payload.put("version", "v3");
         payload.put("sendgrid_template_id", this.getSendgridTemplateId());
+        if (user.getRegSource() != null && user.getRegSource().matches("selfService")) {
+            payload.put("sendgrid_template_id", this.getSendgridSelfServiceTemplateId());
+        }
 
         ArrayList<String> recipients = new ArrayList<String>();
         recipients.add(user.getEmail());
@@ -1888,6 +1894,9 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
         payload.put("version", "v3");
         payload.put("sendgrid_template_id", this.getSendgridWelcomeTemplateId());
+        if (user.getRegSource() != null && user.getRegSource().matches("selfService")) {
+            payload.put("sendgrid_template_id", this.getSendgridSelfServiceWelcomeTemplateId());
+        }
 
         ArrayList<String> recipients = new ArrayList<String>();
         recipients.add(user.getEmail());
