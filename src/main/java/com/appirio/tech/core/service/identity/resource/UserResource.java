@@ -512,7 +512,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             assignRoleByName("Business User", user);
         }
 
-
+        // Add Self-Service Customer role if needed
         if (user.getRegSource() != null && user.getRegSource().matches("selfService")) {
             assignRoleByName("Self-Service Customer", user);
         }
