@@ -106,6 +106,10 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     private String sendgridTemplateId;
 
     private String sendgridWelcomeTemplateId;
+
+    private String sendgridSelfServiceTemplateId;
+
+    private String sendgridSelfServiceWelcomeTemplateId;
     
     protected UserDAO userDao;
     
@@ -506,6 +510,11 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         // Add business user role if needed
         if (user.getRegSource() != null && user.getRegSource().matches("tcBusiness")) {
             assignRoleByName("Business User", user);
+        }
+
+        // Add Self-Service Customer role if needed
+        if (user.getRegSource() != null && user.getRegSource().matches("selfService")) {
+            assignRoleByName("Self-Service Customer", user);
         }
 
         // publish event
@@ -918,6 +927,11 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             data.put("redirectUrl", "https%3A%2F%2Fconnect."+getDomain()+"%2F");
         }
 
+        if (user.getRegSource() != null && user.getRegSource().matches("selfService")) {
+            data.put("subDomain", "platform");
+            data.put("path", "/self-service");
+            data.put("redirectUrl", "https%3A%2F%2Fplatform."+getDomain()+"%2Fself-service");
+        }
 
         payload.put("data", data);
 
@@ -927,6 +941,9 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
         payload.put("version", "v3");
         payload.put("sendgrid_template_id", this.getSendgridTemplateId());
+        if (user.getRegSource() != null && user.getRegSource().matches("selfService")) {
+            payload.put("sendgrid_template_id", this.getSendgridSelfServiceTemplateId());
+        }
 
         ArrayList<String> recipients = new ArrayList<String>();
         recipients.add(user.getEmail());
@@ -980,6 +997,11 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         
         // assign a default user role
         assignDefaultUserRole(user);
+
+
+        if (user.getRegSource() != null && user.getRegSource().matches("selfService")) {
+            assignRoleByName("Self-Service Customer", user);
+        }
 
         return ApiResponseFactory.createResponse(user);
     }
@@ -1759,6 +1781,21 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         this.sendgridTemplateId = sendgridTemplateId;
     }
 
+    public String getSendgridSelfServiceTemplateId() {
+        return sendgridSelfServiceTemplateId;
+    }
+
+    public void setSendgridSelfServiceWelcomeTemplateId(String sendgridSelfServiceWelcomeTemplateId) {
+        this.sendgridSelfServiceWelcomeTemplateId = sendgridSelfServiceWelcomeTemplateId;
+    }
+
+    public String getSendgridSelfServiceWelcomeTemplateId() {
+        return sendgridSelfServiceWelcomeTemplateId;
+    }
+
+    public void setSendgridSelfServiceTemplateId(String sendgridSelfServiceTemplateId) {
+        this.sendgridSelfServiceTemplateId = sendgridSelfServiceTemplateId;
+    }
 
     public String getSecret() {
         return secret;
@@ -1811,6 +1848,12 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
                 data.put("subDomain", "connect");
                 data.put("path", "/");
             }
+
+
+            if (user.getRegSource() != null && user.getRegSource().matches("selfService")) {
+                data.put("subDomain", "platform");
+                data.put("path", "/self-service");
+            }
         }
 
         payload.put("data", data);
@@ -1821,6 +1864,9 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
         payload.put("version", "v3");
         payload.put("sendgrid_template_id", this.getSendgridTemplateId());
+        if (user.getRegSource() != null && user.getRegSource().matches("selfService")) {
+            payload.put("sendgrid_template_id", this.getSendgridSelfServiceTemplateId());
+        }
 
         ArrayList<String> recipients = new ArrayList<String>();
         recipients.add(user.getEmail());
@@ -1853,6 +1899,9 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
         payload.put("version", "v3");
         payload.put("sendgrid_template_id", this.getSendgridWelcomeTemplateId());
+        if (user.getRegSource() != null && user.getRegSource().matches("selfService")) {
+            payload.put("sendgrid_template_id", this.getSendgridSelfServiceWelcomeTemplateId());
+        }
 
         ArrayList<String> recipients = new ArrayList<String>();
         recipients.add(user.getEmail());

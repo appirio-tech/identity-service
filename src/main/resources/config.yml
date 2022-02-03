@@ -13,6 +13,8 @@ context:
   ssoTokenSalt: @application.ssotoken.salt@
   sendGridTemplateId: @application.sendgrid.template.id@
   sendGridWelcomeTemplateId: @application.sendgrid.welcome.template.id@
+  sendGridSelfServiceTemplateId: @application.sendgrid.selfservice.template.id@
+  sendGridSelfServiceWelcomeTemplateId: @application.sendgrid.selfservice.welcome.template.id@
   jwtExpirySeconds: 600
   cookieExpirySeconds: 7776000
 
