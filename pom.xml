@@ -9,7 +9,7 @@
 
   <properties>
     <amazon.aws.version>1.11.508</amazon.aws.version>
-    <jackson-version>[2.5.1,2.9.0)</jackson-version>
+    <jackson-version>2.13.2.2</jackson-version>
   </properties>
 
   <build>
