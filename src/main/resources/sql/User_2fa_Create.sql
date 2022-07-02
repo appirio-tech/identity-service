@@ -1,0 +1,1 @@
+CREATE TABLE common_oltp.user_2fa (id SERIAL, user_id DECIMAL(10,0) UNIQUE NOT NULL, enabled BOOLEAN DEFAULT false NOT NULL, verified BOOLEAN DEFAULT false NOT NULL, PRIMARY KEY (id), FOREIGN KEY (user_id) REFERENCES common_oltp.user (user_id));

@@ -11,6 +11,7 @@ import javax.validation.constraints.NotNull;
 import com.appirio.clients.BaseClientConfiguration;
 import com.appirio.tech.core.api.v3.dropwizard.APIBaseConfiguration;
 import com.appirio.tech.core.service.identity.util.auth.Auth0Client;
+import com.appirio.tech.core.service.identity.util.auth.DICEAuth;
 import com.appirio.tech.core.service.identity.util.auth.ServiceAccountAuthenticatorFactory;
 import com.appirio.tech.core.service.identity.util.cache.CacheServiceFactory;
 import com.appirio.tech.core.service.identity.util.event.EventSystemFactory;
@@ -61,6 +62,10 @@ public class IdentityConfiguration extends APIBaseConfiguration {
 	@Valid
     @JsonProperty
     private Auth0Client auth0New = new Auth0Client();
+
+	@Valid
+    @JsonProperty
+    private DICEAuth diceAuth = new DICEAuth();
 	
 	@Valid
 	@NotNull
@@ -134,6 +139,10 @@ public class IdentityConfiguration extends APIBaseConfiguration {
      */
     public Auth0Client getAuth0New() {
         return auth0New;
+    }
+
+	public DICEAuth getDiceAuth() {
+        return diceAuth;
     }
 	
 	public LDAPServiceFactory getLdap() {

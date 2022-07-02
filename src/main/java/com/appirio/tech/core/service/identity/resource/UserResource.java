@@ -3,15 +3,21 @@ package com.appirio.tech.core.service.identity.resource;
 import static com.appirio.tech.core.service.identity.util.Constants.*;
 import static javax.servlet.http.HttpServletResponse.*;
 
+import com.appirio.tech.core.service.identity.util.m2mscope.User2faFactory;
 import com.appirio.tech.core.service.identity.util.m2mscope.UserProfilesFactory;
 import io.dropwizard.auth.Auth;
 import io.dropwizard.jersey.PATCH;
 
 import java.net.HttpURLConnection;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.LinkedHashMap;
 
 import javax.servlet.http.HttpServletRequest;
@@ -54,6 +60,8 @@ import com.appirio.tech.core.service.identity.dao.UserDAO;
 import com.appirio.tech.core.service.identity.representation.Achievement;
 import com.appirio.tech.core.service.identity.representation.Country;
 import com.appirio.tech.core.service.identity.representation.Credential;
+import com.appirio.tech.core.service.identity.representation.CredentialRequest;
+import com.appirio.tech.core.service.identity.representation.CredentialVerification;
 import com.appirio.tech.core.service.identity.representation.Email;
 import com.appirio.tech.core.service.identity.representation.ProviderType;
 import com.appirio.tech.core.service.identity.representation.Role;
@@ -61,14 +69,20 @@ import com.appirio.tech.core.service.identity.representation.User;
 import com.appirio.tech.core.service.identity.representation.UserProfile;
 import com.appirio.tech.core.service.identity.util.Constants;
 import com.appirio.tech.core.service.identity.util.Utils;
+import com.appirio.tech.core.service.identity.util.HttpUtil.Request;
+import com.appirio.tech.core.service.identity.util.HttpUtil.Response;
 import com.appirio.tech.core.service.identity.util.auth.Auth0Client;
+import com.appirio.tech.core.service.identity.util.auth.DICEAuth;
 import com.appirio.tech.core.service.identity.util.auth.OneTimeToken;
 import com.appirio.tech.core.service.identity.util.cache.CacheService;
 import com.appirio.tech.core.service.identity.util.event.MailRepresentation;
 import com.appirio.tech.core.service.identity.util.event.NotificationPayload;
 import com.appirio.tech.core.service.identity.util.ldap.MemberStatus;
 import com.codahale.metrics.annotation.Timed;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 
 /**
@@ -119,6 +133,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     
     private Auth0Client auth0;
 
+    private DICEAuth diceAuth;
+
     private final EventProducer eventProducer;
 
     private ObjectMapper objectMapper = new ObjectMapper();
@@ -133,6 +149,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     private final EventBusServiceClient eventBusServiceClient;
 
     private final UserProfilesFactory userProfilesFactory;
+
+    private final User2faFactory user2faFactory;
     
     /**
      * Create UserResource
@@ -149,7 +167,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
                 RoleDAO roleDao,
                 CacheService cacheService,
                 EventProducer eventProducer,
-                EventBusServiceClient eventBusServiceClient, UserProfilesFactory userProfilesFactory) {
+                EventBusServiceClient eventBusServiceClient, UserProfilesFactory userProfilesFactory,
+                User2faFactory user2faFactory) {
         this.userDao = userDao;
         this.roleDao = roleDao;
         this.cacheService = cacheService;
@@ -160,6 +179,12 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             this.userProfilesFactory = new UserProfilesFactory();
         } else {
             this.userProfilesFactory = userProfilesFactory;
+        }
+        if (user2faFactory == null) {
+            // create a default one
+            this.user2faFactory = new User2faFactory();
+        } else {
+            this.user2faFactory = user2faFactory;
         }
     }
 
@@ -178,7 +203,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             CacheService cacheService,
             EventProducer eventProducer,
             EventBusServiceClient eventBusServiceClient) {
-        this(userDao, roleDao, cacheService, eventProducer, eventBusServiceClient, null);
+        this(userDao, roleDao, cacheService, eventProducer, eventBusServiceClient, null, null);
     }
 
     protected void setObjectMapper(ObjectMapper objectMapper) {
@@ -187,6 +212,10 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     
     public void setAuth0Client(Auth0Client auth0) {
         this.auth0 = auth0;
+    }
+
+    public void setDiceAuth(DICEAuth diceAuth) {
+        this.diceAuth = diceAuth;
     }
 
     private static void checkAccessAndUserProfile(AuthUser authUser, long userId, UserProfile profile, String[] allowedScopes) {
@@ -1474,6 +1503,116 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
                 createValidationResult((err == null), err));
     }
     
+    @POST
+    @Path("/2faCredentials")
+    @Timed
+    public ApiResponse issueCredentials(
+            @Auth AuthUser authUser,
+            @Valid PostPutRequest<CredentialRequest> postRequest,
+            @Context HttpServletRequest request) {
+        Utils.checkAccess(authUser, user2faFactory.getCreateScopes(), Utils.AdminRoles);
+        CredentialRequest credential = postRequest.getParam();
+
+        if(credential == null) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Request Body"));
+        }
+        if(credential.getEmail() == null || credential.getEmail().length() == 0) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Email address"));
+        }
+        if(credential.getConnectionId() == null || credential.getConnectionId().length() == 0) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Connection Id"));
+        }
+        logger.info(String.format("issue credential (%s)", credential.getEmail()));
+
+        // find user by email
+        User user = userDao.findUserByEmail(credential.getEmail());
+
+        // return 404 if user is not found
+        if(user == null)
+            throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
+        List<Role> roles = roleDao.getRolesBySubjectId(Long.parseLong(user.getId().getId()));
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode body = mapper.createObjectNode();
+        body.put("comment", "TC credential");
+        body.put("connection_id", credential.getConnectionId());
+        body.put("cred_def_id", diceAuth.getCredDefId());
+        ObjectNode preview = mapper.createObjectNode();
+        preview.put("@type", diceAuth.getCredPreview());
+        ArrayNode attributes = mapper.createArrayNode();
+        ObjectNode name = attributes.addObject();
+        ObjectNode email = attributes.addObject();
+        ObjectNode role = attributes.addObject();
+        ObjectNode validUntil = attributes.addObject();
+        name.put("name", "Name");
+        name.put("value", user.getFirstName());
+        email.put("name", "Email");
+        email.put("value", user.getEmail());
+        role.put("name", "Role");
+        role.put("value", roles.stream().map(x -> x.getRoleName()).collect(Collectors.joining(",")));
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.YEAR, 1);
+        validUntil.put("name", "Valid_Till");
+        validUntil.put("value", new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZ").format(cal.getTime()));
+        body.set("credential_preview", preview);
+        preview.set("attributes", attributes);
+        Response response;
+        try {
+            response = new Request("https://dicecontroller-topcoder.wiprobc.com/api/credentialoffer", "POST")
+                    .header("Authorization", "Bearer " + diceAuth.getToken())
+            		.json(mapper.writeValueAsString(body))
+            		.execute();
+        } catch (JsonProcessingException e) {
+            logger.error("Error when processing JSON content", e);
+            throw new APIRuntimeException(SC_INTERNAL_SERVER_ERROR, "Error when calling credentialoffer api");
+        } catch (Exception e) {
+            logger.error("Error when calling credentialoffer api", e);
+            throw new APIRuntimeException(SC_INTERNAL_SERVER_ERROR, "Error when calling credentialoffer api");
+        }
+        if (response.getStatusCode() != HttpURLConnection.HTTP_CREATED) {
+            throw new APIRuntimeException(HttpURLConnection.HTTP_INTERNAL_ERROR,
+                    String.format("Got unexpected response from remote service. %d %s", response.getStatusCode(),
+                            response.getMessage()));
+        }
+        return ApiResponseFactory.createResponse(response.getText());
+    }
+
+    @PUT
+    @Path("/2faVerification")
+    @Timed
+    public ApiResponse update2faVerification(
+            @Auth AuthUser authUser,
+            @Valid PostPutRequest<CredentialVerification> putRequest,
+            @Context HttpServletRequest request) {
+
+        Utils.checkAccess(authUser, user2faFactory.getUpdateScopes(), Utils.AdminRoles);
+        CredentialVerification credential = putRequest.getParam();
+        if(credential == null) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Request Body"));
+        }
+        if(credential.getEmail() == null || credential.getEmail().length() == 0) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Email address"));
+        }
+        if(credential.getVerified() == null) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Verified"));
+        }
+        logger.info(String.format("update 2fa verification (%s) - %b", credential.getEmail(), credential.getVerified()));
+
+        // find user by email
+        CredentialVerification credVerification = userDao.findUserCredentialByEmail(credential.getEmail());
+
+        // return 404 if user is not found
+        if(credVerification == null)
+            throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
+
+        if(credVerification.getEnabled() == null || !credVerification.getEnabled()) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, "2FA is not enabled for user");
+        }
+        if(!credVerification.getVerified().equals(credential.getVerified())) {
+            userDao.update2faVerification(credVerification.getId(), credential.getVerified());
+        }
+        return ApiResponseFactory.createResponse("User verification updated");
+    }
+
     @POST
     @Path("/oneTimeToken")
     @Timed

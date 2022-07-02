@@ -36,6 +36,7 @@ import com.appirio.tech.core.service.identity.dao.ExternalAccountDAO.ExternalAcc
 import com.appirio.tech.core.service.identity.representation.Achievement;
 import com.appirio.tech.core.service.identity.representation.Country;
 import com.appirio.tech.core.service.identity.representation.Credential;
+import com.appirio.tech.core.service.identity.representation.CredentialVerification;
 import com.appirio.tech.core.service.identity.representation.Email;
 import com.appirio.tech.core.service.identity.representation.GroupMembership;
 import com.appirio.tech.core.service.identity.representation.ProviderType;
@@ -122,6 +123,21 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
             "WHERE LOWER(e.address) = LOWER(:email)"
     )
     public abstract List<User> findUsersByEmail(@Bind("email") String email);
+
+    @RegisterMapperFactory(TCBeanMapperFactory.class)
+    @SqlQuery(
+            "SELECT ud.id AS id, u.user_id AS userId, e.address AS email, ud.enabled AS enabled, ud.verified AS verified " +
+            "FROM common_oltp.user AS u JOIN common_oltp.email AS e ON e.user_id = u.user_id " +
+            "LEFT JOIN common_oltp.user_2fa AS ud ON ud.user_id = u.user_id " +
+            "WHERE LOWER(e.address) = LOWER(:email)"
+    )
+    public abstract List<CredentialVerification> findUser2faByEmail(@Bind("email") String email);
+
+    @SqlUpdate(
+            "UPDATE common_oltp.user_2fa SET " +
+            "verified=:verified " +
+            "WHERE id=:id")
+    public abstract int update2faVerification(@Bind("id") long id, @Bind("verified") boolean verified);
 
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
@@ -362,6 +378,22 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
         }
         
         // nothing matched with email parameter in the result, returns the first one.
+        return users.get(0);
+    }
+
+    public CredentialVerification findUserCredentialByEmail(String email) {
+        List<CredentialVerification> users = findUser2faByEmail(email);
+        if(users==null || users.size()==0)
+            return null;
+        
+        if(users.size()==1)
+            return users.get(0);
+
+        for (CredentialVerification user : users) {
+            if(user.getEmail().equals(email))
+                return user;
+        }
+    
         return users.get(0);
     }
     
