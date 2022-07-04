@@ -234,8 +234,9 @@ public class IdentityApplication extends APIApplication<IdentityConfiguration> {
 		        configuration.getEventBusServiceClientConfig(), configuration.getM2mAuthConfiguration());
 		// Resources::users
     	CacheService cacheService = configuration.getCache().createCacheService();
-    	UserResource userResource = new UserResource(userDao, roleDao, cacheService, eventProducer, eventBusServiceClient, configuration.getM2mAuthConfiguration().getUserProfiles());
+    	UserResource userResource = new UserResource(userDao, roleDao, cacheService, eventProducer, eventBusServiceClient, configuration.getM2mAuthConfiguration().getUserProfiles(), configuration.getM2mAuthConfiguration().getUser2fa());
     	userResource.setAuth0Client(configuration.getAuth0()); // TODO: constructor
+		userResource.setDiceAuth(configuration.getDiceAuth());
     	userResource.setDomain(configuration.getAuthDomain());
 			userResource.setSendgridTemplateId(Utils.getString("sendGridTemplateId"));
 			userResource.setSendgridWelcomeTemplateId(Utils.getString("sendGridWelcomeTemplateId"));

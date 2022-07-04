@@ -1,5 +1,6 @@
 package com.appirio.tech.core.service.identity;
 
+import com.appirio.tech.core.service.identity.util.m2mscope.User2faFactory;
 import com.appirio.tech.core.service.identity.util.m2mscope.UserProfilesFactory;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.validation.constraints.NotNull;
@@ -65,12 +66,23 @@ public class M2mAuthConfiguration {
     @JsonProperty
     private UserProfilesFactory userProfiles = new UserProfilesFactory();
 
+    @JsonProperty
+    private User2faFactory user2fa = new User2faFactory();
+
     public UserProfilesFactory getUserProfiles() {
         return userProfiles;
     }
 
     public void setUserProfiles(UserProfilesFactory userProfiles) {
         this.userProfiles = userProfiles;
+    }
+
+    public User2faFactory getUser2fa() {
+        return user2fa;
+    }
+
+    public void setUser2fa(User2faFactory user2fa) {
+        this.user2fa = user2fa;
     }
 
     /**

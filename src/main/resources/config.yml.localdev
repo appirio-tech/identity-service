@@ -85,6 +85,16 @@ auth0New:
   nonInteractiveClientId    : AUTH0-NI-CLIENT-ID
   nonInteractiveClientSecret: AUTH0-NI-CLIENT-SECRET
 
+diceAuth:
+  clientId: dummy
+  clientSecret: dummy
+  password: dummy
+  scope: dummy
+  tenant: dummy
+  username: dummy
+  credDefId: dummy
+  credPreview: dummy
+
 # LDAP Settings
 ldap:
   host: ${DOCKER_IP}
@@ -156,6 +166,11 @@ m2mAuthConfig:
     read: read:user_profiles,all:user_profiles
     update: update:user_profiles,all:user_profiles
     delete: delete:user_profiles,all:user_profiles
+  user2fa:
+    create: all:user-2fa
+    read: all:user-2fa
+    update: all:user-2fa
+    delete: all:user-2fa
   
 # Server settings
 server:

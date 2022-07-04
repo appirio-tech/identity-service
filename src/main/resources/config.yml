@@ -91,6 +91,15 @@ auth0New:
   nonInteractiveClientId    : @auth0.new.nonInteractive.clientId@
   nonInteractiveClientSecret: @auth0.new.nonInteractive.clientSecret@
 
+diceAuth:
+  clientId: @diceAuth.clientId@
+  clientSecret: @diceAuth.clientSecret@
+  password: @diceAuth.password@
+  scope: @diceAuth.scope@
+  tenant: @diceAuth.tenant@
+  username: @diceAuth.username@
+  credDefId: @diceAuth.credDefId@
+  credPreview: @diceAuth.credPreview@
 
 # Authorized accounts
 serviceAccount:
@@ -156,6 +165,11 @@ m2mAuthConfig:
     read: @m2mAuthConfig.userProfiles.read@
     update: @m2mAuthConfig.userProfiles.update@
     delete: @m2mAuthConfig.userProfiles.delete@
+  user2fa:
+    create: @m2mAuthConfig.user2fa.create@
+    read: @m2mAuthConfig.user2fa.read@
+    update: @m2mAuthConfig.user2fa.update@
+    delete: @m2mAuthConfig.user2fa.delete@
   
 # Server settings
 server:

@@ -49,6 +49,15 @@
 @auth0.new.nonInteractive.clientSecret@={{AUTH0_NEW_NONINTERACTIVE_ID_SECRET}}
 @auth0.new.domain@={{AUTH0_NEW_DOMAIN}}
 
+@diceAuth.clientId@={{DICEAUTH_ID}}
+@diceAuth.clientSecret@={{DICEAUTH_ID_SECRET}}
+@diceAuth.password@={{DICEAUTH_PASSWORD}}
+@diceAuth.scope@={{DICEAUTH_SCOPE}}
+@diceAuth.tenant@={{DICEAUTH_TENANT}}
+@diceAuth.username@={{DICEAUTH_USERNAME}}
+@diceAuth.credDefId@={{DICEAUTH_CREDDEFID}}
+@diceAuth.credPreview@={{DICEAUTH_CREDPREVIEW}}
+
 @zendesk.secret@={{ZENDESK_KEY}}
 @zendesk.idprefix@={{ZENDESK_ID}}
 
@@ -86,3 +95,7 @@
 @m2mAuthConfig.userProfiles.read@={{M2MAUTHCONFIG_USERPROFILES_READ}}
 @m2mAuthConfig.userProfiles.update@={{M2MAUTHCONFIG_USERPROFILES_UPDATE}}
 @m2mAuthConfig.userProfiles.delete@={{M2MAUTHCONFIG_USERPROFILES_DELETE}}
+@m2mAuthConfig.user2fa.create@={{M2MAUTHCONFIG_USER2FA_CREATE}}
+@m2mAuthConfig.user2fa.read@={{M2MAUTHCONFIG_USER2FA_READ}}
+@m2mAuthConfig.user2fa.update@={{M2MAUTHCONFIG_USER2FA_UPDATE}}
+@m2mAuthConfig.user2fa.delete@={{M2MAUTHCONFIG_USER2FA_DELETE}}

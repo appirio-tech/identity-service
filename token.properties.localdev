@@ -24,6 +24,15 @@
 @auth0.new.clientSecret@=
 @auth0.new.domain@=dummy.auth0.com
 
+@diceAuth.clientId@=dummy
+@diceAuth.clientSecret@=dummy
+@diceAuth.password@=dummy
+@diceAuth.scope@=dummy
+@diceAuth.tenant@=dummy
+@diceAuth.username@=dummy
+@diceAuth.credDefId@=dummy
+@diceAuth.credPreview@=dummy
+
 @zendesk.secret@=ZENDESK_SECRET
 @zendesk.idprefix@=ZENDESK_PREFIX
 
@@ -59,3 +68,7 @@
 @m2mAuthConfig.userProfiles.read@=read:user_profiles,all:user_profiles
 @m2mAuthConfig.userProfiles.update@=update:user_profiles,all:user_profiles
 @m2mAuthConfig.userProfiles.delete@=delete:user_profiles,all:user_profiles
+@m2mAuthConfig.user2fa.create@=all:user-2fa
+@m2mAuthConfig.user2fa.read@=all:user-2fa
+@m2mAuthConfig.user2fa.update@=all:user-2fa
+@m2mAuthConfig.user2fa.delete@=all:user-2fa
