@@ -56,7 +56,6 @@
 @diceAuth.tenant@={{DICEAUTH_TENANT}}
 @diceAuth.username@={{DICEAUTH_USERNAME}}
 @diceAuth.credDefId@={{DICEAUTH_CREDDEFID}}
-@diceAuth.credPreview@={{DICEAUTH_CREDPREVIEW}}
 
 @zendesk.secret@={{ZENDESK_KEY}}
 @zendesk.idprefix@={{ZENDESK_ID}}

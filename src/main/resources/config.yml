@@ -99,7 +99,6 @@ diceAuth:
   tenant: @diceAuth.tenant@
   username: @diceAuth.username@
   credDefId: @diceAuth.credDefId@
-  credPreview: @diceAuth.credPreview@
 
 # Authorized accounts
 serviceAccount:
