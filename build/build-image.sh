@@ -25,7 +25,7 @@ VER=`date "+%Y%m%d%H%M"`
 # }
 
 # configure_aws_cli
-aws s3 cp "s3://appirio-platform-$CONFIG/services/common/dockercfg" ~/.dockercfg
+# aws s3 cp "s3://appirio-platform-$CONFIG/services/common/dockercfg" ~/.dockercfg
 
 # Elastic Beanstalk Application name
 # dev
@@ -96,6 +96,12 @@ echo "copying environment-specific resources"
 cat $WORK_DIR/config/sumo-template.conf | sed -e "s/@APINAME@/${SERVICE}/g" | sed -e "s/@CONFIG@/${CONFIG}/g" > $DOCKER_DIR/sumo.conf
 cat $WORK_DIR/config/sumo-sources-template.json | sed -e "s/@APINAME@/${SERVICE}/g" | sed -e "s/@CONFIG@/${CONFIG}/g" > $DOCKER_DIR/sumo-sources.json
 cat $WORK_DIR/config/newrelic-template.yml | sed -e "s/@APINAME@/${SERVICE}/g" | sed -e "s/@CONFIG@/${CONFIG}/g" > $DOCKER_DIR/newrelic.yml
+
+echo "Logging into docker"
+echo "############################"
+DOCKER_USER=$(aws ssm get-parameter --name /$CONFIG/build/dockeruser --with-decryption --output text --query Parameter.Value)
+DOCKER_PASSWD=$(aws ssm get-parameter --name /$CONFIG/build/dockercfg --with-decryption --output text --query Parameter.Value)
+echo $DOCKER_PASSWD | docker login -u $DOCKER_USER --password-stdin
 
 echo "building docker image: ${IMAGE}"
 docker build -t $TAG $DOCKER_DIR
