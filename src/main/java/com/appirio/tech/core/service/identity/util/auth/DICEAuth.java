@@ -40,8 +40,7 @@ public class DICEAuth {
     @NotNull
     private String credDefId;
 
-    @NotNull
-    private String credPreview;
+    private String credPreview = "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/credential-preview";
 
     private String cachedToken;
 
@@ -49,7 +48,7 @@ public class DICEAuth {
     }
 
     public DICEAuth(String tenant, String username, String password, String scope, String clientId,
-            String clientSecret, String credDefId, String credPreview) {
+            String clientSecret, String credDefId) {
         this.tenant = tenant;
         this.username = username;
         this.password = password;
@@ -57,7 +56,6 @@ public class DICEAuth {
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.credDefId = credDefId;
-        this.credPreview = credPreview;
     }
 
     public String getTenant() {

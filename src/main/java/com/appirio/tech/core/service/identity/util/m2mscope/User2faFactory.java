@@ -12,22 +12,22 @@ public class User2faFactory {
     /**
      * Represents the create scopes for machine token validation.
      */
-    public static final String[] ReadScopes = { "all:user-2fa" };
+    public static final String[] ReadScopes = { "all:user_2fa" };
 
     /**
      * Represents the create scopes for machine token validation.
      */
-    public static final String[] CreateScopes = { "all:user-2fa" };
+    public static final String[] CreateScopes = { "all:user_2fa" };
 
     /**
      * Represents the delete scopes for machine token validation.
      */
-    public static final String[] DeleteScopes = { "all:user-2fa" };
+    public static final String[] DeleteScopes = { "all:user_2fa" };
 
     /**
      * Represents the update scopes for machine token validation.
      */
-    public static final String[] UpdateScopes = { "all:user-2fa" };
+    public static final String[] UpdateScopes = { "all:user_2fa" };
 
     /**
      * Represents the read attribute
