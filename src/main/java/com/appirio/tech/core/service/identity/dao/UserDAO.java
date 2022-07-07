@@ -108,9 +108,11 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
             "SELECT " + USER_COLUMNS + ", " +
-            "e.address AS email, e.status_id AS emailStatus " +
+            "e.address AS email, e.status_id AS emailStatus, " +
+            "mfa.enabled AS mfaEnabled, mfa.verified AS mfaVerified " +
             "FROM common_oltp.user AS u " +
             "LEFT OUTER JOIN common_oltp.email AS e ON u.user_id = e.user_id AND e.email_type_id = 1 " +
+            "LEFT JOIN common_oltp.user_2fa mfa ON mfa.user_id = u.user_id " +
             "WHERE u.handle_lower = LOWER(:handle)"
     )
     public abstract User findUserByHandle(@Bind("handle") String handle);
@@ -118,8 +120,10 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
             "SELECT " + USER_COLUMNS + ", " +
-            "e.address AS email, e.status_id AS emailStatus " +
+            "e.address AS email, e.status_id AS emailStatus, " +
+            "mfa.enabled AS mfaEnabled, mfa.verified AS mfaVerified " +
             "FROM common_oltp.user AS u JOIN common_oltp.email AS e ON e.user_id = u.user_id " +
+            "LEFT JOIN common_oltp.user_2fa mfa ON mfa.user_id = u.user_id " +
             "WHERE LOWER(e.address) = LOWER(:email)"
     )
     public abstract List<User> findUsersByEmail(@Bind("email") String email);

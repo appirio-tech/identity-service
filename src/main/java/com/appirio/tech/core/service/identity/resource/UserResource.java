@@ -9,11 +9,9 @@ import io.dropwizard.auth.Auth;
 import io.dropwizard.jersey.PATCH;
 
 import java.net.HttpURLConnection;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -1530,6 +1528,9 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         // return 404 if user is not found
         if(user == null)
             throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
+        if(user.getMfaEnabled() == null || !user.getMfaEnabled()) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, "2FA is not enabled for user");
+        }
         List<Role> roles = roleDao.getRolesBySubjectId(Long.parseLong(user.getId().getId()));
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode body = mapper.createObjectNode();
@@ -1573,7 +1574,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
                     String.format("Got unexpected response from remote service. %d %s", response.getStatusCode(),
                             response.getMessage()));
         }
-        return ApiResponseFactory.createResponse(response.getText());
+        return ApiResponseFactory.createResponse("SUCCESS");
     }
 
     @PUT
