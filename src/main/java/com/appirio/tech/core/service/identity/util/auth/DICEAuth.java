@@ -131,16 +131,14 @@ public class DICEAuth {
             }
         }
         if (cachedToken == null || isCachedTokenExpired) {
-            Request request = new Request(
+            Response response = new Request(
                     "https://login.microsoftonline.com/" + getTenant() + "/oauth2/v2.0/token", "POST")
                     .param("grant_type", "password")
                     .param("username", getUsername())
                     .param("password", getPassword())
                     .param("scope", getScope())
                     .param("client_id", getClientId())
-                    .param("client_secret", getClientSecret());
-            logger.info(request.getQuery());
-            Response response = request.execute();
+                    .param("client_secret", getClientSecret()).execute();
             if (response.getStatusCode() != HttpURLConnection.HTTP_OK) {
                 throw new APIRuntimeException(HttpURLConnection.HTTP_INTERNAL_ERROR,
                         String.format("Got unexpected response from remote service. %d %s", response.getStatusCode(),
