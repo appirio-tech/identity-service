@@ -15,6 +15,7 @@ context:
   sendGridWelcomeTemplateId: @application.sendgrid.welcome.template.id@
   sendGridSelfServiceTemplateId: @application.sendgrid.selfservice.template.id@
   sendGridSelfServiceWelcomeTemplateId: @application.sendgrid.selfservice.welcome.template.id@
+  sendGrid2faInvitationTemplateId: @application.sendgrid.2fa.invitation.template.id@
   jwtExpirySeconds: 600
   cookieExpirySeconds: 7776000
 

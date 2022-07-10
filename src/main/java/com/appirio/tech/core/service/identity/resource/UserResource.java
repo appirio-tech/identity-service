@@ -58,6 +58,7 @@ import com.appirio.tech.core.service.identity.dao.UserDAO;
 import com.appirio.tech.core.service.identity.representation.Achievement;
 import com.appirio.tech.core.service.identity.representation.Country;
 import com.appirio.tech.core.service.identity.representation.Credential;
+import com.appirio.tech.core.service.identity.representation.CredentialInvitation;
 import com.appirio.tech.core.service.identity.representation.CredentialRequest;
 import com.appirio.tech.core.service.identity.representation.CredentialVerification;
 import com.appirio.tech.core.service.identity.representation.Email;
@@ -122,6 +123,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     private String sendgridSelfServiceTemplateId;
 
     private String sendgridSelfServiceWelcomeTemplateId;
+
+    private String sendgrid2faInvitationTemplateId;
     
     protected UserDAO userDao;
     
@@ -1615,6 +1618,40 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     }
 
     @POST
+    @Path("/2faInvitation")
+    @Timed
+    public ApiResponse send2faInvitation(
+            @Auth AuthUser authUser,
+            @Valid PostPutRequest<CredentialInvitation> postRequest,
+            @Context HttpServletRequest request) {
+        Utils.checkAccess(authUser, user2faFactory.getCreateScopes(), Utils.AdminRoles);
+        CredentialInvitation invitation = postRequest.getParam();
+
+        if(invitation == null) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Request Body"));
+        }
+        if(invitation.getEmail() == null || invitation.getEmail().length() == 0) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Email address"));
+        }
+        if(invitation.getInvitationUrl() == null || invitation.getInvitationUrl().length() == 0) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Invitation Url"));
+        }
+        logger.info(String.format("send 2fa invitation to (%s)", invitation.getEmail()));
+
+        // find user by email
+        User user = userDao.findUserByEmail(invitation.getEmail());
+
+        // return 404 if user is not found
+        if(user == null)
+            throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
+        if(user.getMfaEnabled() == null || !user.getMfaEnabled()) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, "2FA is not enabled for user");
+        }
+        send2faInvitationEmailEvent(user, invitation.getInvitationUrl());
+        return ApiResponseFactory.createResponse("SUCCESS");
+    }
+
+    @POST
     @Path("/oneTimeToken")
     @Timed
     public ApiResponse getOneTimeToken(
@@ -1937,6 +1974,14 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         this.sendgridSelfServiceTemplateId = sendgridSelfServiceTemplateId;
     }
 
+    public String getSendgrid2faInvitationTemplateId() {
+        return sendgrid2faInvitationTemplateId;
+    }
+
+    public void setSendgrid2faInvitationTemplateId(String sendgrid2faInvitationTemplateId) {
+        this.sendgrid2faInvitationTemplateId = sendgrid2faInvitationTemplateId;
+    }
+
     public String getSecret() {
         return secret;
     }
@@ -2007,6 +2052,38 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if (user.getRegSource() != null && user.getRegSource().matches("selfService")) {
             payload.put("sendgrid_template_id", this.getSendgridSelfServiceTemplateId());
         }
+
+        ArrayList<String> recipients = new ArrayList<String>();
+        recipients.add(user.getEmail());
+
+        payload.put("recipients", recipients);
+
+        msg.setPayload(payload);
+        try {
+            this.eventBusServiceClient.reFireEvent(msg);
+        } catch (Exception e) {
+            logger.error("Error occured while publishing the events to new kafka.");
+        }
+    }
+
+    private void send2faInvitationEmailEvent(User user, String inviteLink) {
+
+        EventMessage msg = EventMessage.getDefault();
+        msg.setTopic("external.action.email");
+
+        Map<String,Object> payload = new LinkedHashMap<String,Object>();
+        Map<String,Object> data = new LinkedHashMap<String,Object>();
+        data.put("handle", user.getHandle());
+        data.put("link", inviteLink);
+
+        payload.put("data", data);
+
+        Map<String,Object> from = new LinkedHashMap<String,Object>();
+        from.put("email", String.format("Topcoder <noreply@%s>", getDomain()));
+        payload.put("from", from);
+
+        payload.put("version", "v3");
+        payload.put("sendgrid_template_id", this.getSendgrid2faInvitationTemplateId());
 
         ArrayList<String> recipients = new ArrayList<String>();
         recipients.add(user.getEmail());
