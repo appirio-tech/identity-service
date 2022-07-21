@@ -51,6 +51,7 @@
 @auth0.new.domain@={{AUTH0_NEW_DOMAIN}}
 
 @diceAuth.diceUrl@={{DICEAUTH_DICE_URL}}
+@diceAuth.diceApiUrl@={{DICEAUTH_DICE_API_URL}}
 @diceAuth.apiKey@={{DICEAUTH_API_KEY}}
 @diceAuth.credDefId@={{DICEAUTH_CREDDEFID}}
 

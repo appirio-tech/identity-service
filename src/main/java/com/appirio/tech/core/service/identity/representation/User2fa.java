@@ -1,9 +1,11 @@
 package com.appirio.tech.core.service.identity.representation;
 
-public class CredentialVerification {
+public class User2fa {
 
 	private long id;
 	private long userId;
+	private String handle;
+	private String firstName;
 	private String email;
 	private Boolean enabled;
 	private Boolean verified;
@@ -22,6 +24,22 @@ public class CredentialVerification {
 
 	public void setUserId(long userId) {
 		this.userId = userId;
+	}
+
+	public String getHandle() {
+		return handle;
+	}
+
+	public void setHandle(String handle) {
+		this.handle = handle;
+	}
+
+	public String getFirstName() {
+		return firstName;
+	}
+
+	public void setFirstName(String firstName) {
+		this.firstName = firstName;
 	}
 
 	public String getEmail() {

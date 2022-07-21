@@ -7,6 +7,9 @@ public class DICEAuth {
     private String diceUrl;
 
     @NotNull
+    private String diceApiUrl;
+
+    @NotNull
     private String apiKey;
 
     @NotNull
@@ -17,8 +20,9 @@ public class DICEAuth {
     public DICEAuth() {
     }
 
-    public DICEAuth(String diceUrl, String apiKey, String credDefId) {
+    public DICEAuth(String diceUrl, String diceApiUrl, String apiKey, String credDefId) {
         this.diceUrl = diceUrl;
+        this.diceApiUrl = diceApiUrl;
         this.apiKey = apiKey;
         this.credDefId = credDefId;
     }
@@ -29,6 +33,14 @@ public class DICEAuth {
 
     public void setDiceUrl(String diceUrl) {
         this.diceUrl = diceUrl;
+    }
+
+    public String getDiceApiUrl() {
+        return diceApiUrl;
+    }
+
+    public void setDiceApiUrl(String diceApiUrl) {
+        this.diceApiUrl = diceApiUrl;
     }
 
     public String getApiKey() {

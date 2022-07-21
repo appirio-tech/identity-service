@@ -36,7 +36,7 @@ import com.appirio.tech.core.service.identity.dao.ExternalAccountDAO.ExternalAcc
 import com.appirio.tech.core.service.identity.representation.Achievement;
 import com.appirio.tech.core.service.identity.representation.Country;
 import com.appirio.tech.core.service.identity.representation.Credential;
-import com.appirio.tech.core.service.identity.representation.CredentialVerification;
+import com.appirio.tech.core.service.identity.representation.User2fa;
 import com.appirio.tech.core.service.identity.representation.Email;
 import com.appirio.tech.core.service.identity.representation.GroupMembership;
 import com.appirio.tech.core.service.identity.representation.ProviderType;
@@ -98,9 +98,11 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
     @SqlQuery(
             "SELECT " + USER_COLUMNS + ", " +
             "s.password AS credential$encodedPassword, e.address AS email, e.status_id AS emailStatus " +
+            "mfa.enabled AS mfaEnabled, mfa.verified AS mfaVerified " +
             "FROM common_oltp.user AS u " +
             "LEFT OUTER JOIN common_oltp.email AS e ON u.user_id = e.user_id AND e.email_type_id = 1 AND e.primary_ind = 1 " +
             "LEFT OUTER JOIN common_oltp.security_user AS s ON u.user_id = s.login_id " +
+            "LEFT JOIN common_oltp.user_2fa mfa ON mfa.user_id = u.user_id " +
             "WHERE u.user_id = :id"
     )
     public abstract User findUserById(@Bind("id") long id);
@@ -130,18 +132,33 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
 
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
-            "SELECT ud.id AS id, u.user_id AS userId, e.address AS email, ud.enabled AS enabled, ud.verified AS verified " +
+            "SELECT mfa.id AS id, u.user_id AS userId, u.handle AS handle, u.first_name AS firstName, e.address AS email, mfa.enabled AS enabled, mfa.verified AS verified " +
             "FROM common_oltp.user AS u JOIN common_oltp.email AS e ON e.user_id = u.user_id " +
-            "LEFT JOIN common_oltp.user_2fa AS ud ON ud.user_id = u.user_id " +
+            "LEFT JOIN common_oltp.user_2fa AS mfa ON mfa.user_id = u.user_id " +
             "WHERE LOWER(e.address) = LOWER(:email)"
     )
-    public abstract List<CredentialVerification> findUser2faByEmail(@Bind("email") String email);
+    public abstract List<User2fa> findUser2faByEmail(@Bind("email") String email);
+
+    @SqlQuery(
+            "SELECT mfa.id AS id, u.user_id AS userId, u.handle AS handle, u.first_name AS firstName, e.address AS email, maf.enabled AS enabled, mfa.verified AS verified " +
+            "FROM common_oltp.user AS u LEFT JOIN common_oltp.email AS e ON e.user_id = u.user_id " +
+            "LEFT JOIN common_oltp.user_2fa AS mfa ON mfa.user_id = u.user_id " +
+            "WHERE u.user_id = :userId"
+    )
+    public abstract User2fa findUser2faById(@Bind("userId") long userId);
+
+    @SqlUpdate(
+            "INSERT INTO common_oltp.user_2fa " +
+            "(user_id, enabled) VALUES " +
+            "(:userId, :enabled)")
+    public abstract int insertUser2fa(@Bind("userId") long userId, @Bind("enabled") boolean enabled);
 
     @SqlUpdate(
             "UPDATE common_oltp.user_2fa SET " +
+            "enabled=:enabled " +
             "verified=:verified " +
             "WHERE id=:id")
-    public abstract int update2faVerification(@Bind("id") long id, @Bind("verified") boolean verified);
+    public abstract int update2fa(@Bind("id") long id, @Bind("enabled") boolean enabled, @Bind("verified") boolean verified);
 
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
@@ -156,7 +173,9 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
     @SqlQuery(
             "SELECT " + USER_COLUMNS + ", " +
             "e.address AS email, e.status_id AS emailStatus " +
+            "mfa.enabled AS mfaEnabled, mfa.verified AS mfaVerified " +
             "FROM common_oltp.user AS u " +
+            "LEFT JOIN common_oltp.user_2fa AS mfa ON mfa.user_id = u.user_id " +
             "<joinOnEmail> common_oltp.email AS e ON u.user_id = e.user_id AND e.primary_ind = 1 " +
             "<condition> " +
             "<order> " +
@@ -385,15 +404,15 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
         return users.get(0);
     }
 
-    public CredentialVerification findUserCredentialByEmail(String email) {
-        List<CredentialVerification> users = findUser2faByEmail(email);
+    public User2fa findUserCredentialByEmail(String email) {
+        List<User2fa> users = findUser2faByEmail(email);
         if(users==null || users.size()==0)
             return null;
         
         if(users.size()==1)
             return users.get(0);
 
-        for (CredentialVerification user : users) {
+        for (User2fa user : users) {
             if(user.getEmail().equals(email))
                 return user;
         }

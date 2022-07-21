@@ -31,6 +31,7 @@
 @auth0.new.domain@=dummy.auth0.com
 
 @diceAuth.diceUrl@=dummy
+@diceAuth.diceApiUrl@=dummy
 @diceAuth.apiKey@=dummy
 @diceAuth.credDefId@=dummy
 

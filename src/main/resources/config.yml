@@ -94,6 +94,7 @@ auth0New:
 
 diceAuth:
   diceUrl: @diceAuth.diceUrl@
+  diceApiUrl: @diceAuth.diceApiUrl@
   apiKey: @diceAuth.apiKey@
   credDefId: @diceAuth.credDefId@
 
