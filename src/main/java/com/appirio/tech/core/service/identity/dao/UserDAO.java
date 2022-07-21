@@ -139,6 +139,7 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
     )
     public abstract List<User2fa> findUser2faByEmail(@Bind("email") String email);
 
+    @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
             "SELECT mfa.id AS id, u.user_id AS userId, u.handle AS handle, u.first_name AS firstName, e.address AS email, mfa.enabled AS enabled, mfa.verified AS verified " +
             "FROM common_oltp.user AS u LEFT JOIN common_oltp.email AS e ON e.user_id = u.user_id " +
