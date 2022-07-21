@@ -1559,7 +1559,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         preview.set("attributes", attributes);
         Response response;
         try {
-            response = new Request(diceAuth.getDiceUrl()+"/credentialoffer/api/credentialoffer", "POST")
+            response = new Request(diceAuth.getDiceUrl()+"/v1/credentialoffer/api/credentialoffer", "POST")
                     .header("x-api-key", diceAuth.getApiKey())
             		.json(mapper.writeValueAsString(body))
             		.execute();
