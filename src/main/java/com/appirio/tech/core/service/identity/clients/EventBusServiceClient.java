@@ -90,6 +90,7 @@ public class EventBusServiceClient extends BaseClient {
                 LOGGER.error("Unable to fire the event: {}", response);
             }
         } catch (SocketTimeoutException e) {
+                LOGGER.info(e.getMessage());
                 if(!e.getMessage().equals("Read timed out")) {
                     LOGGER.error("Failed to fire the event: {}", e);
                 }

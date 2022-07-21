@@ -161,6 +161,13 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
             "WHERE id=:id")
     public abstract int update2fa(@Bind("id") long id, @Bind("enabled") boolean enabled, @Bind("verified") boolean verified);
 
+    @SqlUpdate(
+            "UPDATE common_oltp.user_2fa SET " +
+            "enabled=:enabled, " +
+            "verified=:verified " +
+            "WHERE user_id=:userId")
+    public abstract int update2faByUserId(@Bind("userId") long userId, @Bind("enabled") boolean enabled, @Bind("verified") boolean verified);
+
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
             "SELECT " + USER_COLUMNS + ", " +

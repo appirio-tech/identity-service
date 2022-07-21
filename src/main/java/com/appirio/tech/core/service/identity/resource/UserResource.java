@@ -897,7 +897,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
       logger.debug(String.format("Auth0: updating password for user: %s", dbUser.getHandle()));
       userDao.updatePassword(dbUser);
-      userDao.update2fa(Utils.toLongValue(dbUser.getId()), false, false);
+      userDao.update2faByUserId(Utils.toLongValue(dbUser.getId()), false, false);
 
       return ApiResponseFactory.createResponse("password updated successfully.");
    }
