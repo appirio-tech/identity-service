@@ -86,14 +86,9 @@ auth0New:
   nonInteractiveClientSecret: AUTH0-NI-CLIENT-SECRET
 
 diceAuth:
-  clientId: dummy
-  clientSecret: dummy
-  password: dummy
-  scope: dummy
-  tenant: dummy
-  username: dummy
+  diceUrl: dummy
+  apiKey: dummy
   credDefId: dummy
-  credPreview: dummy
 
 # LDAP Settings
 ldap:

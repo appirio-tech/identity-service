@@ -93,12 +93,8 @@ auth0New:
   nonInteractiveClientSecret: @auth0.new.nonInteractive.clientSecret@
 
 diceAuth:
-  clientId: @diceAuth.clientId@
-  clientSecret: @diceAuth.clientSecret@
-  password: @diceAuth.password@
-  scope: @diceAuth.scope@
-  tenant: @diceAuth.tenant@
-  username: @diceAuth.username@
+  diceUrl: @diceAuth.diceUrl@
+  apiKey: @diceAuth.apiKey@
   credDefId: @diceAuth.credDefId@
 
 # Authorized accounts

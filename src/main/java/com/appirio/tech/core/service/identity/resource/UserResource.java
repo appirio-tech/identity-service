@@ -1512,11 +1512,9 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             @Valid PostPutRequest<CredentialRequest> postRequest,
             @Context HttpServletRequest request) {
         Utils.checkAccess(authUser, user2faFactory.getCreateScopes(), Utils.AdminRoles);
+        checkParam(postRequest);
         CredentialRequest credential = postRequest.getParam();
 
-        if(credential == null) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Request Body"));
-        }
         if(credential.getEmail() == null || credential.getEmail().length() == 0) {
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Email address"));
         }
@@ -1561,8 +1559,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         preview.set("attributes", attributes);
         Response response;
         try {
-            response = new Request("https://dicecontroller-topcoder.wiprobc.com/api/credentialoffer", "POST")
-                    .header("Authorization", "Bearer " + diceAuth.getToken())
+            response = new Request(diceAuth.getDiceUrl()+"/credentialoffer/api/credentialoffer", "POST")
+                    .header("x-api-key", diceAuth.getApiKey())
             		.json(mapper.writeValueAsString(body))
             		.execute();
         } catch (JsonProcessingException e) {
@@ -1589,10 +1587,9 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             @Context HttpServletRequest request) {
 
         Utils.checkAccess(authUser, user2faFactory.getUpdateScopes(), Utils.AdminRoles);
+        checkParam(putRequest);
         CredentialVerification credential = putRequest.getParam();
-        if(credential == null) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Request Body"));
-        }
+
         if(credential.getEmail() == null || credential.getEmail().length() == 0) {
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Email address"));
         }
@@ -1625,11 +1622,9 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             @Valid PostPutRequest<CredentialInvitation> postRequest,
             @Context HttpServletRequest request) {
         Utils.checkAccess(authUser, user2faFactory.getCreateScopes(), Utils.AdminRoles);
+        checkParam(postRequest);
         CredentialInvitation invitation = postRequest.getParam();
 
-        if(invitation == null) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Request Body"));
-        }
         if(invitation.getEmail() == null || invitation.getEmail().length() == 0) {
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Email address"));
         }

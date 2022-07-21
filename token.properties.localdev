@@ -30,12 +30,8 @@
 @auth0.new.clientSecret@=
 @auth0.new.domain@=dummy.auth0.com
 
-@diceAuth.clientId@=dummy
-@diceAuth.clientSecret@=dummy
-@diceAuth.password@=dummy
-@diceAuth.scope@=dummy
-@diceAuth.tenant@=dummy
-@diceAuth.username@=dummy
+@diceAuth.diceUrl@=dummy
+@diceAuth.apiKey@=dummy
 @diceAuth.credDefId@=dummy
 
 @zendesk.secret@=ZENDESK_SECRET

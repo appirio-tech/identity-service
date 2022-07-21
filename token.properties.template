@@ -50,12 +50,8 @@
 @auth0.new.nonInteractive.clientSecret@={{AUTH0_NEW_NONINTERACTIVE_ID_SECRET}}
 @auth0.new.domain@={{AUTH0_NEW_DOMAIN}}
 
-@diceAuth.clientId@={{DICEAUTH_ID}}
-@diceAuth.clientSecret@={{DICEAUTH_ID_SECRET}}
-@diceAuth.password@={{DICEAUTH_PASSWORD}}
-@diceAuth.scope@={{DICEAUTH_SCOPE}}
-@diceAuth.tenant@={{DICEAUTH_TENANT}}
-@diceAuth.username@={{DICEAUTH_USERNAME}}
+@diceAuth.diceUrl@={{DICEAUTH_DICE_URL}}
+@diceAuth.apiKey@={{DICEAUTH_API_KEY}}
 @diceAuth.credDefId@={{DICEAUTH_CREDDEFID}}
 
 @zendesk.secret@={{ZENDESK_KEY}}
