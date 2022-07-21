@@ -156,7 +156,7 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
 
     @SqlUpdate(
             "UPDATE common_oltp.user_2fa SET " +
-            "enabled=:enabled " +
+            "enabled=:enabled, " +
             "verified=:verified " +
             "WHERE id=:id")
     public abstract int update2fa(@Bind("id") long id, @Bind("enabled") boolean enabled, @Bind("verified") boolean verified);
