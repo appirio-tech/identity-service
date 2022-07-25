@@ -1513,8 +1513,6 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             @Valid PostPutRequest<User2fa> postRequest,
             @Context HttpServletRequest request) {
 
-        logger.info(String.format("update user 2fa(%s)", resourceId));
-
         TCID id = new TCID(resourceId);
         validateResourceIdAndCheckPermission(authUser, id, user2faFactory.getUpdateScopes());
         // checking param
@@ -1525,6 +1523,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if(user2fa.getEnabled() == null) {
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "enabled"));
         }
+        logger.info(String.format("update user 2fa(%s) - %b", resourceId, user2fa.getEnabled()));
 
         Long userId = Utils.toLongValue(id);
         
