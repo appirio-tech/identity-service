@@ -95,7 +95,13 @@ auth0New:
 diceAuth:
   diceUrl: @diceAuth.diceUrl@
   diceApiUrl: @diceAuth.diceApiUrl@
-  apiKey: @diceAuth.apiKey@
+  diceVerifier: @diceAuth.diceVerifier@
+  clientId: @diceAuth.clientId@
+  clientSecret: @diceAuth.clientSecret@
+  password: @diceAuth.password@
+  scope: @diceAuth.scope@
+  tenant: @diceAuth.tenant@
+  username: @diceAuth.username@
   credDefId: @diceAuth.credDefId@
 
 # Authorized accounts

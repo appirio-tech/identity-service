@@ -87,7 +87,14 @@ auth0New:
 
 diceAuth:
   diceUrl: dummy
-  apiKey: dummy
+  diceApiUrl: dummy
+  diceVerifier: dummy
+  clientId: dummy
+  clientSecret: dummy
+  password: dummy
+  scope: dummy
+  tenant: dummy
+  username: dummy
   credDefId: dummy
 
 # LDAP Settings
