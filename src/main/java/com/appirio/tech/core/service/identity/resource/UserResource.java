@@ -1517,26 +1517,26 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         validateResourceIdAndCheckPermission(authUser, id, user2faFactory.getUpdateScopes());
         // checking param
         checkParam(postRequest);
-        
+
         User2fa user2fa = postRequest.getParam();
 
-        if(user2fa.getEnabled() == null) {
+        if (user2fa.getEnabled() == null) {
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "enabled"));
         }
         logger.info(String.format("update user 2fa(%s) - %b", resourceId, user2fa.getEnabled()));
 
         Long userId = Utils.toLongValue(id);
-        
+
         logger.info(String.format("findUserById(%s)", resourceId));
         User2fa user2faInDb = userDao.findUser2faById(userId);
-        if(user2faInDb==null)
+        if (user2faInDb == null)
             throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
-        
+
         Boolean shouldSendInvite = false;
-        if(user2faInDb.getEnabled() == null) {
+        if (user2faInDb.getEnabled() == null) {
             userDao.insertUser2fa(userId, user2fa.getEnabled());
             shouldSendInvite = user2fa.getEnabled();
-        } else if(!user2faInDb.getEnabled().equals(user2fa.getEnabled())) {
+        } else if (!user2faInDb.getEnabled().equals(user2fa.getEnabled())) {
             userDao.update2fa(user2faInDb.getId(), user2fa.getEnabled(), false);
             shouldSendInvite = user2fa.getEnabled();
         }
@@ -1544,15 +1544,17 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if (shouldSendInvite) {
             Response response;
             try {
-                response = new Request(diceAuth.getDiceApiUrl() + "/v1/connection/submit", "POST")
+                response = new Request(diceAuth.getDiceApiUrl() + "/connection/invitation", "POST")
                         .param("emailId", user2faInDb.getEmail())
-                        .header("x-api-key", diceAuth.getApiKey())
+                        .header("Authorization", "Bearer " + diceAuth.getToken())
                         .execute();
             } catch (Exception e) {
                 logger.error("Error when calling 2fa submit api", e);
+                userDao.update2fa(user2faInDb.getId(), false, false);
                 throw new APIRuntimeException(SC_INTERNAL_SERVER_ERROR, "Error when calling 2fa submit api");
             }
             if (response.getStatusCode() != HttpURLConnection.HTTP_CREATED) {
+                userDao.update2fa(user2faInDb.getId(), false, false);
                 throw new APIRuntimeException(HttpURLConnection.HTTP_INTERNAL_ERROR,
                         String.format("Got unexpected response from remote service. %d %s", response.getStatusCode(),
                                 response.getMessage()));
@@ -1560,7 +1562,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             logger.info(response.getText());
             send2faInvitationEmailEvent(user2faInDb, diceAuth.getDiceUrl() + "/verify/" + response.getText());
         }
-        
+
         return ApiResponseFactory.createResponse("SUCCESS");
     }
 
@@ -1619,10 +1621,10 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         preview.set("attributes", attributes);
         Response response;
         try {
-            response = new Request(diceAuth.getDiceApiUrl()+"/v1/credentialoffer/api/credentialoffer", "POST")
-                    .header("x-api-key", diceAuth.getApiKey())
-            		.json(mapper.writeValueAsString(body))
-            		.execute();
+            response = new Request(diceAuth.getDiceApiUrl() + "/cred/issuance/offer", "POST")
+                    .header("Authorization", "Bearer " + diceAuth.getToken())
+                    .json(mapper.writeValueAsString(body))
+                    .execute();
         } catch (JsonProcessingException e) {
             logger.error("Error when processing JSON content", e);
             throw new APIRuntimeException(SC_INTERNAL_SERVER_ERROR, "Error when calling credentialoffer api");
@@ -1634,6 +1636,9 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             throw new APIRuntimeException(HttpURLConnection.HTTP_INTERNAL_ERROR,
                     String.format("Got unexpected response from remote service. %d %s", response.getStatusCode(),
                             response.getMessage()));
+        }
+        if (user.getVerified()) {
+            userDao.update2fa(user.getId(), true, false);
         }
         return ApiResponseFactory.createResponse("SUCCESS");
     }
@@ -2098,6 +2103,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         Map<String,Object> data = new LinkedHashMap<String,Object>();
         data.put("handle", user.getHandle());
         data.put("link", inviteLink);
+        data.put("verifier", diceAuth.getDiceVerifier());
 
         payload.put("data", data);
 

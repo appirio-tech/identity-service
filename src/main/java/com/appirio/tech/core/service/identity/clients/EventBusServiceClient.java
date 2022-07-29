@@ -9,8 +9,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.SocketTimeoutException;
-
+import javax.ws.rs.ProcessingException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
@@ -89,9 +88,8 @@ public class EventBusServiceClient extends BaseClient {
             if (response.getStatusInfo().getStatusCode() != HttpStatus.OK_200 &&  response.getStatusInfo().getStatusCode()!= HttpStatus.NO_CONTENT_204) {
                 LOGGER.error("Unable to fire the event: {}", response);
             }
-        } catch (SocketTimeoutException e) {
-                LOGGER.info(e.getMessage());
-                if(!e.getMessage().equals("Read timed out")) {
+        } catch (ProcessingException e) {
+                if(!e.getMessage().equals("java.net.SocketTimeoutException: Read timed out")) {
                     LOGGER.error("Failed to fire the event: {}", e);
                 }
         } catch (Exception e) {

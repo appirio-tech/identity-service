@@ -32,7 +32,13 @@
 
 @diceAuth.diceUrl@=dummy
 @diceAuth.diceApiUrl@=dummy
-@diceAuth.apiKey@=dummy
+@diceAuth.diceVerifier@=dummy
+@diceAuth.clientId@=dummy
+@diceAuth.clientSecret@=dummy
+@diceAuth.password@=dummy
+@diceAuth.scope@=dummy
+@diceAuth.tenant@=dummy
+@diceAuth.username@=dummy
 @diceAuth.credDefId@=dummy
 
 @zendesk.secret@=ZENDESK_SECRET
