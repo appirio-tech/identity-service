@@ -167,8 +167,8 @@ public class DICEAuth {
             }
         }
         if (cachedToken == null || isCachedTokenExpired) {
-            Response response = new Request(
-                    "https://login.microsoftonline.com/" + getTenant() + "/oauth2/v2.0/token", "POST")
+            String url = "https://login.microsoftonline.com/" + getTenant() + "/oauth2/v2.0/token";
+            Response response = new Request(url, "POST")
                     .param("grant_type", "password")
                     .param("username", getUsername())
                     .param("password", getPassword())
@@ -181,6 +181,7 @@ public class DICEAuth {
                                 response.getText()));
             }
             cachedToken = new ObjectMapper().readValue(response.getText(), Auth0Credential.class).getIdToken();
+            logger.info("Fetched token from URL: " + url);
         }
         return cachedToken;
     }

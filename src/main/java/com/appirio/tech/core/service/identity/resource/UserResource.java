@@ -1527,7 +1527,6 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
         Long userId = Utils.toLongValue(id);
 
-        logger.info(String.format("findUserById(%s)", resourceId));
         User2fa user2faInDb = userDao.findUser2faById(userId);
         if (user2faInDb == null)
             throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
@@ -1559,7 +1558,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
                         String.format("Got unexpected response from remote service. %d %s", response.getStatusCode(),
                                 response.getMessage()));
             }
-            logger.info(response.getText());
+            logger.info("Connection created: " + response.getText());
             send2faInvitationEmailEvent(user2faInDb, diceAuth.getDiceUrl() + "/verify/" + response.getText());
         }
 

@@ -82,9 +82,9 @@ public class EventBusServiceClient extends BaseClient {
             String authToken = Utils.generateAuthToken(m2mAuthConfiguration);
 
             eventMessage.setOriginator(this.config.getAdditionalConfiguration().get("originator"));
+            LOGGER.info("Fire event {}", new ObjectMapper().writer().writeValueAsString(eventMessage));
             Response response = request.header("Authorization", "Bearer " + authToken).post(Entity.entity(eventMessage.getData(), MediaType.APPLICATION_JSON_TYPE));
 
-            LOGGER.info("Fire event {}", new ObjectMapper().writer().writeValueAsString(eventMessage));
             if (response.getStatusInfo().getStatusCode() != HttpStatus.OK_200 &&  response.getStatusInfo().getStatusCode()!= HttpStatus.NO_CONTENT_204) {
                 LOGGER.error("Unable to fire the event: {}", response);
             }
