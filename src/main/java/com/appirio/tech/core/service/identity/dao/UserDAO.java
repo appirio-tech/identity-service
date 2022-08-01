@@ -175,7 +175,7 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
             "WHERE id=:id")
     public abstract int update2faOtp(@Bind("id") long id, @Bind("otp") String otp);
 
-    @SqlUpdate(
+    @SqlQuery(
             "UPDATE common_oltp.user_2fa x SET otp=null, otp_expire=null " +
             "FROM (SELECT id, otp, otp_expire FROM common_oltp.user_2fa WHERE user_id=:userId FOR UPDATE)y " +
             "WHERE x.id=y.id " +
