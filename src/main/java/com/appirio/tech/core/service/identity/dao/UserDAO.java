@@ -176,7 +176,7 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
     public abstract int update2faOtp(@Bind("id") long id, @Bind("otp") String otp);
 
     @SqlUpdate(
-            "UPDATE common_oltp.user_2fa SET otp=null, otp_expire=null " +
+            "UPDATE common_oltp.user_2fa x SET otp=null, otp_expire=null " +
             "FROM (SELECT id, otp, otp_expire FROM common_oltp.user_2fa WHERE user_id=:userId FOR UPDATE)y " +
             "WHERE x.id=y.id " +
             "RETURNING CASE WHEN y.otp=:otp and y.otp_expire > current_timestamp THEN 1 ELSE 0 END")
