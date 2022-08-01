@@ -60,6 +60,8 @@ import com.appirio.tech.core.service.identity.representation.Country;
 import com.appirio.tech.core.service.identity.representation.Credential;
 import com.appirio.tech.core.service.identity.representation.CredentialRequest;
 import com.appirio.tech.core.service.identity.representation.User2fa;
+import com.appirio.tech.core.service.identity.representation.UserOtp;
+import com.appirio.tech.core.service.identity.representation.UserOtpResponse;
 import com.appirio.tech.core.service.identity.representation.Email;
 import com.appirio.tech.core.service.identity.representation.ProviderType;
 import com.appirio.tech.core.service.identity.representation.Role;
@@ -124,6 +126,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     private String sendgridSelfServiceWelcomeTemplateId;
 
     private String sendgrid2faInvitationTemplateId;
+
+    private String sendgrid2faOtpTemplateId;
     
     protected UserDAO userDao;
     
@@ -1679,6 +1683,65 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     }
 
     @POST
+    @Path("/sendOtp")
+    @Timed
+    public ApiResponse createOtp(
+            @Valid PostPutRequest<UserOtp> postRequest,
+            @Context HttpServletRequest request) {
+
+        // checking param
+        checkParam(postRequest);
+
+        UserOtp userOtp = postRequest.getParam();
+
+        if (userOtp.getUserId() == null) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "userId"));
+        }
+        logger.info(String.format("send otp to user (%d)", userOtp.getUserId()));
+
+        User2fa user2faInDb = userDao.findUser2faById(userOtp.getUserId());
+        if (user2faInDb == null)
+            throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
+        if (user2faInDb.getEnabled() == null || !user2faInDb.getEnabled()) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, "2FA is not enabled for user");
+        }
+        String otp = Utils.generateRandomString(ALPHABET_DIGITS_EN, 6);
+        userDao.update2faOtp(user2faInDb.getId(), otp);
+        send2faCodeEmailEvent(user2faInDb, otp);
+        return ApiResponseFactory.createResponse("SUCCESS");
+    }
+
+    @POST
+    @Path("/checkOtp")
+    @Timed
+    public ApiResponse checkOtp(
+            @Valid PostPutRequest<UserOtp> postRequest,
+            @Context HttpServletRequest request) {
+
+        // checking param
+        checkParam(postRequest);
+
+        UserOtp userOtp = postRequest.getParam();
+
+        if (userOtp.getUserId() == null) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "userId"));
+        }
+        if (userOtp.getOtp() == null || userOtp.getOtp().length() == 0) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "otp"));
+        }
+        logger.info(String.format("verify otp for user (%d)", userOtp.getUserId()));
+
+        int result = userDao.verify2faOtp(userOtp.getUserId(), userOtp.getOtp());
+        UserOtpResponse response = new UserOtpResponse();
+        if (result == 1) {
+            response.setVerified(true);
+        } else {
+            response.setVerified(false);
+        }
+        return ApiResponseFactory.createResponse(response);
+    }
+
+    @POST
     @Path("/oneTimeToken")
     @Timed
     public ApiResponse getOneTimeToken(
@@ -2009,6 +2072,14 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         this.sendgrid2faInvitationTemplateId = sendgrid2faInvitationTemplateId;
     }
 
+    public String getSendgrid2faOtpTemplateId() {
+        return sendgrid2faOtpTemplateId;
+    }
+
+    public void setSendgrid2faOtpTemplateId(String sendgrid2faOtpTemplateId) {
+        this.sendgrid2faOtpTemplateId = sendgrid2faOtpTemplateId;
+    }
+
     public String getSecret() {
         return secret;
     }
@@ -2112,6 +2183,34 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
         payload.put("version", "v3");
         payload.put("sendgrid_template_id", this.getSendgrid2faInvitationTemplateId());
+
+        ArrayList<String> recipients = new ArrayList<String>();
+        recipients.add(user.getEmail());
+
+        payload.put("recipients", recipients);
+
+        msg.setPayload(payload);
+        this.eventBusServiceClient.reFireEvent(msg);
+    }
+
+    private void send2faCodeEmailEvent(User2fa user, String code) {
+
+        EventMessage msg = EventMessage.getDefault();
+        msg.setTopic("external.action.email");
+
+        Map<String,Object> payload = new LinkedHashMap<String,Object>();
+        Map<String,Object> data = new LinkedHashMap<String,Object>();
+        data.put("handle", user.getHandle());
+        data.put("code", code);
+
+        payload.put("data", data);
+
+        Map<String,Object> from = new LinkedHashMap<String,Object>();
+        from.put("email", String.format("Topcoder <noreply@%s>", getDomain()));
+        payload.put("from", from);
+
+        payload.put("version", "v3");
+        payload.put("sendgrid_template_id", this.getSendgrid2faOtpTemplateId());
 
         ArrayList<String> recipients = new ArrayList<String>();
         recipients.add(user.getEmail());

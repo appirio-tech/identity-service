@@ -13,6 +13,7 @@
 @application.sendgrid.selfservice.template.id@={{SENDGRID_SELF_SERVICE_RESEND_ACTIVATION_EMAIL_TEMPLATE_ID}}
 @application.sendgrid.selfservice.welcome.template.id@={{SENDGRID_SELF_SERVICE_WELCOME_EMAIL_TEMPLATE_ID}}
 @application.sendgrid.2fa.invitation.template.id@={{SENDGRID_2FA_INVITATION_TEMPLATE_ID}}
+@application.sendgrid.2fa.otp.template.id@={{SENDGRID_2FA_OTP_TEMPLATE_ID}}
 
 @ldap.host@={{LDAP_SERVER}}
 @ldap.port@=389
