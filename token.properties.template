@@ -99,7 +99,6 @@
 @m2mAuthConfig.userProfiles.read@={{M2MAUTHCONFIG_USERPROFILES_READ}}
 @m2mAuthConfig.userProfiles.update@={{M2MAUTHCONFIG_USERPROFILES_UPDATE}}
 @m2mAuthConfig.userProfiles.delete@={{M2MAUTHCONFIG_USERPROFILES_DELETE}}
-@m2mAuthConfig.user2fa.create@={{M2MAUTHCONFIG_USER2FA_CREATE}}
-@m2mAuthConfig.user2fa.read@={{M2MAUTHCONFIG_USER2FA_READ}}
-@m2mAuthConfig.user2fa.update@={{M2MAUTHCONFIG_USER2FA_UPDATE}}
-@m2mAuthConfig.user2fa.delete@={{M2MAUTHCONFIG_USER2FA_DELETE}}
+@m2mAuthConfig.user2fa.enable@={{M2MAUTHCONFIG_USER2FA_ENABLE}}
+@m2mAuthConfig.user2fa.verify@={{M2MAUTHCONFIG_USER2FA_VERIFY}}
+@m2mAuthConfig.user2fa.credential@={{M2MAUTHCONFIG_USER2FA_CREDENTIAL}}

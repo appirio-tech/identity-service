@@ -169,10 +169,9 @@ m2mAuthConfig:
     update: update:user_profiles,all:user_profiles
     delete: delete:user_profiles,all:user_profiles
   user2fa:
-    create: all:user-2fa
-    read: all:user-2fa
-    update: all:user-2fa
-    delete: all:user-2fa
+    enable: enable:user-2fa,all:user-2fa
+    verify: verify:user-2fa,all:user-2fa
+    credential: cred:user-2fa,all:user-2fa
   
 # Server settings
 server:

@@ -12,131 +12,99 @@ public class User2faFactory {
     /**
      * Represents the create scopes for machine token validation.
      */
-    public static final String[] ReadScopes = { "all:user_2fa" };
+    public static final String[] EnableScopes = { "enable:user_2fa", "all:user_2fa" };
 
     /**
      * Represents the create scopes for machine token validation.
      */
-    public static final String[] CreateScopes = { "all:user_2fa" };
-
-    /**
-     * Represents the delete scopes for machine token validation.
-     */
-    public static final String[] DeleteScopes = { "all:user_2fa" };
+    public static final String[] VerifyScopes = { "verify:user_2fa", "all:user_2fa" };
 
     /**
      * Represents the update scopes for machine token validation.
      */
-    public static final String[] UpdateScopes = { "all:user_2fa" };
+    public static final String[] CredentialIssuerScopes = { "cred:user_2fa", "all:user_2fa" };
 
     /**
-     * Represents the read attribute
+     * Represents the enable attribute
      */
     @JsonProperty
-    private String read;
+    private String enable;
 
     /**
-     * Represents the create attribute
+     * Represents the verify attribute
      */
     @JsonProperty
-    private String create;
+    private String verify;
 
     /**
-     * Represents the update attribute
+     * Represents the credential attribute
      */
     @JsonProperty
-    private String update;
-
-    /**
-     * Represents the delete attribute
-     */
-    @JsonProperty
-    private String delete;
+    private String credential;
 
     public User2faFactory() {
     }
 
-    public String getRead() {
-        return read;
+    public String getEnable() {
+        return enable;
     }
 
-    public void setRead(String read) {
-        this.read = read;
+    public void setEnable(String enable) {
+        this.enable = enable;
     }
 
-    public String getCreate() {
-        return create;
+    public String getVerify() {
+        return verify;
     }
 
-    public void setCreate(String create) {
-        this.create = create;
+    public void SetVerify(String verify) {
+        this.verify = verify;
     }
 
-    public String getUpdate() {
-        return update;
+    public String getCredential() {
+        return credential;
     }
 
-    public void setUpdate(String update) {
-        this.update = update;
-    }
-
-    public String getDelete() {
-        return delete;
-    }
-
-    public void setDelete(String delete) {
-        this.delete = delete;
+    public void setCredential(String credential) {
+        this.credential = credential;
     }
 
     /**
-     * Gets the read scopes.
+     * Gets the enable scopes.
      *
-     * @return the read scopes.
+     * @return the enable scopes.
      */
-    public String[] getReadScopes() {
-        if (read != null && read.trim().length() != 0) {
-            return read.split(SCOPE_DELIMITER);
+    public String[] getEnableScopes() {
+        if (enable != null && enable.trim().length() != 0) {
+            return enable.split(SCOPE_DELIMITER);
         }
 
-        return ReadScopes;
+        return EnableScopes;
     }
 
     /**
-     * Gets the create scopes.
+     * Gets the verify scopes.
      *
-     * @return the create scopes.
+     * @return the verify scopes.
      */
-    public String[] getCreateScopes() {
-        if (create != null && create.trim().length() != 0) {
-            return create.split(SCOPE_DELIMITER);
+    public String[] getVerifyScopes() {
+        if (verify != null && verify.trim().length() != 0) {
+            return verify.split(SCOPE_DELIMITER);
         }
 
-        return CreateScopes;
+        return VerifyScopes;
     }
 
     /**
-     * Gets the update scopes.
+     * Gets the credential issuer scopes.
      *
-     * @return the update scopes.
+     * @return the credential issuer scopes.
      */
-    public String[] getUpdateScopes() {
-        if (update != null && update.trim().length() != 0) {
-            return update.split(SCOPE_DELIMITER);
+    public String[] getCredentialIssuerScopes() {
+        if (credential != null && credential.trim().length() != 0) {
+            return credential.split(SCOPE_DELIMITER);
         }
 
-        return UpdateScopes;
-    }
-
-    /**
-     * Gets the delete scopes.
-     *
-     * @return the delete scopes.
-     */
-    public String[] getDeleteScopes() {
-        if (delete != null && delete.trim().length() != 0) {
-            return delete.split(SCOPE_DELIMITER);
-        }
-
-        return DeleteScopes;
+        return CredentialIssuerScopes;
     }
 }

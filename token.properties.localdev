@@ -77,7 +77,6 @@
 @m2mAuthConfig.userProfiles.read@=read:user_profiles,all:user_profiles
 @m2mAuthConfig.userProfiles.update@=update:user_profiles,all:user_profiles
 @m2mAuthConfig.userProfiles.delete@=delete:user_profiles,all:user_profiles
-@m2mAuthConfig.user2fa.create@=create:user_2fa,all:user_2fa
-@m2mAuthConfig.user2fa.read@=read:user_2fa,all:user_2fa
-@m2mAuthConfig.user2fa.update@=update:user_2fa,all:user_2fa
-@m2mAuthConfig.user2fa.delete@=delete:user_2fa,all:user_2fa
+@m2mAuthConfig.user2fa.enable@=enable:user_2fa,all:user_2fa
+@m2mAuthConfig.user2fa.verify@=verify:user_2fa,all:user_2fa
+@m2mAuthConfig.user2fa.credential@=cred:user_2fa,all:user_2fa
