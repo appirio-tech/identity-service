@@ -1549,7 +1549,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             try {
                 response = new Request(diceAuth.getDiceApiUrl() + "/connection/invitation", "POST")
                         .param("emailId", user2faInDb.getEmail())
-                        .header("Authorization", "Bearer " + diceAuth.getToken())
+                        .header("x-api-key", diceAuth.getDiceApiKey())
                         .execute();
             } catch (Exception e) {
                 logger.error("Error when calling 2fa submit api", e);
@@ -1625,7 +1625,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         Response response;
         try {
             response = new Request(diceAuth.getDiceApiUrl() + "/cred/issuance/offer", "POST")
-                    .header("Authorization", "Bearer " + diceAuth.getToken())
+                    .header("x-api-key", diceAuth.getDiceApiKey())
                     .json(mapper.writeValueAsString(body))
                     .execute();
         } catch (JsonProcessingException e) {
