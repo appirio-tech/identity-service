@@ -97,12 +97,7 @@ diceAuth:
   diceUrl: @diceAuth.diceUrl@
   diceApiUrl: @diceAuth.diceApiUrl@
   diceVerifier: @diceAuth.diceVerifier@
-  clientId: @diceAuth.clientId@
-  clientSecret: @diceAuth.clientSecret@
-  password: @diceAuth.password@
-  scope: @diceAuth.scope@
-  tenant: @diceAuth.tenant@
-  username: @diceAuth.username@
+  diceApiKey: @diceAuth.diceApiKey@
   credDefId: @diceAuth.credDefId@
 
 # Authorized accounts
@@ -170,10 +165,9 @@ m2mAuthConfig:
     update: @m2mAuthConfig.userProfiles.update@
     delete: @m2mAuthConfig.userProfiles.delete@
   user2fa:
-    create: @m2mAuthConfig.user2fa.create@
-    read: @m2mAuthConfig.user2fa.read@
-    update: @m2mAuthConfig.user2fa.update@
-    delete: @m2mAuthConfig.user2fa.delete@
+    enable: @m2mAuthConfig.user2fa.enable@
+    verify: @m2mAuthConfig.user2fa.verify@
+    credential: @m2mAuthConfig.user2fa.credential@
   
 # Server settings
 server:

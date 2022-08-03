@@ -1518,7 +1518,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             @Context HttpServletRequest request) {
 
         TCID id = new TCID(resourceId);
-        validateResourceIdAndCheckPermission(authUser, id, user2faFactory.getUpdateScopes());
+        validateResourceIdAndCheckPermission(authUser, id, user2faFactory.getEnableScopes());
         // checking param
         checkParam(postRequest);
 
@@ -1549,7 +1549,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             try {
                 response = new Request(diceAuth.getDiceApiUrl() + "/connection/invitation", "POST")
                         .param("emailId", user2faInDb.getEmail())
-                        .header("Authorization", "Bearer " + diceAuth.getToken())
+                        .header("x-api-key", diceAuth.getDiceApiKey())
                         .execute();
             } catch (Exception e) {
                 logger.error("Error when calling 2fa submit api", e);
@@ -1576,7 +1576,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             @Auth AuthUser authUser,
             @Valid PostPutRequest<CredentialRequest> postRequest,
             @Context HttpServletRequest request) {
-        Utils.checkAccess(authUser, user2faFactory.getCreateScopes(), Utils.AdminRoles);
+        Utils.checkAccess(authUser, user2faFactory.getCredentialIssuerScopes(), Utils.AdminRoles);
         checkParam(postRequest);
         CredentialRequest credential = postRequest.getParam();
 
@@ -1625,7 +1625,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         Response response;
         try {
             response = new Request(diceAuth.getDiceApiUrl() + "/cred/issuance/offer", "POST")
-                    .header("Authorization", "Bearer " + diceAuth.getToken())
+                    .header("x-api-key", diceAuth.getDiceApiKey())
                     .json(mapper.writeValueAsString(body))
                     .execute();
         } catch (JsonProcessingException e) {
@@ -1654,7 +1654,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             @Valid PostPutRequest<User2fa> putRequest,
             @Context HttpServletRequest request) {
 
-        Utils.checkAccess(authUser, user2faFactory.getUpdateScopes(), Utils.AdminRoles);
+        Utils.checkAccess(authUser, user2faFactory.getVerifyScopes(), Utils.AdminRoles);
         checkParam(putRequest);
         User2fa credential = putRequest.getParam();
 

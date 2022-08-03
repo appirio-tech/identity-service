@@ -54,12 +54,7 @@
 @diceAuth.diceUrl@={{DICEAUTH_DICE_URL}}
 @diceAuth.diceApiUrl@={{DICEAUTH_DICE_API_URL}}
 @diceAuth.diceVerifier@={{DICEAUTH_DICE_VERIFIER}}
-@diceAuth.clientId@={{DICEAUTH_ID}}
-@diceAuth.clientSecret@={{DICEAUTH_ID_SECRET}}
-@diceAuth.password@={{DICEAUTH_PASSWORD}}
-@diceAuth.scope@={{DICEAUTH_SCOPE}}
-@diceAuth.tenant@={{DICEAUTH_TENANT}}
-@diceAuth.username@={{DICEAUTH_USERNAME}}
+@diceAuth.diceApiKey@={{DICEAUTH_DICE_API_KEY}}
 @diceAuth.credDefId@={{DICEAUTH_CREDDEFID}}
 
 @zendesk.secret@={{ZENDESK_KEY}}
@@ -99,7 +94,6 @@
 @m2mAuthConfig.userProfiles.read@={{M2MAUTHCONFIG_USERPROFILES_READ}}
 @m2mAuthConfig.userProfiles.update@={{M2MAUTHCONFIG_USERPROFILES_UPDATE}}
 @m2mAuthConfig.userProfiles.delete@={{M2MAUTHCONFIG_USERPROFILES_DELETE}}
-@m2mAuthConfig.user2fa.create@={{M2MAUTHCONFIG_USER2FA_CREATE}}
-@m2mAuthConfig.user2fa.read@={{M2MAUTHCONFIG_USER2FA_READ}}
-@m2mAuthConfig.user2fa.update@={{M2MAUTHCONFIG_USER2FA_UPDATE}}
-@m2mAuthConfig.user2fa.delete@={{M2MAUTHCONFIG_USER2FA_DELETE}}
+@m2mAuthConfig.user2fa.enable@={{M2MAUTHCONFIG_USER2FA_ENABLE}}
+@m2mAuthConfig.user2fa.verify@={{M2MAUTHCONFIG_USER2FA_VERIFY}}
+@m2mAuthConfig.user2fa.credential@={{M2MAUTHCONFIG_USER2FA_CREDENTIAL}}
