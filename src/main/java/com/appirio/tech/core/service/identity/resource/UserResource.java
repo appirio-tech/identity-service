@@ -1676,7 +1676,10 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if(credVerification.getEnabled() == null || !credVerification.getEnabled()) {
             throw new APIRuntimeException(SC_BAD_REQUEST, "2FA is not enabled for user");
         }
-        if(!credVerification.getVerified().equals(credential.getVerified())) {
+        // update only if it's true. We need to prevent changing verification status from true to false
+        // Otherwise 2fa will be skipped during the login flow.
+        // The only way to set verification to false is disabling the 2fa for that user.
+        if(credential.getVerified()) {
             userDao.update2fa(credVerification.getId(), true, credential.getVerified());
         }
         return ApiResponseFactory.createResponse("User verification updated");
