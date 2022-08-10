@@ -19,17 +19,22 @@ public class DICEAuth {
     @NotNull
     private String credDefId;
 
+    @NotNull
+    private Integer otpDuration;
+
     private String credPreview = "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/credential-preview";
 
     public DICEAuth() {
     }
 
-    public DICEAuth(String diceUrl, String diceApiUrl, String diceVerifier, String diceApiKey, String credDefId) {
+    public DICEAuth(String diceUrl, String diceApiUrl, String diceVerifier, String diceApiKey, String credDefId,
+            Integer otpDuration) {
         this.diceUrl = diceUrl;
         this.diceApiUrl = diceApiUrl;
         this.diceVerifier = diceVerifier;
         this.diceApiKey = diceApiKey;
         this.credDefId = credDefId;
+        this.otpDuration = otpDuration;
     }
 
     public String getDiceUrl() {
@@ -70,6 +75,14 @@ public class DICEAuth {
 
     public void setCredDefId(String credDefId) {
         this.credDefId = credDefId;
+    }
+
+    public Integer getOtpDuration() {
+        return otpDuration;
+    }
+
+    public void setOtpDuration(Integer otpDuration) {
+        this.otpDuration = otpDuration;
     }
 
     public String getCredPreview() {

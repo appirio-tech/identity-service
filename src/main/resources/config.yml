@@ -99,6 +99,7 @@ diceAuth:
   diceVerifier: @diceAuth.diceVerifier@
   diceApiKey: @diceAuth.diceApiKey@
   credDefId: @diceAuth.credDefId@
+  otpDuration: @diceAuth.otpDuration@
 
 # Authorized accounts
 serviceAccount:

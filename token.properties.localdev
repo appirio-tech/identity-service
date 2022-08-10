@@ -36,6 +36,7 @@
 @diceAuth.diceVerifier@=dummy
 @diceAuth.diceApiKey@=dummy
 @diceAuth.credDefId@=dummy
+@diceAuth.otpDuration@=10
 
 @zendesk.secret@=ZENDESK_SECRET
 @zendesk.idprefix@=ZENDESK_PREFIX
