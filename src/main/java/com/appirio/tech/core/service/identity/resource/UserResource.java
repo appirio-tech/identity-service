@@ -1676,7 +1676,10 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if(credVerification.getEnabled() == null || !credVerification.getEnabled()) {
             throw new APIRuntimeException(SC_BAD_REQUEST, "2FA is not enabled for user");
         }
-        if(!credVerification.getVerified().equals(credential.getVerified())) {
+        // update only if it's true. We need to prevent changing verification status from true to false
+        // Otherwise 2fa will be skipped during the login flow.
+        // The only way to set verification to false is disabling the 2fa for that user.
+        if(credential.getVerified()) {
             userDao.update2fa(credVerification.getId(), true, credential.getVerified());
         }
         return ApiResponseFactory.createResponse("User verification updated");
@@ -1706,8 +1709,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             throw new APIRuntimeException(SC_BAD_REQUEST, "2FA is not enabled for user");
         }
         String otp = Utils.generateRandomString(ALPHABET_DIGITS_EN, 6);
-        userDao.update2faOtp(user2faInDb.getId(), otp);
-        send2faCodeEmailEvent(user2faInDb, otp);
+        userDao.update2faOtp(user2faInDb.getId(), otp, diceAuth.getOtpDuration());
+        send2faCodeEmailEvent(user2faInDb, otp, diceAuth.getOtpDuration());
         return ApiResponseFactory.createResponse("SUCCESS");
     }
 
@@ -2193,7 +2196,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         this.eventBusServiceClient.reFireEvent(msg);
     }
 
-    private void send2faCodeEmailEvent(User2fa user, String code) {
+    private void send2faCodeEmailEvent(User2fa user, String code, Integer duration) {
 
         EventMessage msg = EventMessage.getDefault();
         msg.setTopic("external.action.email");
@@ -2202,6 +2205,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         Map<String,Object> data = new LinkedHashMap<String,Object>();
         data.put("handle", user.getHandle());
         data.put("code", code);
+        data.put("duration", duration);
 
         payload.put("data", data);
 

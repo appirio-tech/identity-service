@@ -91,6 +91,7 @@ diceAuth:
   diceVerifier: dummy
   diceApiKey: dummy
   credDefId: dummy
+  otpDuration: 10
 
 # LDAP Settings
 ldap:

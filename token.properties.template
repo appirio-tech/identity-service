@@ -56,6 +56,7 @@
 @diceAuth.diceVerifier@={{DICEAUTH_DICE_VERIFIER}}
 @diceAuth.diceApiKey@={{DICEAUTH_DICE_API_KEY}}
 @diceAuth.credDefId@={{DICEAUTH_CREDDEFID}}
+@diceAuth.otpDuration@={{DICEAUTH_OTP_DURATION}}
 
 @zendesk.secret@={{ZENDESK_KEY}}
 @zendesk.idprefix@={{ZENDESK_ID}}
