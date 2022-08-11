@@ -817,7 +817,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             @FormParam("email") String email,
             @FormParam("handle") String handle,
             @Context HttpServletRequest request) throws Exception {
-
+        logger.info("auth0 roles request.");
         if(Utils.isEmpty(email) &&  Utils.isEmpty(handle))
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "email/handle"));
 
@@ -832,13 +832,13 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if(user==null) {
             throw new APIRuntimeException(SC_UNAUTHORIZED, "Credentials are incorrect.");
         }
-
+        logger.info("auth0 roles: user found.");
         List<Role> roles = null;
         if (user.getId() != null) {
             roles = roleDao.getRolesBySubjectId(Long.parseLong(user.getId().getId()));
         }
         user.setRoles(roles);
-
+        logger.info("auth0 roles: roles assigned");
         // temp - just for testing
         user.setRegSource(userDao.generateSSOToken(Long.parseLong(user.getId().getId())));
 
