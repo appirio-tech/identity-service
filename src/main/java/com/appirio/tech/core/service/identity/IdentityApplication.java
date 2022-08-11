@@ -234,13 +234,16 @@ public class IdentityApplication extends APIApplication<IdentityConfiguration> {
 		        configuration.getEventBusServiceClientConfig(), configuration.getM2mAuthConfiguration());
 		// Resources::users
     	CacheService cacheService = configuration.getCache().createCacheService();
-    	UserResource userResource = new UserResource(userDao, roleDao, cacheService, eventProducer, eventBusServiceClient, configuration.getM2mAuthConfiguration().getUserProfiles());
+    	UserResource userResource = new UserResource(userDao, roleDao, cacheService, eventProducer, eventBusServiceClient, configuration.getM2mAuthConfiguration().getUserProfiles(), configuration.getM2mAuthConfiguration().getUser2fa());
     	userResource.setAuth0Client(configuration.getAuth0()); // TODO: constructor
+		userResource.setDiceAuth(configuration.getDiceAuth());
     	userResource.setDomain(configuration.getAuthDomain());
 			userResource.setSendgridTemplateId(Utils.getString("sendGridTemplateId"));
 			userResource.setSendgridWelcomeTemplateId(Utils.getString("sendGridWelcomeTemplateId"));
 			userResource.setSendgridSelfServiceTemplateId(Utils.getString("sendGridSelfServiceTemplateId"));
 			userResource.setSendgridSelfServiceWelcomeTemplateId(Utils.getString("sendGridSelfServiceWelcomeTemplateId"));
+			userResource.setSendgrid2faInvitationTemplateId(Utils.getString("sendGrid2faInvitationTemplateId"));
+			userResource.setSendgrid2faOtpTemplateId(Utils.getString("sendGrid2faOtpTemplateId"));
     	// this secret _used_ to be different from the one used in AuthorizationResource.
     	// it _was_ the secret x2. (userResource.setSecret(getSecret()+getSecret());)
 		// we assume this was done to further limit the usability of the oneTimeToken generated in userResource

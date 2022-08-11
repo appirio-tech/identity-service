@@ -1,0 +1,1 @@
+CREATE TABLE common_oltp.user_2fa (id SERIAL NOT NULL, user_id NUMERIC(10,0) NOT NULL, enabled BOOLEAN DEFAULT false NOT NULL, verified BOOLEAN DEFAULT false NOT NULL, otp CHARACTER VARYING(6), otp_expire TIMESTAMP(6) WITHOUT TIME ZONE, CONSTRAINT user_2fa_pk PRIMARY KEY (id), CONSTRAINT user_2fa_user_id_fkey FOREIGN KEY (user_id) REFERENCES "user" ("user_id"), UNIQUE (user_id));

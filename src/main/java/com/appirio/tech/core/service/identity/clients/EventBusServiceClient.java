@@ -9,6 +9,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.ProcessingException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
@@ -81,13 +82,17 @@ public class EventBusServiceClient extends BaseClient {
             String authToken = Utils.generateAuthToken(m2mAuthConfiguration);
 
             eventMessage.setOriginator(this.config.getAdditionalConfiguration().get("originator"));
+            LOGGER.info("Fire event {}", new ObjectMapper().writer().writeValueAsString(eventMessage));
             Response response = request.header("Authorization", "Bearer " + authToken).post(Entity.entity(eventMessage.getData(), MediaType.APPLICATION_JSON_TYPE));
 
-            LOGGER.info("Fire event {}", new ObjectMapper().writer().writeValueAsString(eventMessage));
             if (response.getStatusInfo().getStatusCode() != HttpStatus.OK_200 &&  response.getStatusInfo().getStatusCode()!= HttpStatus.NO_CONTENT_204) {
                 LOGGER.error("Unable to fire the event: {}", response);
             }
-        }  catch (Exception e) {
+        } catch (ProcessingException e) {
+                if(!e.getMessage().equals("java.net.SocketTimeoutException: Read timed out")) {
+                    LOGGER.error("Failed to fire the event: {}", e);
+                }
+        } catch (Exception e) {
             LOGGER.error("Failed to fire the event: {}", e);
         }
     }

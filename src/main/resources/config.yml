@@ -15,6 +15,8 @@ context:
   sendGridWelcomeTemplateId: @application.sendgrid.welcome.template.id@
   sendGridSelfServiceTemplateId: @application.sendgrid.selfservice.template.id@
   sendGridSelfServiceWelcomeTemplateId: @application.sendgrid.selfservice.welcome.template.id@
+  sendGrid2faInvitationTemplateId: @application.sendgrid.2fa.invitation.template.id@
+  sendGrid2faOtpTemplateId: @application.sendgrid.2fa.otp.template.id@
   jwtExpirySeconds: 600
   cookieExpirySeconds: 7776000
 
@@ -91,6 +93,13 @@ auth0New:
   nonInteractiveClientId    : @auth0.new.nonInteractive.clientId@
   nonInteractiveClientSecret: @auth0.new.nonInteractive.clientSecret@
 
+diceAuth:
+  diceUrl: @diceAuth.diceUrl@
+  diceApiUrl: @diceAuth.diceApiUrl@
+  diceVerifier: @diceAuth.diceVerifier@
+  diceApiKey: @diceAuth.diceApiKey@
+  credDefId: @diceAuth.credDefId@
+  otpDuration: @diceAuth.otpDuration@
 
 # Authorized accounts
 serviceAccount:
@@ -156,6 +165,10 @@ m2mAuthConfig:
     read: @m2mAuthConfig.userProfiles.read@
     update: @m2mAuthConfig.userProfiles.update@
     delete: @m2mAuthConfig.userProfiles.delete@
+  user2fa:
+    enable: @m2mAuthConfig.user2fa.enable@
+    verify: @m2mAuthConfig.user2fa.verify@
+    credential: @m2mAuthConfig.user2fa.credential@
   
 # Server settings
 server:

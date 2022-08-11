@@ -41,6 +41,8 @@ public class User extends AbstractIdResource {
 	private String utmMedium;
 	private String utmCampaign;
 	private List<Role> roles;
+	private Boolean mfaEnabled;
+	private Boolean mfaVerified;
 	
     /**
      * Represents the ssoLogin attribute.
@@ -188,6 +190,22 @@ public class User extends AbstractIdResource {
 	public List<Role> getRoles() { return roles; }
 
 	public void setRoles(List<Role> roles) { this.roles = roles; }
+
+	public Boolean getMfaEnabled() {
+		return mfaEnabled;
+	}
+
+	public void setMfaEnabled(Boolean mfaEnabled) {
+		this.mfaEnabled = mfaEnabled;
+	}
+
+	public Boolean getMfaVerified() {
+		return mfaVerified;
+	}
+
+	public void setMfaVerified(Boolean mfaVerified) {
+		this.mfaVerified = mfaVerified;
+	}
 	
 	@JsonIgnore
 	public boolean isReferralProgramCampaign() {

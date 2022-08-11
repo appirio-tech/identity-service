@@ -3,15 +3,19 @@ package com.appirio.tech.core.service.identity.resource;
 import static com.appirio.tech.core.service.identity.util.Constants.*;
 import static javax.servlet.http.HttpServletResponse.*;
 
+import com.appirio.tech.core.service.identity.util.m2mscope.User2faFactory;
 import com.appirio.tech.core.service.identity.util.m2mscope.UserProfilesFactory;
 import io.dropwizard.auth.Auth;
 import io.dropwizard.jersey.PATCH;
 
 import java.net.HttpURLConnection;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.LinkedHashMap;
 
 import javax.servlet.http.HttpServletRequest;
@@ -54,6 +58,10 @@ import com.appirio.tech.core.service.identity.dao.UserDAO;
 import com.appirio.tech.core.service.identity.representation.Achievement;
 import com.appirio.tech.core.service.identity.representation.Country;
 import com.appirio.tech.core.service.identity.representation.Credential;
+import com.appirio.tech.core.service.identity.representation.CredentialRequest;
+import com.appirio.tech.core.service.identity.representation.User2fa;
+import com.appirio.tech.core.service.identity.representation.UserOtp;
+import com.appirio.tech.core.service.identity.representation.UserOtpResponse;
 import com.appirio.tech.core.service.identity.representation.Email;
 import com.appirio.tech.core.service.identity.representation.ProviderType;
 import com.appirio.tech.core.service.identity.representation.Role;
@@ -61,14 +69,20 @@ import com.appirio.tech.core.service.identity.representation.User;
 import com.appirio.tech.core.service.identity.representation.UserProfile;
 import com.appirio.tech.core.service.identity.util.Constants;
 import com.appirio.tech.core.service.identity.util.Utils;
+import com.appirio.tech.core.service.identity.util.HttpUtil.Request;
+import com.appirio.tech.core.service.identity.util.HttpUtil.Response;
 import com.appirio.tech.core.service.identity.util.auth.Auth0Client;
+import com.appirio.tech.core.service.identity.util.auth.DICEAuth;
 import com.appirio.tech.core.service.identity.util.auth.OneTimeToken;
 import com.appirio.tech.core.service.identity.util.cache.CacheService;
 import com.appirio.tech.core.service.identity.util.event.MailRepresentation;
 import com.appirio.tech.core.service.identity.util.event.NotificationPayload;
 import com.appirio.tech.core.service.identity.util.ldap.MemberStatus;
 import com.codahale.metrics.annotation.Timed;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 
 /**
@@ -110,6 +124,10 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     private String sendgridSelfServiceTemplateId;
 
     private String sendgridSelfServiceWelcomeTemplateId;
+
+    private String sendgrid2faInvitationTemplateId;
+
+    private String sendgrid2faOtpTemplateId;
     
     protected UserDAO userDao;
     
@@ -118,6 +136,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     protected CacheService cacheService;
     
     private Auth0Client auth0;
+
+    private DICEAuth diceAuth;
 
     private final EventProducer eventProducer;
 
@@ -133,6 +153,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     private final EventBusServiceClient eventBusServiceClient;
 
     private final UserProfilesFactory userProfilesFactory;
+
+    private final User2faFactory user2faFactory;
     
     /**
      * Create UserResource
@@ -149,7 +171,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
                 RoleDAO roleDao,
                 CacheService cacheService,
                 EventProducer eventProducer,
-                EventBusServiceClient eventBusServiceClient, UserProfilesFactory userProfilesFactory) {
+                EventBusServiceClient eventBusServiceClient, UserProfilesFactory userProfilesFactory,
+                User2faFactory user2faFactory) {
         this.userDao = userDao;
         this.roleDao = roleDao;
         this.cacheService = cacheService;
@@ -160,6 +183,12 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             this.userProfilesFactory = new UserProfilesFactory();
         } else {
             this.userProfilesFactory = userProfilesFactory;
+        }
+        if (user2faFactory == null) {
+            // create a default one
+            this.user2faFactory = new User2faFactory();
+        } else {
+            this.user2faFactory = user2faFactory;
         }
     }
 
@@ -178,7 +207,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             CacheService cacheService,
             EventProducer eventProducer,
             EventBusServiceClient eventBusServiceClient) {
-        this(userDao, roleDao, cacheService, eventProducer, eventBusServiceClient, null);
+        this(userDao, roleDao, cacheService, eventProducer, eventBusServiceClient, null, null);
     }
 
     protected void setObjectMapper(ObjectMapper objectMapper) {
@@ -187,6 +216,10 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     
     public void setAuth0Client(Auth0Client auth0) {
         this.auth0 = auth0;
+    }
+
+    public void setDiceAuth(DICEAuth diceAuth) {
+        this.diceAuth = diceAuth;
     }
 
     private static void checkAccessAndUserProfile(AuthUser authUser, long userId, UserProfile profile, String[] allowedScopes) {
@@ -784,7 +817,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             @FormParam("email") String email,
             @FormParam("handle") String handle,
             @Context HttpServletRequest request) throws Exception {
-
+        logger.info("auth0 roles request.");
         if(Utils.isEmpty(email) &&  Utils.isEmpty(handle))
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "email/handle"));
 
@@ -799,13 +832,13 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if(user==null) {
             throw new APIRuntimeException(SC_UNAUTHORIZED, "Credentials are incorrect.");
         }
-
+        logger.info("auth0 roles: user found.");
         List<Role> roles = null;
         if (user.getId() != null) {
             roles = roleDao.getRolesBySubjectId(Long.parseLong(user.getId().getId()));
         }
         user.setRoles(roles);
-
+        logger.info("auth0 roles: roles assigned");
         // temp - just for testing
         user.setRegSource(userDao.generateSSOToken(Long.parseLong(user.getId().getId())));
 
@@ -868,6 +901,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
       logger.debug(String.format("Auth0: updating password for user: %s", dbUser.getHandle()));
       userDao.updatePassword(dbUser);
+      userDao.update2faByUserId(Utils.toLongValue(dbUser.getId()), false, false);
 
       return ApiResponseFactory.createResponse("password updated successfully.");
    }
@@ -1474,6 +1508,242 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
                 createValidationResult((err == null), err));
     }
     
+    @PATCH
+    @Path("/{resourceId}/2fa")
+    @Timed
+    public ApiResponse updateUser2fa(
+            @Auth AuthUser authUser,
+            @PathParam("resourceId") String resourceId,
+            @Valid PostPutRequest<User2fa> postRequest,
+            @Context HttpServletRequest request) {
+
+        TCID id = new TCID(resourceId);
+        validateResourceIdAndCheckPermission(authUser, id, user2faFactory.getEnableScopes());
+        // checking param
+        checkParam(postRequest);
+
+        User2fa user2fa = postRequest.getParam();
+
+        if (user2fa.getEnabled() == null) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "enabled"));
+        }
+        logger.info(String.format("update user 2fa(%s) - %b", resourceId, user2fa.getEnabled()));
+
+        Long userId = Utils.toLongValue(id);
+
+        User2fa user2faInDb = userDao.findUser2faById(userId);
+        if (user2faInDb == null)
+            throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
+
+        Boolean shouldSendInvite = false;
+        if (user2faInDb.getEnabled() == null) {
+            userDao.insertUser2fa(userId, user2fa.getEnabled());
+            shouldSendInvite = user2fa.getEnabled();
+        } else if (!user2faInDb.getEnabled().equals(user2fa.getEnabled())) {
+            userDao.update2fa(user2faInDb.getId(), user2fa.getEnabled(), false);
+            shouldSendInvite = user2fa.getEnabled();
+        }
+
+        if (shouldSendInvite) {
+            Response response;
+            try {
+                response = new Request(diceAuth.getDiceApiUrl() + "/connection/invitation", "POST")
+                        .param("emailId", user2faInDb.getEmail())
+                        .header("x-api-key", diceAuth.getDiceApiKey())
+                        .execute();
+            } catch (Exception e) {
+                logger.error("Error when calling 2fa submit api", e);
+                userDao.update2fa(user2faInDb.getId(), false, false);
+                throw new APIRuntimeException(SC_INTERNAL_SERVER_ERROR, "Error when calling 2fa submit api");
+            }
+            if (response.getStatusCode() != HttpURLConnection.HTTP_CREATED) {
+                userDao.update2fa(user2faInDb.getId(), false, false);
+                throw new APIRuntimeException(HttpURLConnection.HTTP_INTERNAL_ERROR,
+                        String.format("Got unexpected response from remote service. %d %s", response.getStatusCode(),
+                                response.getMessage()));
+            }
+            logger.info("Connection created: " + response.getText());
+            send2faInvitationEmailEvent(user2faInDb, diceAuth.getDiceUrl() + "/verify/" + response.getText());
+        }
+
+        return ApiResponseFactory.createResponse("SUCCESS");
+    }
+
+    @POST
+    @Path("/2faCredentials")
+    @Timed
+    public ApiResponse issueCredentials(
+            @Auth AuthUser authUser,
+            @Valid PostPutRequest<CredentialRequest> postRequest,
+            @Context HttpServletRequest request) {
+        Utils.checkAccess(authUser, user2faFactory.getCredentialIssuerScopes(), Utils.AdminRoles);
+        checkParam(postRequest);
+        CredentialRequest credential = postRequest.getParam();
+
+        if(credential.getEmail() == null || credential.getEmail().length() == 0) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Email address"));
+        }
+        if(credential.getConnectionId() == null || credential.getConnectionId().length() == 0) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Connection Id"));
+        }
+        logger.info(String.format("issue credential (%s)", credential.getEmail()));
+
+        // find user by email
+        User2fa user = userDao.findUserCredentialByEmail(credential.getEmail());
+
+        // return 404 if user is not found
+        if(user == null)
+            throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
+        if(user.getEnabled() == null || !user.getEnabled()) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, "2FA is not enabled for user");
+        }
+        List<Role> roles = roleDao.getRolesBySubjectId(user.getUserId());
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode body = mapper.createObjectNode();
+        body.put("comment", "TC credential");
+        body.put("connection_id", credential.getConnectionId());
+        body.put("cred_def_id", diceAuth.getCredDefId());
+        ObjectNode preview = mapper.createObjectNode();
+        preview.put("@type", diceAuth.getCredPreview());
+        ArrayNode attributes = mapper.createArrayNode();
+        ObjectNode name = attributes.addObject();
+        ObjectNode email = attributes.addObject();
+        ObjectNode role = attributes.addObject();
+        ObjectNode validUntil = attributes.addObject();
+        name.put("name", "Name");
+        name.put("value", user.getFirstName());
+        email.put("name", "Email");
+        email.put("value", user.getEmail());
+        role.put("name", "Role");
+        role.put("value", roles.stream().map(x -> x.getRoleName()).collect(Collectors.joining(",")));
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.YEAR, 1);
+        validUntil.put("name", "Valid_Till");
+        validUntil.put("value", new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZ").format(cal.getTime()));
+        body.set("credential_preview", preview);
+        preview.set("attributes", attributes);
+        Response response;
+        try {
+            response = new Request(diceAuth.getDiceApiUrl() + "/cred/issuance/offer", "POST")
+                    .header("x-api-key", diceAuth.getDiceApiKey())
+                    .json(mapper.writeValueAsString(body))
+                    .execute();
+        } catch (JsonProcessingException e) {
+            logger.error("Error when processing JSON content", e);
+            throw new APIRuntimeException(SC_INTERNAL_SERVER_ERROR, "Error when calling credentialoffer api");
+        } catch (Exception e) {
+            logger.error("Error when calling credentialoffer api", e);
+            throw new APIRuntimeException(SC_INTERNAL_SERVER_ERROR, "Error when calling credentialoffer api");
+        }
+        if (response.getStatusCode() != HttpURLConnection.HTTP_CREATED) {
+            throw new APIRuntimeException(HttpURLConnection.HTTP_INTERNAL_ERROR,
+                    String.format("Got unexpected response from remote service. %d %s", response.getStatusCode(),
+                            response.getMessage()));
+        }
+        if (user.getVerified()) {
+            userDao.update2fa(user.getId(), true, false);
+        }
+        return ApiResponseFactory.createResponse("SUCCESS");
+    }
+
+    @PUT
+    @Path("/2faVerification")
+    @Timed
+    public ApiResponse update2faVerification(
+            @Auth AuthUser authUser,
+            @Valid PostPutRequest<User2fa> putRequest,
+            @Context HttpServletRequest request) {
+
+        Utils.checkAccess(authUser, user2faFactory.getVerifyScopes(), Utils.AdminRoles);
+        checkParam(putRequest);
+        User2fa credential = putRequest.getParam();
+
+        if(credential.getEmail() == null || credential.getEmail().length() == 0) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Email address"));
+        }
+        if(credential.getVerified() == null) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Verified"));
+        }
+        logger.info(String.format("update 2fa verification (%s) - %b", credential.getEmail(), credential.getVerified()));
+
+        // find user by email
+        User2fa credVerification = userDao.findUserCredentialByEmail(credential.getEmail());
+
+        // return 404 if user is not found
+        if(credVerification == null)
+            throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
+
+        if(credVerification.getEnabled() == null || !credVerification.getEnabled()) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, "2FA is not enabled for user");
+        }
+        // update only if it's true. We need to prevent changing verification status from true to false
+        // Otherwise 2fa will be skipped during the login flow.
+        // The only way to set verification to false is disabling the 2fa for that user.
+        if(credential.getVerified()) {
+            userDao.update2fa(credVerification.getId(), true, credential.getVerified());
+        }
+        return ApiResponseFactory.createResponse("User verification updated");
+    }
+
+    @POST
+    @Path("/sendOtp")
+    @Timed
+    public ApiResponse createOtp(
+            @Valid PostPutRequest<UserOtp> postRequest,
+            @Context HttpServletRequest request) {
+
+        // checking param
+        checkParam(postRequest);
+
+        UserOtp userOtp = postRequest.getParam();
+
+        if (userOtp.getUserId() == null) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "userId"));
+        }
+        logger.info(String.format("send otp to user (%d)", userOtp.getUserId()));
+
+        User2fa user2faInDb = userDao.findUser2faById(userOtp.getUserId());
+        if (user2faInDb == null)
+            throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
+        if (user2faInDb.getEnabled() == null || !user2faInDb.getEnabled()) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, "2FA is not enabled for user");
+        }
+        String otp = Utils.generateRandomString(ALPHABET_DIGITS_EN, 6);
+        userDao.update2faOtp(user2faInDb.getId(), otp, diceAuth.getOtpDuration());
+        send2faCodeEmailEvent(user2faInDb, otp, diceAuth.getOtpDuration());
+        return ApiResponseFactory.createResponse("SUCCESS");
+    }
+
+    @POST
+    @Path("/checkOtp")
+    @Timed
+    public ApiResponse checkOtp(
+            @Valid PostPutRequest<UserOtp> postRequest,
+            @Context HttpServletRequest request) {
+
+        // checking param
+        checkParam(postRequest);
+
+        UserOtp userOtp = postRequest.getParam();
+
+        if (userOtp.getUserId() == null) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "userId"));
+        }
+        if (userOtp.getOtp() == null || userOtp.getOtp().length() == 0) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "otp"));
+        }
+        logger.info(String.format("verify otp for user (%d)", userOtp.getUserId()));
+
+        int result = userDao.verify2faOtp(userOtp.getUserId(), userOtp.getOtp());
+        UserOtpResponse response = new UserOtpResponse();
+        if (result == 1) {
+            response.setVerified(true);
+        } else {
+            response.setVerified(false);
+        }
+        return ApiResponseFactory.createResponse(response);
+    }
+
     @POST
     @Path("/oneTimeToken")
     @Timed
@@ -1797,6 +2067,22 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         this.sendgridSelfServiceTemplateId = sendgridSelfServiceTemplateId;
     }
 
+    public String getSendgrid2faInvitationTemplateId() {
+        return sendgrid2faInvitationTemplateId;
+    }
+
+    public void setSendgrid2faInvitationTemplateId(String sendgrid2faInvitationTemplateId) {
+        this.sendgrid2faInvitationTemplateId = sendgrid2faInvitationTemplateId;
+    }
+
+    public String getSendgrid2faOtpTemplateId() {
+        return sendgrid2faOtpTemplateId;
+    }
+
+    public void setSendgrid2faOtpTemplateId(String sendgrid2faOtpTemplateId) {
+        this.sendgrid2faOtpTemplateId = sendgrid2faOtpTemplateId;
+    }
+
     public String getSecret() {
         return secret;
     }
@@ -1879,6 +2165,64 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         } catch (Exception e) {
             logger.error("Error occured while publishing the events to new kafka.");
         }
+    }
+
+    private void send2faInvitationEmailEvent(User2fa user, String inviteLink) {
+
+        EventMessage msg = EventMessage.getDefault();
+        msg.setTopic("external.action.email");
+
+        Map<String,Object> payload = new LinkedHashMap<String,Object>();
+        Map<String,Object> data = new LinkedHashMap<String,Object>();
+        data.put("handle", user.getHandle());
+        data.put("link", inviteLink);
+        data.put("verifier", diceAuth.getDiceVerifier());
+
+        payload.put("data", data);
+
+        Map<String,Object> from = new LinkedHashMap<String,Object>();
+        from.put("email", String.format("Topcoder <noreply@%s>", getDomain()));
+        payload.put("from", from);
+
+        payload.put("version", "v3");
+        payload.put("sendgrid_template_id", this.getSendgrid2faInvitationTemplateId());
+
+        ArrayList<String> recipients = new ArrayList<String>();
+        recipients.add(user.getEmail());
+
+        payload.put("recipients", recipients);
+
+        msg.setPayload(payload);
+        this.eventBusServiceClient.reFireEvent(msg);
+    }
+
+    private void send2faCodeEmailEvent(User2fa user, String code, Integer duration) {
+
+        EventMessage msg = EventMessage.getDefault();
+        msg.setTopic("external.action.email");
+
+        Map<String,Object> payload = new LinkedHashMap<String,Object>();
+        Map<String,Object> data = new LinkedHashMap<String,Object>();
+        data.put("handle", user.getHandle());
+        data.put("code", code);
+        data.put("duration", duration);
+
+        payload.put("data", data);
+
+        Map<String,Object> from = new LinkedHashMap<String,Object>();
+        from.put("email", String.format("Topcoder <noreply@%s>", getDomain()));
+        payload.put("from", from);
+
+        payload.put("version", "v3");
+        payload.put("sendgrid_template_id", this.getSendgrid2faOtpTemplateId());
+
+        ArrayList<String> recipients = new ArrayList<String>();
+        recipients.add(user.getEmail());
+
+        payload.put("recipients", recipients);
+
+        msg.setPayload(payload);
+        this.eventBusServiceClient.reFireEvent(msg);
     }
 
     private void sendWelcomeEmailEvent(User user) {
