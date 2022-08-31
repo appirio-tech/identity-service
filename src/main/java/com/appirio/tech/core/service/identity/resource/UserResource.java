@@ -8,9 +8,12 @@ import com.appirio.tech.core.service.identity.util.m2mscope.UserProfilesFactory;
 import io.dropwizard.auth.Auth;
 import io.dropwizard.jersey.PATCH;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
@@ -18,6 +21,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.LinkedHashMap;
 
+import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
@@ -33,6 +37,9 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
 
 import org.apache.log4j.Logger;
 
@@ -83,6 +90,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.WriterException;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
 
 
 /**
@@ -1559,8 +1570,42 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
                         String.format("Got unexpected response from remote service. %d %s", response.getStatusCode(),
                                 response.getMessage()));
             }
-            logger.info("Connection created: " + response.getText());
-            send2faInvitationEmailEvent(user2faInDb, diceAuth.getDiceUrl() + "/verify/" + response.getText());
+            String connectionId = response.getText();
+            logger.info("Connection created: " + connectionId);
+            int height = 230;
+            int width = 230;
+            ByteArrayOutputStream os = new ByteArrayOutputStream();
+            try {
+                QRCodeWriter qrCodeWriter = new QRCodeWriter();
+                BitMatrix byteMatrix = qrCodeWriter.encode(
+                        diceAuth.getDiceApiUrl() + "/web/connection/inviteurl/" + connectionId, BarcodeFormat.QR_CODE,
+                        height, width);
+                int CrunchifyWidth = byteMatrix.getWidth();
+                BufferedImage image = new BufferedImage(CrunchifyWidth, CrunchifyWidth, BufferedImage.TYPE_INT_RGB);
+                image.createGraphics();
+
+                Graphics2D graphics = (Graphics2D) image.getGraphics();
+                graphics.setColor(Color.WHITE);
+                graphics.fillRect(0, 0, CrunchifyWidth, CrunchifyWidth);
+                graphics.setColor(Color.BLACK);
+
+                for (int i = 0; i < CrunchifyWidth; i++) {
+                    for (int j = 0; j < CrunchifyWidth; j++) {
+                        if (byteMatrix.get(i, j)) {
+                            graphics.fillRect(i, j, 1, 1);
+                        }
+                    }
+                }
+                ImageIO.write(image, "PNG", os);
+            } catch (WriterException e) {
+                e.printStackTrace();
+                logger.error("Error is:", e);
+            } catch (IOException e) {
+                e.printStackTrace();
+                logger.error("Error is: {}", e);
+            }
+            send2faInvitationEmailEvent(user2faInDb, connectionId,
+                    Base64.getEncoder().encodeToString(os.toByteArray()));
         }
 
         return ApiResponseFactory.createResponse("SUCCESS");
@@ -2164,20 +2209,21 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         }
     }
 
-    private void send2faInvitationEmailEvent(User2fa user, String inviteLink) {
+    private void send2faInvitationEmailEvent(User2fa user, String connectionId, String QR) {
 
         EventMessage msg = EventMessage.getDefault();
         msg.setTopic("external.action.email");
 
-        Map<String,Object> payload = new LinkedHashMap<String,Object>();
-        Map<String,Object> data = new LinkedHashMap<String,Object>();
+        Map<String, Object> payload = new LinkedHashMap<String, Object>();
+        Map<String, Object> data = new LinkedHashMap<String, Object>();
         data.put("handle", user.getHandle());
-        data.put("link", inviteLink);
+        data.put("link", diceAuth.getDiceUrl() + "/verify/" + connectionId);
+        data.put("qrcid", connectionId);
         data.put("verifier", diceAuth.getDiceVerifier());
 
         payload.put("data", data);
 
-        Map<String,Object> from = new LinkedHashMap<String,Object>();
+        Map<String, Object> from = new LinkedHashMap<String, Object>();
         from.put("email", String.format("Topcoder <noreply@%s>", getDomain()));
         payload.put("from", from);
 
@@ -2188,6 +2234,16 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         recipients.add(user.getEmail());
 
         payload.put("recipients", recipients);
+
+        ArrayList<Map<String, Object>> attachments = new ArrayList<Map<String, Object>>();
+        Map<String, Object> attachment = new LinkedHashMap<String, Object>();
+        attachment.put("content", QR);
+        attachment.put("type", "image/png");
+        attachment.put("disposition", "inline");
+        attachment.put("content_id", connectionId);
+        attachment.put("filename", connectionId + ".png");
+        attachments.add(attachment);
+        payload.put("attachments", attachments);
 
         msg.setPayload(payload);
         this.eventBusServiceClient.reFireEvent(msg);
