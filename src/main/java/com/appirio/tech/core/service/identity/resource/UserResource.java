@@ -8,12 +8,9 @@ import com.appirio.tech.core.service.identity.util.m2mscope.UserProfilesFactory;
 import io.dropwizard.auth.Auth;
 import io.dropwizard.jersey.PATCH;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
@@ -21,7 +18,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.LinkedHashMap;
 
-import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
@@ -37,11 +33,9 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.image.BufferedImage;
 
 import org.apache.log4j.Logger;
+import org.joda.time.DateTime;
 
 import com.appirio.eventsbus.api.client.EventProducer;
 import com.appirio.tech.core.api.v3.TCID;
@@ -66,7 +60,10 @@ import com.appirio.tech.core.service.identity.representation.Achievement;
 import com.appirio.tech.core.service.identity.representation.Country;
 import com.appirio.tech.core.service.identity.representation.Credential;
 import com.appirio.tech.core.service.identity.representation.CredentialRequest;
+import com.appirio.tech.core.service.identity.representation.DiceConnection;
+import com.appirio.tech.core.service.identity.representation.DiceVerification;
 import com.appirio.tech.core.service.identity.representation.User2fa;
+import com.appirio.tech.core.service.identity.representation.UserDiceAttributes;
 import com.appirio.tech.core.service.identity.representation.UserOtp;
 import com.appirio.tech.core.service.identity.representation.UserOtpResponse;
 import com.appirio.tech.core.service.identity.representation.Email;
@@ -90,10 +87,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.zxing.BarcodeFormat;
-import com.google.zxing.WriterException;
-import com.google.zxing.common.BitMatrix;
-import com.google.zxing.qrcode.QRCodeWriter;
 
 
 /**
@@ -833,10 +826,10 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
         User user = null;
         if (!Utils.isEmpty(handle)) {
-            user = userDao.findUserByHandle(handle);
+            user = userDao.findUserWith2faByHandle(handle);
         } else {
             // email address - case sensitive - for auth0 sepecific
-            user = userDao.findUserByEmailCS(email);
+            user = userDao.findUserByEmailCS(email, true);
         }
 
         if(user==null) {
@@ -909,7 +902,6 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
       logger.debug(String.format("Auth0: updating password for user: %s", dbUser.getHandle()));
       userDao.updatePassword(dbUser);
-      userDao.update2faByUserId(Utils.toLongValue(dbUser.getId()), false, false);
 
       return ApiResponseFactory.createResponse("password updated successfully.");
    }
@@ -1515,7 +1507,37 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         return ApiResponseFactory.createResponse(
                 createValidationResult((err == null), err));
     }
-    
+
+    @GET
+    @Path("/{resourceId}/2fa")
+    @Timed
+    public ApiResponse getUser2fa(
+            @Auth AuthUser authUser,
+            @PathParam("resourceId") String resourceId,
+            @Context HttpServletRequest request) {
+
+        if (authUser == null) {
+            throw new APIRuntimeException(SC_BAD_REQUEST,
+                    String.format(MSG_TEMPLATE_MANDATORY, "Authentication user"));
+        }
+
+        TCID id = new TCID(resourceId);
+        if (!Utils.isValid(id)) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, Constants.MSG_TEMPLATE_INVALID_ID);
+        }
+        Boolean hasAdminRole = Utils.hasAdminRole(authUser);
+        if (!id.equals(authUser.getUserId()) && !hasAdminRole) {
+            throw new APIRuntimeException(SC_FORBIDDEN, "Forbidden");
+        }
+
+        Long userId = Utils.toLongValue(id);
+
+        User2fa user2fa = userDao.findUser2faByUserId(userId);
+        if (user2fa == null)
+            throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
+        return ApiResponseFactory.createResponse(user2fa);
+    }
+
     @PATCH
     @Path("/{resourceId}/2fa")
     @Timed
@@ -1525,90 +1547,162 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             @Valid PostPutRequest<User2fa> postRequest,
             @Context HttpServletRequest request) {
 
+        if (authUser == null) {
+            throw new APIRuntimeException(SC_BAD_REQUEST,
+                    String.format(MSG_TEMPLATE_MANDATORY, "Authentication user"));
+        }
+
         TCID id = new TCID(resourceId);
-        validateResourceIdAndCheckPermission(authUser, id, user2faFactory.getEnableScopes());
+        if (!Utils.isValid(id)) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, Constants.MSG_TEMPLATE_INVALID_ID);
+        }
+        Boolean hasAdminRole = Utils.hasAdminRole(authUser);
+        if (!id.equals(authUser.getUserId()) && !hasAdminRole) {
+            throw new APIRuntimeException(SC_FORBIDDEN, "Forbidden");
+        }
+
+        Long userId = Utils.toLongValue(id);
+
         // checking param
         checkParam(postRequest);
 
         User2fa user2fa = postRequest.getParam();
 
-        if (user2fa.getEnabled() == null) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "enabled"));
+        if (user2fa.getDiceEnabled() == null && user2fa.getMfaEnabled() == null) {
+            throw new APIRuntimeException(SC_BAD_REQUEST,
+                    String.format(MSG_TEMPLATE_MANDATORY, "mfaEnabled or diceEnabled"));
         }
-        logger.info(String.format("update user 2fa(%s) - %b", resourceId, user2fa.getEnabled()));
+        if (!hasAdminRole && ((user2fa.getDiceEnabled() != null && user2fa.getDiceEnabled() == false)
+                || (user2fa.getMfaEnabled() != null && user2fa.getMfaEnabled() == false))) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, "You cannot disable mfa options");
+        }
+        logger.info(String.format("update user 2fa(%s) - mfa: %s, dice: %s", resourceId, user2fa.getMfaEnabled(),
+                user2fa.getDiceEnabled()));
 
-        Long userId = Utils.toLongValue(id);
-
-        User2fa user2faInDb = userDao.findUser2faById(userId);
+        User2fa user2faInDb = userDao.findUser2faByUserId(userId);
         if (user2faInDb == null)
             throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
 
-        Boolean shouldSendInvite = false;
-        if (user2faInDb.getEnabled() == null) {
-            userDao.insertUser2fa(userId, user2fa.getEnabled());
-            shouldSendInvite = user2fa.getEnabled();
-        } else if (!user2faInDb.getEnabled().equals(user2fa.getEnabled())) {
-            userDao.update2fa(user2faInDb.getId(), user2fa.getEnabled(), false);
-            shouldSendInvite = user2fa.getEnabled();
+        if (user2fa.getMfaEnabled() == null) {
+            user2fa.setMfaEnabled(user2faInDb.getMfaEnabled() == null ? false : user2faInDb.getMfaEnabled());
         }
-
-        if (shouldSendInvite) {
-            Response response;
-            try {
-                response = new Request(diceAuth.getDiceApiUrl() + "/connection/invitation", "POST")
-                        .param("emailId", user2faInDb.getEmail())
-                        .header("x-api-key", diceAuth.getDiceApiKey())
-                        .execute();
-            } catch (Exception e) {
-                logger.error("Error when calling 2fa submit api", e);
-                userDao.update2fa(user2faInDb.getId(), false, false);
-                throw new APIRuntimeException(SC_INTERNAL_SERVER_ERROR, "Error when calling 2fa submit api");
-            }
-            if (response.getStatusCode() != HttpURLConnection.HTTP_CREATED) {
-                userDao.update2fa(user2faInDb.getId(), false, false);
-                throw new APIRuntimeException(HttpURLConnection.HTTP_INTERNAL_ERROR,
-                        String.format("Got unexpected response from remote service. %d %s", response.getStatusCode(),
-                                response.getMessage()));
-            }
-            String connectionId = response.getText();
-            logger.info("Connection created: " + connectionId);
-            int height = 230;
-            int width = 230;
-            ByteArrayOutputStream os = new ByteArrayOutputStream();
-            try {
-                QRCodeWriter qrCodeWriter = new QRCodeWriter();
-                BitMatrix byteMatrix = qrCodeWriter.encode(
-                        diceAuth.getDiceApiUrl() + "/web/connection/inviteurl/" + connectionId, BarcodeFormat.QR_CODE,
-                        height, width);
-                int CrunchifyWidth = byteMatrix.getWidth();
-                BufferedImage image = new BufferedImage(CrunchifyWidth, CrunchifyWidth, BufferedImage.TYPE_INT_RGB);
-                image.createGraphics();
-
-                Graphics2D graphics = (Graphics2D) image.getGraphics();
-                graphics.setColor(Color.WHITE);
-                graphics.fillRect(0, 0, CrunchifyWidth, CrunchifyWidth);
-                graphics.setColor(Color.BLACK);
-
-                for (int i = 0; i < CrunchifyWidth; i++) {
-                    for (int j = 0; j < CrunchifyWidth; j++) {
-                        if (byteMatrix.get(i, j)) {
-                            graphics.fillRect(i, j, 1, 1);
-                        }
-                    }
-                }
-                ImageIO.write(image, "PNG", os);
-            } catch (WriterException e) {
-                e.printStackTrace();
-                logger.error("Error is:", e);
-            } catch (IOException e) {
-                e.printStackTrace();
-                logger.error("Error is: {}", e);
-            }
-            send2faInvitationEmailEvent(user2faInDb, connectionId,
-                    Base64.getEncoder().encodeToString(os.toByteArray()));
+        if (user2fa.getDiceEnabled() == null) {
+            user2fa.setDiceEnabled(user2faInDb.getDiceEnabled() == null ? false : user2faInDb.getDiceEnabled());
         }
+        if (user2faInDb.getId() == null) {
+            long newId = userDao.insertUser2fa(userId, user2fa.getMfaEnabled(), user2fa.getDiceEnabled(),
+                    Utils.toLongValue(authUser.getUserId()));
+            user2faInDb = userDao.findUser2faById(newId);
+        } else if (!user2fa.getMfaEnabled().equals(user2faInDb.getMfaEnabled())
+                || !user2fa.getDiceEnabled().equals(user2faInDb.getDiceEnabled())) {
+            userDao.updateUser2fa(user2faInDb.getId(), user2fa.getMfaEnabled(),
+                    user2fa.getDiceEnabled(), Utils.toLongValue(authUser.getUserId()));
+            user2faInDb = userDao.findUser2faById(user2faInDb.getId());
+        }
+        return ApiResponseFactory.createResponse(user2faInDb);
+    }
 
-        return ApiResponseFactory.createResponse("SUCCESS");
+    @GET
+    @Path("/{resourceId}/diceConnection")
+    @Timed
+    public ApiResponse getDiceConnection(
+            @Auth AuthUser authUser,
+            @PathParam("resourceId") String resourceId,
+            @Context HttpServletRequest request) {
+
+        if (authUser == null) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Authentication user"));
+        }
+        TCID id = new TCID(resourceId);
+        if (!Utils.isValid(id)) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, Constants.MSG_TEMPLATE_INVALID_ID);
+        }
+        if (!id.equals(authUser.getUserId())) {
+            throw new APIRuntimeException(SC_FORBIDDEN, "Forbidden");
+        }
+        Long userId = Utils.toLongValue(id);
+
+        UserDiceAttributes diceAttributes = userDao.findUserDiceAttributesByUserId(userId);
+        if (diceAttributes == null)
+            throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
+        if (diceAttributes.getId() == null) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, "MFA is not enabled for user");
+        }
+        if (diceAttributes.getDiceConnectionId() != null) {
+            if (!diceAttributes.getDiceConnectionAccepted()
+                    && DateTime.now().isBefore(diceAttributes.getDiceConnectionCreatedAt().plusMinutes(5))) {
+                DiceConnection diceConnection = new DiceConnection();
+                diceConnection.setId(diceAttributes.getDiceConnectionId());
+                diceConnection.setAccepted(diceAttributes.getDiceConnectionAccepted());
+                diceConnection.setCreatedAt(diceAttributes.getDiceConnectionCreatedAt());
+                diceConnection.setConnection(diceAuth.getDiceApiUrl() + "/web/connection/inviteurl/"
+                        + diceAttributes.getDiceConnection());
+                return ApiResponseFactory.createResponse(diceConnection);
+            }
+        }
+        Response response;
+        try {
+            response = new Request(diceAuth.getDiceApiUrl() + "/connection/invitation", "POST")
+                    .param("emailId", diceAttributes.getEmail())
+                    .header("x-api-key", diceAuth.getDiceApiKey())
+                    .execute();
+        } catch (Exception e) {
+            logger.error("Error when calling 2fa submit api", e);
+            throw new APIRuntimeException(SC_INTERNAL_SERVER_ERROR, "Error when calling 2fa submit api");
+        }
+        if (response.getStatusCode() != HttpURLConnection.HTTP_CREATED) {
+            throw new APIRuntimeException(HttpURLConnection.HTTP_INTERNAL_ERROR,
+                    String.format("Got unexpected response from remote service. %d %s", response.getStatusCode(),
+                            response.getMessage()));
+        }
+        String connectionId = response.getText();
+        logger.info("Connection created: " + connectionId);
+        if (diceAttributes.getDiceConnectionId() != null) {
+            userDao.deleteDiceConnection(diceAttributes.getDiceConnectionId());
+        }
+        long newId = userDao.insertDiceConnection(diceAttributes.getUserId(), connectionId, false);
+        DiceConnection diceConnection = new DiceConnection();
+        diceConnection.setId(newId);
+        diceConnection.setConnection(diceAuth.getDiceApiUrl() + "/web/connection/inviteurl/" + connectionId);
+        diceConnection.setAccepted(false);
+        return ApiResponseFactory.createResponse(diceConnection);
+    }
+
+    @GET
+    @Path("/{resourceId}/diceConnection/{connectionId}")
+    @Timed
+    public ApiResponse getDiceConnectionStatus(
+            @Auth AuthUser authUser,
+            @PathParam("resourceId") String resourceId,
+            @PathParam("connectionId") String connectionId,
+            @Context HttpServletRequest request) {
+
+        if (authUser == null) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Authentication user"));
+        }
+        TCID id = new TCID(resourceId);
+        if (!Utils.isValid(id)) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, Constants.MSG_TEMPLATE_INVALID_ID);
+        }
+        if (!id.equals(authUser.getUserId())) {
+            throw new APIRuntimeException(SC_FORBIDDEN, "Forbidden");
+        }
+        Long userId = Utils.toLongValue(id);
+
+        TCID connectionTCId = new TCID(connectionId);
+        if (!Utils.isValid(connectionTCId)) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, Constants.MSG_TEMPLATE_INVALID_ID);
+        }
+        Long diceConnectionId = Utils.toLongValue(connectionTCId);
+
+        DiceConnection diceConnection = userDao.findDiceConnection(userId, diceConnectionId);
+
+        if (diceConnection == null) {
+            throw new APIRuntimeException(SC_NOT_FOUND, "Connection not found");
+        }
+        diceConnection.setConnection(diceAuth.getDiceApiUrl() + "/web/connection/inviteurl/"
+                + diceConnection.getConnection());
+        return ApiResponseFactory.createResponse(diceConnection);
     }
 
     @POST
@@ -1622,22 +1716,26 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         checkParam(postRequest);
         CredentialRequest credential = postRequest.getParam();
 
-        if(credential.getEmail() == null || credential.getEmail().length() == 0) {
+        if (credential.getEmail() == null || credential.getEmail().length() == 0) {
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Email address"));
         }
-        if(credential.getConnectionId() == null || credential.getConnectionId().length() == 0) {
+        if (credential.getConnectionId() == null || credential.getConnectionId().length() == 0) {
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Connection Id"));
         }
         logger.info(String.format("issue credential (%s)", credential.getEmail()));
 
         // find user by email
-        User2fa user = userDao.findUserCredentialByEmail(credential.getEmail());
+        UserDiceAttributes user = userDao.findUserDiceAttributesByEmail(credential.getEmail());
 
         // return 404 if user is not found
-        if(user == null)
+        if (user == null)
             throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
-        if(user.getEnabled() == null || !user.getEnabled()) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, "2FA is not enabled for user");
+        if (user.getId() == null) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, "MFA is not enabled for user");
+        }
+        if (user.getDiceConnectionId() == null
+                || !user.getDiceConnection().equals(credential.getConnectionId())) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, "Connection not created or renewed");
         }
         List<Role> roles = roleDao.getRolesBySubjectId(user.getUserId());
         ObjectMapper mapper = new ObjectMapper();
@@ -1682,47 +1780,45 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
                     String.format("Got unexpected response from remote service. %d %s", response.getStatusCode(),
                             response.getMessage()));
         }
-        if (user.getVerified()) {
-            userDao.update2fa(user.getId(), true, false);
-        }
+        userDao.updateDiceConnectionStatus(user.getDiceConnectionId(), true);
         return ApiResponseFactory.createResponse("SUCCESS");
     }
 
     @PUT
-    @Path("/2faVerification")
+    @Path("/diceVerification")
     @Timed
-    public ApiResponse update2faVerification(
+    public ApiResponse updateDiceVerification(
             @Auth AuthUser authUser,
-            @Valid PostPutRequest<User2fa> putRequest,
+            @Valid PostPutRequest<DiceVerification> putRequest,
             @Context HttpServletRequest request) {
 
         Utils.checkAccess(authUser, user2faFactory.getVerifyScopes(), Utils.AdminRoles);
         checkParam(putRequest);
-        User2fa credential = putRequest.getParam();
+        DiceVerification verification = putRequest.getParam();
 
-        if(credential.getEmail() == null || credential.getEmail().length() == 0) {
+        if (verification.getEmail() == null || verification.getEmail().length() == 0) {
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Email address"));
         }
-        if(credential.getVerified() == null) {
+        if (verification.getVerified() == null) {
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Verified"));
         }
-        logger.info(String.format("update 2fa verification (%s) - %b", credential.getEmail(), credential.getVerified()));
+        logger.info(String.format("update 2fa verification (%s) - %b", verification.getEmail(),
+                verification.getVerified()));
 
         // find user by email
-        User2fa credVerification = userDao.findUserCredentialByEmail(credential.getEmail());
+        User2fa user2fa = userDao.findUser2faByEmail(verification.getEmail());
 
         // return 404 if user is not found
-        if(credVerification == null)
+        if (user2fa == null)
             throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
 
-        if(credVerification.getEnabled() == null || !credVerification.getEnabled()) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, "2FA is not enabled for user");
+        if (user2fa.getId() == null) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, "MFA is not enabled for user");
         }
-        // update only if it's true. We need to prevent changing verification status from true to false
-        // Otherwise 2fa will be skipped during the login flow.
-        // The only way to set verification to false is disabling the 2fa for that user.
-        if(credential.getVerified()) {
-            userDao.update2fa(credVerification.getId(), true, credential.getVerified());
+
+        if (verification.getVerified() && (user2fa.getDiceEnabled() == null || !user2fa.getDiceEnabled())) {
+            userDao.updateUser2fa(user2fa.getId(), user2fa.getMfaEnabled(), true,
+                    authUser.isMachine() ? 0 : Utils.toLongValue(authUser.getUserId()));
         }
         return ApiResponseFactory.createResponse("User verification updated");
     }
@@ -1737,22 +1833,73 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         // checking param
         checkParam(postRequest);
 
-        UserOtp userOtp = postRequest.getParam();
+        UserOtp otpRequest = postRequest.getParam();
 
-        if (userOtp.getUserId() == null) {
+        if (otpRequest.getUserId() == null) {
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "userId"));
         }
-        logger.info(String.format("send otp to user (%d)", userOtp.getUserId()));
+        logger.info(String.format("send otp to user (%d)", otpRequest.getUserId()));
 
-        User2fa user2faInDb = userDao.findUser2faById(userOtp.getUserId());
-        if (user2faInDb == null)
+        UserOtp userOtp = userDao.findUserOtpEmailByUserId(otpRequest.getUserId());
+        if (userOtp == null) {
             throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
-        if (user2faInDb.getEnabled() == null || !user2faInDb.getEnabled()) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, "2FA is not enabled for user");
         }
+
         String otp = Utils.generateRandomString(ALPHABET_DIGITS_EN, 6);
-        userDao.update2faOtp(user2faInDb.getId(), otp, diceAuth.getOtpDuration());
-        send2faCodeEmailEvent(user2faInDb, otp, diceAuth.getOtpDuration());
+        String resendToken = Utils.generateRandomString(ALPHABET_ALPHA_EN + ALPHABET_DIGITS_EN, 20);
+        if (userOtp.getId() == null) {
+            userDao.insertUserOtp(userOtp.getUserId(), otp, diceAuth.getOtpDuration(), resendToken, false, 0);
+        } else {
+            userDao.updateUserOtp(userOtp.getId(), otp, diceAuth.getOtpDuration(), resendToken, false, 0);
+        }
+        userOtp.setOtp(otp);
+        send2faCodeEmailEvent(userOtp, diceAuth.getOtpDuration());
+        UserOtpResponse response = new UserOtpResponse();
+        response.setResendToken(resendToken);
+        return ApiResponseFactory.createResponse(response);
+    }
+
+    @POST
+    @Path("/resendEmailOtp")
+    @Timed
+    public ApiResponse resendOtp(
+            @Valid PostPutRequest<UserOtp> postRequest,
+            @Context HttpServletRequest request) {
+
+        // checking param
+        checkParam(postRequest);
+
+        UserOtp otpRequest = postRequest.getParam();
+
+        if (otpRequest.getUserId() == null) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "userId"));
+        }
+        if (otpRequest.getResendToken() == null) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "resendToken"));
+        }
+        logger.info(String.format("resend otp to user (%d)", otpRequest.getUserId()));
+
+        UserOtp userOtp = userDao.findUserOtpEmailByUserId(otpRequest.getUserId());
+        if (userOtp == null) {
+            throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
+        }
+        if (userOtp.getId() == null) {
+            throw new APIRuntimeException(SC_NOT_FOUND, "No otp found");
+        }
+        if (!userOtp.getResendToken().equals(otpRequest.getResendToken())) {
+            throw new APIRuntimeException(SC_FORBIDDEN, "Invalid token");
+        }
+        if (userOtp.getResend()) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, "Otp already resent");
+        }
+        if (userOtp.getExpireAt().isAfterNow()) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, "Token expired");
+        }
+        if (userOtp.getFailCount() >= 3) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, "Too many attempts");
+        }
+        userDao.updateUserOtpResend(userOtp.getId(), diceAuth.getOtpDuration(), true);
+        send2faCodeEmailEvent(userOtp, diceAuth.getOtpDuration());
         return ApiResponseFactory.createResponse("SUCCESS");
     }
 
@@ -1766,22 +1913,40 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         // checking param
         checkParam(postRequest);
 
-        UserOtp userOtp = postRequest.getParam();
+        UserOtp otpRequest = postRequest.getParam();
 
-        if (userOtp.getUserId() == null) {
+        if (otpRequest.getUserId() == null) {
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "userId"));
         }
-        if (userOtp.getOtp() == null || userOtp.getOtp().length() == 0) {
+        if (otpRequest.getOtp() == null || otpRequest.getOtp().length() == 0) {
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "otp"));
         }
-        logger.info(String.format("verify otp for user (%d)", userOtp.getUserId()));
+        logger.info(String.format("verify otp for user (%d)", otpRequest.getUserId()));
 
-        int result = userDao.verify2faOtp(userOtp.getUserId(), userOtp.getOtp());
+        UserOtp userOtp = userDao.findUserOtpByUserId(otpRequest.getUserId());
+        if (userOtp == null) {
+            throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
+        }
+        if (userOtp.getId() == null) {
+            throw new APIRuntimeException(SC_NOT_FOUND, "No otp found");
+        }
         UserOtpResponse response = new UserOtpResponse();
-        if (result == 1) {
+        if (userOtp.getFailCount() >= 3) {
+            response.setVerified(false);
+            response.setBlocked(true);
+        } else if (userOtp.getExpireAt().isAfterNow()) {
+            response.setVerified(false);
+            response.setExpired(true);
+        } else if (userOtp.getOtp().equals(otpRequest.getOtp())) {
             response.setVerified(true);
         } else {
             response.setVerified(false);
+            if (userOtp.getFailCount() >= 2) {
+                response.setBlocked(true);
+            } else if (!userOtp.getResend()) {
+                response.setResendToken(userOtp.getResendToken());
+            }
+            userDao.updateUserOtpAttempt(userOtp.getId(), userOtp.getFailCount() + 1);
         }
         return ApiResponseFactory.createResponse(response);
     }
@@ -2209,47 +2374,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         }
     }
 
-    private void send2faInvitationEmailEvent(User2fa user, String connectionId, String QR) {
-
-        EventMessage msg = EventMessage.getDefault();
-        msg.setTopic("external.action.email");
-
-        Map<String, Object> payload = new LinkedHashMap<String, Object>();
-        Map<String, Object> data = new LinkedHashMap<String, Object>();
-        data.put("handle", user.getHandle());
-        data.put("link", diceAuth.getDiceUrl() + "/verify/" + connectionId);
-        data.put("qrcid", connectionId);
-        data.put("verifier", diceAuth.getDiceVerifier());
-
-        payload.put("data", data);
-
-        Map<String, Object> from = new LinkedHashMap<String, Object>();
-        from.put("email", String.format("Topcoder <noreply@%s>", getDomain()));
-        payload.put("from", from);
-
-        payload.put("version", "v3");
-        payload.put("sendgrid_template_id", this.getSendgrid2faInvitationTemplateId());
-
-        ArrayList<String> recipients = new ArrayList<String>();
-        recipients.add(user.getEmail());
-
-        payload.put("recipients", recipients);
-
-        ArrayList<Map<String, Object>> attachments = new ArrayList<Map<String, Object>>();
-        Map<String, Object> attachment = new LinkedHashMap<String, Object>();
-        attachment.put("content", QR);
-        attachment.put("type", "image/png");
-        attachment.put("disposition", "inline");
-        attachment.put("content_id", connectionId);
-        attachment.put("filename", connectionId + ".png");
-        attachments.add(attachment);
-        payload.put("attachments", attachments);
-
-        msg.setPayload(payload);
-        this.eventBusServiceClient.reFireEvent(msg);
-    }
-
-    private void send2faCodeEmailEvent(User2fa user, String code, Integer duration) {
+    private void send2faCodeEmailEvent(UserOtp user, Integer duration) {
 
         EventMessage msg = EventMessage.getDefault();
         msg.setTopic("external.action.email");
@@ -2257,7 +2382,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         Map<String,Object> payload = new LinkedHashMap<String,Object>();
         Map<String,Object> data = new LinkedHashMap<String,Object>();
         data.put("handle", user.getHandle());
-        data.put("code", code);
+        data.put("code", user.getOtp());
         data.put("duration", duration);
 
         payload.put("data", data);

@@ -36,9 +36,11 @@ import com.appirio.tech.core.service.identity.dao.ExternalAccountDAO.ExternalAcc
 import com.appirio.tech.core.service.identity.representation.Achievement;
 import com.appirio.tech.core.service.identity.representation.Country;
 import com.appirio.tech.core.service.identity.representation.Credential;
+import com.appirio.tech.core.service.identity.representation.DiceConnection;
 import com.appirio.tech.core.service.identity.representation.User2fa;
+import com.appirio.tech.core.service.identity.representation.UserDiceAttributes;
+import com.appirio.tech.core.service.identity.representation.UserOtp;
 import com.appirio.tech.core.service.identity.representation.Email;
-import com.appirio.tech.core.service.identity.representation.GroupMembership;
 import com.appirio.tech.core.service.identity.representation.ProviderType;
 import com.appirio.tech.core.service.identity.representation.User;
 import com.appirio.tech.core.service.identity.representation.UserProfile;
@@ -97,12 +99,10 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
             "SELECT " + USER_COLUMNS + ", " +
-            "s.password AS credential$encodedPassword, e.address AS email, e.status_id AS emailStatus, " +
-            "mfa.enabled AS mfaEnabled, mfa.verified AS mfaVerified " +
+            "s.password AS credential$encodedPassword, e.address AS email, e.status_id AS emailStatus " +
             "FROM common_oltp.user AS u " +
             "LEFT OUTER JOIN common_oltp.email AS e ON u.user_id = e.user_id AND e.email_type_id = 1 AND e.primary_ind = 1 " +
             "LEFT OUTER JOIN common_oltp.security_user AS s ON u.user_id = s.login_id " +
-            "LEFT JOIN common_oltp.user_2fa mfa ON mfa.user_id = u.user_id " +
             "WHERE u.user_id = :id"
     )
     public abstract User findUserById(@Bind("id") long id);
@@ -110,88 +110,178 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
             "SELECT " + USER_COLUMNS + ", " +
+            "e.address AS email, e.status_id AS emailStatus " +
+            "FROM common_oltp.user AS u " +
+            "LEFT OUTER JOIN common_oltp.email AS e ON u.user_id = e.user_id AND e.email_type_id = 1 " +
+            "WHERE u.handle_lower = LOWER(:handle)"
+    )
+    public abstract User findUserByHandle(@Bind("handle") String handle);
+
+    @RegisterMapperFactory(TCBeanMapperFactory.class)
+    @SqlQuery(
+            "SELECT " + USER_COLUMNS + ", " +
             "e.address AS email, e.status_id AS emailStatus, " +
-            "mfa.enabled AS mfaEnabled, mfa.verified AS mfaVerified " +
+            "mfa.mfa_enabled AS mfaEnabled, mfa.dice_enabled AS diceEnabled " +
             "FROM common_oltp.user AS u " +
             "LEFT OUTER JOIN common_oltp.email AS e ON u.user_id = e.user_id AND e.email_type_id = 1 " +
             "LEFT JOIN common_oltp.user_2fa mfa ON mfa.user_id = u.user_id " +
             "WHERE u.handle_lower = LOWER(:handle)"
     )
-    public abstract User findUserByHandle(@Bind("handle") String handle);
+    public abstract User findUserWith2faByHandle(@Bind("handle") String handle);
     
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
             "SELECT " + USER_COLUMNS + ", " +
-            "e.address AS email, e.status_id AS emailStatus, " +
-            "mfa.enabled AS mfaEnabled, mfa.verified AS mfaVerified " +
+            "e.address AS email, e.status_id AS emailStatus " +
             "FROM common_oltp.user AS u JOIN common_oltp.email AS e ON e.user_id = u.user_id " +
-            "LEFT JOIN common_oltp.user_2fa mfa ON mfa.user_id = u.user_id " +
             "WHERE LOWER(e.address) = LOWER(:email)"
     )
     public abstract List<User> findUsersByEmail(@Bind("email") String email);
 
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
-            "SELECT mfa.id AS id, u.user_id AS userId, u.handle AS handle, u.first_name AS firstName, e.address AS email, mfa.enabled AS enabled, mfa.verified AS verified " +
+            "SELECT mfa.id AS id, u.user_id AS userId, u.handle AS handle, u.first_name AS firstName, e.address AS email, mfa.mfa_enabled AS mfaEnabled, mfa.dice_enabled AS diceEnabled" +
+            ", dc.id AS diceConnectionId, dc.connection AS diceConnection, dc.accepted AS diceConnectionAccepted, dc.created_at AS diceConnectionCreatedAt " +
+            "FROM common_oltp.user AS u LEFT JOIN common_oltp.email AS e ON e.user_id = u.user_id " +
+            "LEFT JOIN common_oltp.user_2fa AS mfa ON mfa.user_id = u.user_id " +
+            "LEFT JOIN common_oltp.dice_connection AS dc ON dc.user_id = u.user_id " +
+            "WHERE u.user_id = :userId")
+    public abstract UserDiceAttributes findUserDiceAttributesByUserId(@Bind("userId") long userId);
+
+    @RegisterMapperFactory(TCBeanMapperFactory.class)
+    @SqlQuery(
+            "SELECT mfa.id AS id, u.user_id AS userId, u.handle AS handle, u.first_name AS firstName, e.address AS email, mfa.mfa_enabled AS mfaEnabled, mfa.dice_enabled AS diceEnabled" +
+            ", dc.id AS diceConnectionId, dc.connection AS diceConnection, dc.accepted AS diceConnectionAccepted, dc.created_at AS diceConnectionCreatedAt " +
+            "FROM common_oltp.user AS u JOIN common_oltp.email AS e ON e.user_id = u.user_id " +
+            "LEFT JOIN common_oltp.user_2fa AS mfa ON mfa.user_id = u.user_id " +
+            "LEFT JOIN common_oltp.dice_connection AS dc ON dc.user_id = u.user_id " +
+            "WHERE  LOWER(e.address) = LOWER(:email)")
+    public abstract List<UserDiceAttributes> findAllUserDiceAttributesByEmail(@Bind("email") String email);
+
+    @SqlQuery("INSERT INTO common_oltp.dice_connection " +
+            "(user_id, connection, accepted) VALUES " +
+            "(:userId, :connection, :accepted) RETURNING id")
+    public abstract long insertDiceConnection(@Bind("userId") long userId, @Bind("connection") String connection, @Bind("accepted") boolean accepted);
+
+    @SqlUpdate("DELETE FROM common_oltp.dice_connection " +
+            "WHERE id=:id")
+    public abstract int deleteDiceConnection(@Bind("id") long id);
+
+    @SqlUpdate("UPDATE common_oltp.dice_connection SET " +
+            "accepted=:accepted " +
+            "WHERE id=:id")
+    public abstract int updateDiceConnectionStatus(@Bind("id") long id, @Bind("accepted") boolean accepted);
+
+    @RegisterMapperFactory(TCBeanMapperFactory.class)
+    @SqlQuery(
+            "SELECT dc.id AS id, dc.connection AS connection, dc.accepted AS accepted, dc.created_at AS createdAt " +
+            "FROM common_oltp.dice_connection AS dc " +
+            "WHERE dc.id = :id AND dc.user_id = :userId")
+    public abstract DiceConnection findDiceConnection(@Bind("userId") long userId, @Bind("id") long id);
+
+    @RegisterMapperFactory(TCBeanMapperFactory.class)
+    @SqlQuery(
+            "SELECT mfa.id AS id, mfa.user_id AS userId, mfa.mfa_enabled AS mfaEnabled, mfa.dice_enabled AS diceEnabled, mfa.created_by AS createdBy, mfa.created_at AS createdAt, mfa.modified_by AS modifiedBy, mfa.modified_at AS modifiedAt " +
+            "FROM common_oltp.user_2fa AS mfa " +
+            "WHERE mfa.id = :id")
+    public abstract User2fa findUser2faById(@Bind("id") long id);
+
+    @RegisterMapperFactory(TCBeanMapperFactory.class)
+    @SqlQuery(
+            "SELECT mfa.id AS id, u.user_id AS userId, u.handle AS handle, e.address AS email, mfa.mfa_enabled AS mfaEnabled, mfa.dice_enabled AS diceEnabled, mfa.created_by AS createdBy, mfa.created_at AS createdAt, mfa.modified_by AS modifiedBy, mfa.modified_at AS modifiedAt " +
             "FROM common_oltp.user AS u JOIN common_oltp.email AS e ON e.user_id = u.user_id " +
             "LEFT JOIN common_oltp.user_2fa AS mfa ON mfa.user_id = u.user_id " +
             "WHERE LOWER(e.address) = LOWER(:email)"
     )
-    public abstract List<User2fa> findUser2faByEmail(@Bind("email") String email);
+    public abstract List<User2fa> findAllUser2faByEmail(@Bind("email") String email);
 
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
-            "SELECT mfa.id AS id, u.user_id AS userId, u.handle AS handle, u.first_name AS firstName, e.address AS email, mfa.enabled AS enabled, mfa.verified AS verified " +
-            "FROM common_oltp.user AS u LEFT JOIN common_oltp.email AS e ON e.user_id = u.user_id " +
+            "SELECT mfa.id AS id, u.user_id AS userId, u.handle AS handle, mfa.mfa_enabled AS mfaEnabled, mfa.dice_enabled AS diceEnabled, mfa.created_by AS createdBy, mfa.created_at AS createdAt, mfa.modified_by AS modifiedBy, mfa.modified_at AS modifiedAt " +
+            "FROM common_oltp.user AS u " +
             "LEFT JOIN common_oltp.user_2fa AS mfa ON mfa.user_id = u.user_id " +
             "WHERE u.user_id = :userId"
     )
-    public abstract User2fa findUser2faById(@Bind("userId") long userId);
+    public abstract User2fa findUser2faByUserId(@Bind("userId") long userId);
 
-    @SqlUpdate(
-            "INSERT INTO common_oltp.user_2fa " +
-            "(user_id, enabled) VALUES " +
-            "(:userId, :enabled)")
-    public abstract int insertUser2fa(@Bind("userId") long userId, @Bind("enabled") boolean enabled);
+    @SqlQuery("INSERT INTO common_oltp.user_2fa " +
+            "(user_id, mfa_enabled, dice_enabled, created_by, modified_by) VALUES " +
+            "(:userId, :mfaEnabled, :diceEnabled, :createdBy, :createdBy) RETURNING id")
+    public abstract long insertUser2fa(@Bind("userId") long userId, @Bind("mfaEnabled") boolean mfaEnabled,
+            @Bind("diceEnabled") boolean diceEnabled, @Bind("createdBy") Long createdBy);
 
-    @SqlUpdate(
-            "UPDATE common_oltp.user_2fa SET " +
-            "enabled=:enabled, " +
-            "verified=:verified " +
+    @SqlUpdate("UPDATE common_oltp.user_2fa SET " +
+            "mfa_enabled=:mfaEnabled, dice_enabled=:diceEnabled, " +
+            "modified_by=:modifiedBy, modified_at=current_timestamp " +
             "WHERE id=:id")
-    public abstract int update2fa(@Bind("id") long id, @Bind("enabled") boolean enabled, @Bind("verified") boolean verified);
+    public abstract int updateUser2fa(@Bind("id") long id, @Bind("mfaEnabled") boolean mfaEnabled,
+            @Bind("diceEnabled") boolean diceEnabled, @Bind("modifiedBy") Long modifiedBy);
 
-    @SqlUpdate(
-            "UPDATE common_oltp.user_2fa SET " +
-            "enabled=:enabled, " +
-            "verified=:verified " +
-            "WHERE user_id=:userId")
-    public abstract int update2faByUserId(@Bind("userId") long userId, @Bind("enabled") boolean enabled, @Bind("verified") boolean verified);
-
-    @SqlUpdate(
-            "UPDATE common_oltp.user_2fa SET " +
-            "otp=:otp, " +
-            "otp_expire=current_timestamp + (:duration ||' minutes')::interval " +
-            "WHERE id=:id")
-    public abstract int update2faOtp(@Bind("id") long id, @Bind("otp") String otp, @Bind("duration") int duration);
-
+    @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
-            "UPDATE common_oltp.user_2fa x SET otp=null, otp_expire=null " +
-            "FROM (SELECT id, otp, otp_expire FROM common_oltp.user_2fa WHERE user_id=:userId FOR UPDATE)y " +
-            "WHERE x.id=y.id " +
-            "RETURNING CASE WHEN y.otp=:otp and y.otp_expire > current_timestamp THEN 1 ELSE 0 END")
-    public abstract int verify2faOtp(@Bind("userId") long userId, @Bind("otp") String otp);
+            "SELECT otp.id AS id, u.user_id AS userId, u.handle AS handle, otp.otp AS otp, otp.expire_at AS expireAt, otp.resend_token AS resendToken, otp.resend AS resend, otp.fail_count AS failCount " +
+            "FROM common_oltp.user AS u " +
+            "LEFT JOIN common_oltp.user_otp_email AS otp ON otp.user_id = u.user_id " +
+            "WHERE u.user_id = :userId")
+    public abstract UserOtp findUserOtpByUserId(@Bind("userId") long userId);
+
+    @RegisterMapperFactory(TCBeanMapperFactory.class)
+    @SqlQuery(
+            "SELECT otp.id AS id, u.user_id AS userId, u.handle AS handle, e.address AS email, otp.otp AS otp, otp.expire_at AS expireAt, otp.resend_token AS resendToken, otp.resend AS resend, otp.fail_count AS failCount " +
+            "FROM common_oltp.user AS u " +
+            "JOIN common_oltp.email AS e ON e.user_id = u.user_id " +
+            "LEFT JOIN common_oltp.user_otp_email AS otp ON otp.user_id = u.user_id " +
+            "WHERE u.user_id = :userId")
+    public abstract UserOtp findUserOtpEmailByUserId(@Bind("userId") long userId);
+
+    @SqlUpdate("UPDATE common_oltp.user_otp_email SET " +
+            "otp=:otp, " +
+            "expire_at=current_timestamp + (:duration ||' minutes')::interval, " +
+            "resend_token=:resendToken, " +
+            "resend=:resend, " +
+            "fail_count=:failCount " +
+            "WHERE id=:id")
+    public abstract int updateUserOtp(@Bind("id") long id, @Bind("otp") String otp, @Bind("duration") int duration,
+            @Bind("resendToken") String resendToken, @Bind("resend") boolean resend, @Bind("failCount") int failCount);
+
+    @SqlUpdate("UPDATE common_oltp.user_otp_email SET " +
+            "expire_at=current_timestamp + (:duration ||' minutes')::interval, " +
+            "resend=:resend " +
+            "WHERE id=:id")
+    public abstract int updateUserOtpResend(@Bind("id") long id, @Bind("duration") int duration,
+            @Bind("resend") boolean resend);
+
+    @SqlUpdate("UPDATE common_oltp.user_otp_email SET " +
+            "fail_count=:failCount " +
+            "WHERE id=:id")
+    public abstract int updateUserOtpAttempt(@Bind("id") long id, @Bind("failCount") int failCount);
+
+    @SqlUpdate("INSERT INTO common_oltp.user_otp_email " +
+            "(user_id, otp, expire_at, resend_token, resend, fail_count) VALUES " +
+            "(:userId, :otp, current_timestamp + (:duration ||' minutes')::interval, :resendToken, :resend, :failCount)")
+    public abstract int insertUserOtp(@Bind("userId") long userId, @Bind("otp") String otp,
+            @Bind("duration") int duration, @Bind("resendToken") String resendToken, @Bind("resend") boolean resend,
+            @Bind("failCount") int failCount);
+
+    @RegisterMapperFactory(TCBeanMapperFactory.class)
+    @SqlQuery(
+            "SELECT " + USER_COLUMNS + ", " +
+            "e.address AS email, e.status_id AS emailStatus " +
+            "FROM common_oltp.user AS u JOIN common_oltp.email AS e ON e.user_id = u.user_id " +
+            "WHERE e.address = :email"
+    )
+    public abstract List<User> findUsersByEmailCS(@Bind("email") String email);
 
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
             "SELECT " + USER_COLUMNS + ", " +
             "e.address AS email, e.status_id AS emailStatus, " +
-            "mfa.enabled AS mfaEnabled, mfa.verified AS mfaVerified " +
+            "mfa.mfa_enabled AS mfaEnabled, mfa.dice_enabled AS diceEnabled " +
             "FROM common_oltp.user AS u JOIN common_oltp.email AS e ON e.user_id = u.user_id " +
             "LEFT JOIN common_oltp.user_2fa AS mfa ON mfa.user_id = u.user_id " +
             "WHERE e.address = :email"
     )
-    public abstract List<User> findUsersByEmailCS(@Bind("email") String email);
+    public abstract List<User> findUsersWith2faByEmailCS(@Bind("email") String email);
 
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
@@ -428,19 +518,33 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
         return users.get(0);
     }
 
-    public User2fa findUserCredentialByEmail(String email) {
-        List<User2fa> users = findUser2faByEmail(email);
-        if(users==null || users.size()==0)
+    public UserDiceAttributes findUserDiceAttributesByEmail(String email) {
+        List<UserDiceAttributes> users = findAllUserDiceAttributesByEmail(email);
+        if (users == null || users.size() == 0)
             return null;
-        
-        if(users.size()==1)
+
+        if (users.size() == 1)
+            return users.get(0);
+
+        for (UserDiceAttributes user : users) {
+            if (user.getEmail().equals(email))
+                return user;
+        }
+        return users.get(0);
+    }
+
+    public User2fa findUser2faByEmail(String email) {
+        List<User2fa> users = findAllUser2faByEmail(email);
+        if (users == null || users.size() == 0)
+            return null;
+
+        if (users.size() == 1)
             return users.get(0);
 
         for (User2fa user : users) {
-            if(user.getEmail().equals(email))
+            if (user.getEmail().equals(email))
                 return user;
         }
-    
         return users.get(0);
     }
     
@@ -450,11 +554,25 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
      * @return an user object or null
      */
     public User findUserByEmailCS(String email) {
-        if(email==null || email.length()==0)
+        return findUserByEmailCS(email, false);
+    }
+
+    /**
+     *
+     * @param email - case sensitive search
+     * @return an user object or null
+     */
+    public User findUserByEmailCS(String email, Boolean include2fa) {
+        if (email == null || email.length() == 0)
             throw new IllegalArgumentException("email must be specified.");
 
-        List<User> users = findUsersByEmailCS(email);
-        if(users==null || users.size()==0)
+        List<User> users;
+        if (include2fa) {
+            users = findUsersWith2faByEmailCS(email);
+        } else {
+            users = findUsersByEmailCS(email);
+        }
+        if (users == null || users.size() == 0)
             return null;
 
         // if found multiple, retuning first one
