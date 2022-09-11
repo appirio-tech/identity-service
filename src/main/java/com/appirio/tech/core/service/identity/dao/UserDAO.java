@@ -11,7 +11,6 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.log4j.Logger;
-import org.joda.time.DateTime;
 import org.skife.jdbi.v2.TransactionIsolationLevel;
 import org.skife.jdbi.v2.sqlobject.Bind;
 import org.skife.jdbi.v2.sqlobject.BindBean;
@@ -189,7 +188,7 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
             "SELECT mfa.id AS id, u.user_id AS userId, u.handle AS handle, e.address AS email, mfa.mfa_enabled AS mfaEnabled, mfa.dice_enabled AS diceEnabled, mfa.created_by AS createdBy, mfa.created_at AS createdAt, mfa.modified_by AS modifiedBy, mfa.modified_at AS modifiedAt " +
-            "FROM common_oltp.user AS u JOIN common_oltp.email AS e ON e.user_id = u.user_id " +
+            "FROM common_oltp.user AS u JOIN common_oltp.email AS e ON e.user_id = u.user_id AND e.email_type_id = 1 AND e.primary_ind = 1 " +
             "LEFT JOIN common_oltp.user_2fa AS mfa ON mfa.user_id = u.user_id " +
             "WHERE LOWER(e.address) = LOWER(:email)"
     )
@@ -219,30 +218,29 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
 
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
-            "SELECT otp.id AS id, u.user_id AS userId, u.handle AS handle, otp.otp AS otp, otp.expire_at AS expireAt, otp.resend_token AS resendToken, otp.resend AS resend, otp.fail_count AS failCount " +
+            "SELECT otp.id AS id, u.user_id AS userId, u.handle AS handle, u.status AS status, otp.otp AS otp, otp.expire_at AS expireAt, otp.resend AS resend, otp.fail_count AS failCount " +
             "FROM common_oltp.user AS u " +
-            "LEFT JOIN common_oltp.user_otp_email AS otp ON otp.user_id = u.user_id " +
+            "LEFT JOIN common_oltp.user_otp_email AS otp ON otp.user_id = u.user_id AND otp.mode = :mode " +
             "WHERE u.user_id = :userId")
-    public abstract UserOtp findUserOtpByUserId(@Bind("userId") long userId);
+    public abstract UserOtp findUserOtpByUserId(@Bind("userId") long userId, @Bind("mode") int mode);
 
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
-            "SELECT otp.id AS id, u.user_id AS userId, u.handle AS handle, e.address AS email, otp.otp AS otp, otp.expire_at AS expireAt, otp.resend_token AS resendToken, otp.resend AS resend, otp.fail_count AS failCount " +
+            "SELECT otp.id AS id, u.user_id AS userId, u.handle AS handle, e.address AS email, otp.otp AS otp, otp.expire_at AS expireAt, otp.resend AS resend, otp.fail_count AS failCount " +
             "FROM common_oltp.user AS u " +
-            "JOIN common_oltp.email AS e ON e.user_id = u.user_id " +
-            "LEFT JOIN common_oltp.user_otp_email AS otp ON otp.user_id = u.user_id " +
+            "JOIN common_oltp.email AS e ON e.user_id = u.user_id AND e.email_type_id = 1 AND e.primary_ind = 1 " +
+            "LEFT JOIN common_oltp.user_otp_email AS otp ON otp.user_id = u.user_id AND otp.mode = :mode " +
             "WHERE u.user_id = :userId")
-    public abstract UserOtp findUserOtpEmailByUserId(@Bind("userId") long userId);
+    public abstract UserOtp findUserOtpEmailByUserId(@Bind("userId") long userId, @Bind("mode") int mode);
 
     @SqlUpdate("UPDATE common_oltp.user_otp_email SET " +
             "otp=:otp, " +
             "expire_at=current_timestamp + (:duration ||' minutes')::interval, " +
-            "resend_token=:resendToken, " +
             "resend=:resend, " +
             "fail_count=:failCount " +
             "WHERE id=:id")
     public abstract int updateUserOtp(@Bind("id") long id, @Bind("otp") String otp, @Bind("duration") int duration,
-            @Bind("resendToken") String resendToken, @Bind("resend") boolean resend, @Bind("failCount") int failCount);
+            @Bind("resend") boolean resend, @Bind("failCount") int failCount);
 
     @SqlUpdate("UPDATE common_oltp.user_otp_email SET " +
             "expire_at=current_timestamp + (:duration ||' minutes')::interval, " +
@@ -257,11 +255,10 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
     public abstract int updateUserOtpAttempt(@Bind("id") long id, @Bind("failCount") int failCount);
 
     @SqlUpdate("INSERT INTO common_oltp.user_otp_email " +
-            "(user_id, otp, expire_at, resend_token, resend, fail_count) VALUES " +
-            "(:userId, :otp, current_timestamp + (:duration ||' minutes')::interval, :resendToken, :resend, :failCount)")
-    public abstract int insertUserOtp(@Bind("userId") long userId, @Bind("otp") String otp,
-            @Bind("duration") int duration, @Bind("resendToken") String resendToken, @Bind("resend") boolean resend,
-            @Bind("failCount") int failCount);
+            "(user_id, mode, otp, expire_at, resend, fail_count) VALUES " +
+            "(:userId, :mode, :otp, current_timestamp + (:duration ||' minutes')::interval, :resendToken, :resend, :failCount)")
+    public abstract int insertUserOtp(@Bind("userId") long userId, @Bind("mode") int mode, @Bind("otp") String otp,
+            @Bind("duration") int duration, @Bind("resend") boolean resend, @Bind("failCount") int failCount);
 
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
@@ -359,9 +356,9 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
     
     @SqlUpdate(
             "INSERT INTO common_oltp.user " +
-            "(user_id, first_name, last_name, handle, status, activation_code, reg_source, utm_source, utm_medium, utm_campaign) VALUES " +
-            "(:u.id, :u.firstName, :u.lastName, :u.handle, :u.status, :activationCode, :u.regSource, :u.utmSource, :u.utmMedium, :u.utmCampaign)")
-    abstract int createUser(@BindBean("u") User user, @Bind("activationCode") String activationCode);
+            "(user_id, first_name, last_name, handle, status, reg_source, utm_source, utm_medium, utm_campaign) VALUES " +
+            "(:u.id, :u.firstName, :u.lastName, :u.handle, :u.status, :u.regSource, :u.utmSource, :u.utmMedium, :u.utmCampaign)")
+    abstract int createUser(@BindBean("u") User user);
 
     @SqlUpdate(
             "UPDATE common_oltp.user SET " +
@@ -588,18 +585,12 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
         Long userId = nextSequeceValue("sequence_user_seq");
         user.setId(new TCID(userId));
         
-        // generate an activation code for inactive user
-        String activationCode = null;
-        if(!user.isActive()) {
-            activationCode = Utils.getActivationCode(userId);
-            if(user.getCredential()==null) {
-                user.setCredential(new Credential());
-            }
-            user.getCredential().setActivationCode(activationCode);
+        if(user.getCredential()==null) {
+            user.setCredential(new Credential());
         }
         
         // insert user
-        createUser(user, activationCode);
+        createUser(user);
         
         // insert security_user
         createSecurityUser(
@@ -781,25 +772,13 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
     }
 
     @Transaction(TransactionIsolationLevel.READ_COMMITTED)
-    public void activate(User user) {
-        if(user==null)
-            throw new IllegalArgumentException("user must be specified.");
-        if(user.getId()==null)
-            throw new IllegalArgumentException("user has no ID.");
-        
-        Long userId = Utils.toLongValue(user.getId());
-        
+    public void activate(long userId) {       
         // user table
         activateUser(userId);
         // email table
         activateEmail(userId);
-        
         // LDAP
         activateLDAP(userId);
-        
-        // finally change status
-        user.setActive(true);
-        user.setEmailStatus(1);
     }
     
     @Transaction(TransactionIsolationLevel.READ_COMMITTED)

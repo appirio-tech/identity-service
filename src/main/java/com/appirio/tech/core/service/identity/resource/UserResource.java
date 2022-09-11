@@ -5,13 +5,21 @@ import static javax.servlet.http.HttpServletResponse.*;
 
 import com.appirio.tech.core.service.identity.util.m2mscope.User2faFactory;
 import com.appirio.tech.core.service.identity.util.m2mscope.UserProfilesFactory;
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.JWTCreator;
+import com.auth0.jwt.JWTVerifier;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTVerificationException;
+
 import io.dropwizard.auth.Auth;
 import io.dropwizard.jersey.PATCH;
 
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -151,6 +159,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     
     private String secret;
 
+    private String resendTokenSecret;
+
     /**
      * The event bus service client field used to send the event
      */
@@ -159,16 +169,26 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     private final UserProfilesFactory userProfilesFactory;
 
     private final User2faFactory user2faFactory;
-    
+
+    private final static int otpActivationMode = 1;
+
+    private final static int otp2faMode = 2;
+
+    private final static String otpActivationAud = "emailactivation";
+
+    private final static String otp2faAud = "2faemail";
+
+    private final static int activationCodeExpiration = 24 * 60;
+
     /**
      * Create UserResource
      *
-     * @param userDao the userDao to use
-     * @param roleDao the roleDao to use
-     * @param cacheService the cacheService to use
-     * @param eventProducer the eventProducer to use
+     * @param userDao               the userDao to use
+     * @param roleDao               the roleDao to use
+     * @param cacheService          the cacheService to use
+     * @param eventProducer         the eventProducer to use
      * @param eventBusServiceClient the eventBusServiceClient to use
-     * @param userProfilesFactory the user profiles scopes configuration.
+     * @param userProfilesFactory   the user profiles scopes configuration.
      */
     public UserResource(
                 UserDAO userDao,
@@ -224,6 +244,10 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
     public void setDiceAuth(DICEAuth diceAuth) {
         this.diceAuth = diceAuth;
+    }
+
+    public void setResendTokenSecret(String secret) {
+        this.resendTokenSecret = secret;
     }
 
     private static void checkAccessAndUserProfile(AuthUser authUser, long userId, UserProfile profile, String[] allowedScopes) {
@@ -536,10 +560,11 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
         // registration mail with activation code for inactive user
         if(!user.isActive()) {
-            String redirectUrl = postRequest.getOptionString("afterActivationURL");
+            String otp = Utils.generateRandomString(ALPHABET_DIGITS_EN, 6);
+            userDao.insertUserOtp(Utils.toLongValue(user.getId()), otpActivationMode, otp, activationCodeExpiration, false, 0);
             logger.debug(String.format("sending registration mail to: %s (%s)", user.getEmail(), user.getHandle()));
             // publish event.
-            notifyActivation(user, redirectUrl);
+            sendActivationEmailEvent(user, otp);
         } else {
             assignDefaultUserRole(user); // Add Topcoder User role if the user was auto-activated
         }
@@ -843,6 +868,25 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         // temp - just for testing
         user.setRegSource(userDao.generateSSOToken(Long.parseLong(user.getId().getId())));
 
+        if (!user.isActive()) {
+            UserOtp activation = userDao.findUserOtpByUserId(Utils.toLongValue(user.getId()), otpActivationMode);
+            if (user.getCredential() == null) {
+                user.setCredential(new Credential());
+            }
+            if (activation.getId() == null) {
+                String otp = Utils.generateRandomString(ALPHABET_DIGITS_EN, 6);
+                userDao.insertUserOtp(Utils.toLongValue(user.getId()), otpActivationMode, otp, activationCodeExpiration,
+                        false, 0);
+                user.getCredential().setCanResend(true);
+            } else if (activation.getFailCount() >= 3 || activation.getExpireAt().isBeforeNow()) {
+                user.getCredential().setActivationBlocked(true);
+                return ApiResponseFactory.createResponse(user);
+            } else if (!activation.getResend()) {
+                user.getCredential().setCanResend(true);
+            }
+            user.getCredential().setResendToken(
+                    generateResendToken(user.getId().getId(), otpActivationAud, activationCodeExpiration));
+        }
         return ApiResponseFactory.createResponse(user);
     }
 
@@ -990,103 +1034,119 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         return ApiResponseFactory.createResponse(user);
     }
 
+    @POST
+    @Path("/resendActivationEmail")
+    @Timed
+    public ApiResponse resendActivationEmail(
+            @Valid PostPutRequest<UserOtp> postRequest,
+            @Context HttpServletRequest request) {
 
-    //TODO: should be PATCH?
+        // checking param
+        checkParam(postRequest);
+
+        UserOtp otpRequest = postRequest.getParam();
+
+        if (otpRequest.getUserId() == null) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "userId"));
+        }
+        if (otpRequest.getResendToken() == null) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "resendToken"));
+        }
+        logger.info(String.format("resend activation email to user (%d)", otpRequest.getUserId()));
+        if (!verifyResendToken(otpRequest.getUserId().toString(), otpActivationAud, otpRequest.getResendToken())) {
+            throw new APIRuntimeException(SC_FORBIDDEN, "Invalid token");
+        }
+        UserOtp userActivation = userDao.findUserOtpByUserId(otpRequest.getUserId(), otpActivationMode);
+        if (userActivation == null) {
+            throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
+        }
+        if(userActivation.isActive()) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, MSG_TEMPLATE_USER_ALREADY_ACTIVATED);
+        }
+        if (userActivation.getId() == null) {
+            throw new APIRuntimeException(SC_NOT_FOUND, "No activation code found");
+        }
+        if (userActivation.getResend()) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, "Activation email already resent");
+        }
+        if (userActivation.getExpireAt().isBeforeNow()) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, "Activation code expired");
+        }
+        if (userActivation.getFailCount() >= 3) { 
+            throw new APIRuntimeException(SC_BAD_REQUEST, "Too many attempts");
+        }
+        userDao.updateUserOtpResend(userActivation.getId(), activationCodeExpiration, true);
+        User user = userDao.findUserById(userActivation.getUserId());
+        sendActivationEmailEvent(user, userActivation.getOtp());
+        return ApiResponseFactory.createResponse("SUCCESS");
+    }
+
+
     @PUT
     @Path("/activate")
     @Timed
     public ApiResponse activateUser(
-            @QueryParam("code") String code,
+            @Valid PostPutRequest<UserOtp> postRequest,
             @Context HttpServletRequest request) {
 
-        logger.info(String.format("activateUser(%s)", code));
+        checkParam(postRequest);
 
-        int userId = Utils.getCoderId(code);
-        if(userId==0)
-            throw new APIRuntimeException(SC_BAD_REQUEST, MSG_TEMPLATE_INVALID_ACTIVATION_CODE);
-        logger.debug(String.format("user id: %s from %s", userId, code));
-        
-        logger.debug(String.format("findUserById(%s)", userId));
-        User user = userDao.findUserById(userId);
-        if(user==null ||
-            (user.getCredential()!=null && !code.equals(user.getCredential().getActivationCode()))) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, MSG_TEMPLATE_INVALID_ACTIVATION_CODE);
+        UserOtp activationRequest = postRequest.getParam();
+
+        if (activationRequest.getUserId() == null) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "userId"));
         }
-        logger.debug(String.format("findUserById(%s): %s", userId, user.getHandle()));
-        if(user.isActive())
-            throw new APIRuntimeException(SC_BAD_REQUEST, MSG_TEMPLATE_USER_ALREADY_ACTIVATED);
-        
-        logger.debug(String.format("activating user: %s", user.getHandle()));
-        userDao.activate(user);
+        if (activationRequest.getOtp() == null || activationRequest.getOtp().length() == 0) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "otp"));
+        }
+        if (activationRequest.getResendToken() == null) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "resendToken"));
+        }
+        if (!verifyResendToken(activationRequest.getUserId().toString(), otpActivationAud, activationRequest.getResendToken())) {
+            throw new APIRuntimeException(SC_FORBIDDEN, "Invalid token");
+        }
+        logger.info(String.format("activateUser(%s)", activationRequest.getUserId()));
 
+        UserOtp userActivation = userDao.findUserOtpByUserId(activationRequest.getUserId(), otpActivationMode);
+        if (userActivation == null) {
+            throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
+        }
+        if(userActivation.isActive()) {
+            return ApiResponseFactory.createResponse(MSG_TEMPLATE_USER_ALREADY_ACTIVATED);
+        }
+        if (userActivation.getId() == null) {
+            throw new APIRuntimeException(SC_NOT_FOUND, "No activation code found");
+        }
+
+        if (userActivation.getFailCount() >= 3) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, "Blocked");
+        } else if (userActivation.getExpireAt().isBeforeNow()) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, "Expired");
+        } else if (!userActivation.getOtp().equals(activationRequest.getOtp())) {
+            userDao.updateUserOtpAttempt(userActivation.getId(), userActivation.getFailCount() + 1);
+            if (userActivation.getFailCount() >= 2) {
+                throw new APIRuntimeException(SC_BAD_REQUEST, "Blocked");
+            }
+            throw new APIRuntimeException(SC_BAD_REQUEST, "Wrong Activation Code");
+        }
+        userDao.activate(userActivation.getUserId());
+
+        User user = userDao.findUserById(userActivation.getUserId());
         // publish event
         publishUserEvent("event.user.activated", user);
         
         // Fix for https://app.asana.com/0/152805928309317/156708836631075
         // The current Welcome mail should not be sent to customers (connect users). 
-        String source = request.getParameter("source");
-        if(!"connect".equalsIgnoreCase(source)) {
+        if (user.getRegSource() == null || !user.getRegSource().matches("tcBusiness")) {
             notifyWelcome(user);
         }
         
         // assign a default user role
         assignDefaultUserRole(user);
 
-
-        if (user.getRegSource() != null && user.getRegSource().matches("selfService")) {
-            assignRoleByName("Self-Service Customer", user);
-        }
-
         return ApiResponseFactory.createResponse(user);
     }
 
-    @POST
-    @Path("/{resourceId}/sendActivationCode")
-    @Timed
-    public ApiResponse sendActivationCode(
-            @PathParam("resourceId") String resourceId,
-            @Valid PostPutRequest<User> postRequest,
-            @Context HttpServletRequest request) {
-        
-        logger.info(String.format("sendActivationCode(%s)", resourceId));
-
-        TCID id = new TCID(resourceId);
-        // checking ID
-        checkResourceId(id);
-
-        // find user by resourceId
-        User user = userDao.findUserById(Utils.toLongValue(id));
-
-        // return 404 if user is not found
-        if(user==null)
-            throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
-        
-        // return 400 if user has been activated
-        if(user.isActive())
-            throw new APIRuntimeException(SC_BAD_REQUEST, MSG_TEMPLATE_USER_ALREADY_ACTIVATED);
-        
-        // check cache with email
-        String cacheKey = getCacheKeyForActivationCode(user.getId(), user.getEmail());
-        String code = cacheService.get(cacheKey);
-        logger.debug(String.format("cache[%s] -> %s", cacheKey, code));
-        
-        // return 400 if code!=null
-        if(code!=null) {
-            // TODO: MSG
-            throw new APIRuntimeException(HttpURLConnection.HTTP_BAD_REQUEST, "You have already requested the activation code. Please find it in your email inbox. If it's not there, please contact support@topcoder.com.");
-        }
-        logger.debug(String.format("cache[%s] <- %s", cacheKey, user.getCredential().getActivationCode()));
-        cacheService.put(cacheKey, user.getCredential().getActivationCode(), getResendActivationCodeExpirySeconds());
-        
-        // registration mail with activation code for inactive user
-        String redirectUrl = postRequest.getOptionString("afterActivationURL");
-        logger.debug(String.format("sending registration mail to: %s (%s)", user.getEmail(), user.getHandle()));
-        // publish event
-        notifyActivation(user, redirectUrl);
-        
-        return ApiResponseFactory.createResponse("Activation mail has been sent successfully.");
-    }
-    
     @PATCH
     @Path("/{resourceId}/handle")
     @Timed
@@ -1840,17 +1900,17 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         }
         logger.info(String.format("send otp to user (%d)", otpRequest.getUserId()));
 
-        UserOtp userOtp = userDao.findUserOtpEmailByUserId(otpRequest.getUserId());
+        UserOtp userOtp = userDao.findUserOtpEmailByUserId(otpRequest.getUserId(), otp2faMode);
         if (userOtp == null) {
             throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
         }
 
         String otp = Utils.generateRandomString(ALPHABET_DIGITS_EN, 6);
-        String resendToken = Utils.generateRandomString(ALPHABET_ALPHA_EN + ALPHABET_DIGITS_EN, 20);
+        String resendToken = generateResendToken(userOtp.getUserId().toString(), otp2faAud, diceAuth.getOtpDuration().intValue() * 60);
         if (userOtp.getId() == null) {
-            userDao.insertUserOtp(userOtp.getUserId(), otp, diceAuth.getOtpDuration(), resendToken, false, 0);
+            userDao.insertUserOtp(userOtp.getUserId(), otp2faMode, otp, diceAuth.getOtpDuration(), false, 0);
         } else {
-            userDao.updateUserOtp(userOtp.getId(), otp, diceAuth.getOtpDuration(), resendToken, false, 0);
+            userDao.updateUserOtp(userOtp.getId(), otp, diceAuth.getOtpDuration(), false, 0);
         }
         userOtp.setOtp(otp);
         send2faCodeEmailEvent(userOtp, diceAuth.getOtpDuration());
@@ -1878,24 +1938,23 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "resendToken"));
         }
         logger.info(String.format("resend otp to user (%d)", otpRequest.getUserId()));
-
-        UserOtp userOtp = userDao.findUserOtpEmailByUserId(otpRequest.getUserId());
+        if (!verifyResendToken(otpRequest.getUserId().toString(), otp2faAud, otpRequest.getResendToken())) {
+            throw new APIRuntimeException(SC_FORBIDDEN, "Invalid token");
+        }
+        UserOtp userOtp = userDao.findUserOtpEmailByUserId(otpRequest.getUserId(), otp2faMode);
         if (userOtp == null) {
             throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
         }
         if (userOtp.getId() == null) {
             throw new APIRuntimeException(SC_NOT_FOUND, "No otp found");
         }
-        if (!userOtp.getResendToken().equals(otpRequest.getResendToken())) {
-            throw new APIRuntimeException(SC_FORBIDDEN, "Invalid token");
-        }
         if (userOtp.getResend()) {
             throw new APIRuntimeException(SC_BAD_REQUEST, "Otp already resent");
         }
-        if (userOtp.getExpireAt().isAfterNow()) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, "Token expired");
+        if (userOtp.getExpireAt().isBeforeNow()) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, "Password expired");
         }
-        if (userOtp.getFailCount() >= 3) {
+        if (userOtp.getFailCount() >= 3) { 
             throw new APIRuntimeException(SC_BAD_REQUEST, "Too many attempts");
         }
         userDao.updateUserOtpResend(userOtp.getId(), diceAuth.getOtpDuration(), true);
@@ -1923,7 +1982,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         }
         logger.info(String.format("verify otp for user (%d)", otpRequest.getUserId()));
 
-        UserOtp userOtp = userDao.findUserOtpByUserId(otpRequest.getUserId());
+        UserOtp userOtp = userDao.findUserOtpByUserId(otpRequest.getUserId(), otp2faMode);
         if (userOtp == null) {
             throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
         }
@@ -1934,7 +1993,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if (userOtp.getFailCount() >= 3) {
             response.setVerified(false);
             response.setBlocked(true);
-        } else if (userOtp.getExpireAt().isAfterNow()) {
+        } else if (userOtp.getExpireAt().isBeforeNow()) {
             response.setVerified(false);
             response.setExpired(true);
         } else if (userOtp.getOtp().equals(otpRequest.getOtp())) {
@@ -1944,7 +2003,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             if (userOtp.getFailCount() >= 2) {
                 response.setBlocked(true);
             } else if (!userOtp.getResend()) {
-                response.setResendToken(userOtp.getResendToken());
+                response.setResendToken(generateResendToken(userOtp.getUserId().toString(), otp2faAud,
+                        diceAuth.getOtpDuration().intValue() * 60));
             }
             userDao.updateUserOtpAttempt(userOtp.getId(), userOtp.getFailCount() + 1);
         }
@@ -1992,6 +2052,37 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         
         // return token
         return ApiResponseFactory.createResponse(token);
+    }
+
+    private String generateResendToken(String userId, String aud, int expirySeconds) {
+        JWTCreator.Builder jwtBuilder = JWT.create();
+        jwtBuilder.withClaim("userId", userId);
+        jwtBuilder.withAudience(aud);
+        jwtBuilder.withIssuedAt(new Date());
+        Date expireTime = new Date();
+        expireTime.setTime(expireTime.getTime() + (expirySeconds * 1000));
+        jwtBuilder.withExpiresAt(expireTime);
+        String jwt = null;
+        try {
+            jwt = jwtBuilder.sign(Algorithm.HMAC256(resendTokenSecret));
+        } catch (UnsupportedEncodingException e) {
+            throw new APIRuntimeException(HttpURLConnection.HTTP_INTERNAL_ERROR, e);
+        }
+        return jwt;
+    }
+
+    private boolean verifyResendToken(String userId, String aud, String token) {
+        JWTVerifier verifier;
+        try {
+            verifier = JWT.require(Algorithm.HMAC256(resendTokenSecret)).withAudience(aud).withClaim("userId", userId)
+                    .build();
+            verifier.verify(token);
+        } catch (UnsupportedEncodingException e) {
+            throw new APIRuntimeException(HttpURLConnection.HTTP_INTERNAL_ERROR, e);
+        } catch (JWTVerificationException exception) {
+            return false;
+        }
+        return true;
     }
 
     protected String generateOneTimeToken(User user, String domain, Integer expirySeconds) {
@@ -2308,46 +2399,16 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
          */
         publishEvent(topic, user);
     }
-    
-    
-    protected void notifyActivation(User user, String redirectUrl) {
-    	NotificationPayload payload = createActivationNotificationPayload(user, redirectUrl);
-    	publishNotificationEvent(payload.getMailRepresentation());
 
-        /**
-         * trigger event for new kafka
-         */
-        sendActivationEmailEvent(user, redirectUrl);
-    }
-
-    private void sendActivationEmailEvent(User user, String redirectUrl) {
+    private void sendActivationEmailEvent(User user, String otp) {
 
         EventMessage msg = EventMessage.getDefault();
         msg.setTopic("external.action.email");
 
         Map<String,Object> payload = new LinkedHashMap<String,Object>();
-
         Map<String,Object> data = new LinkedHashMap<String,Object>();
         data.put("handle", user.getHandle());
-        data.put("code", user.getCredential().getActivationCode());
-        data.put("domain", getDomain());
-        data.put("redirectUrl", redirectUrl);
-
-        if ((redirectUrl ==null) || (redirectUrl.isEmpty())) {
-            data.put("subDomain", "www");
-            data.put("path", "/home");
-
-            if (user.getRegSource() != null && user.getRegSource().matches("tcBusiness")) {
-                data.put("subDomain", "connect");
-                data.put("path", "/");
-            }
-
-
-            if (user.getRegSource() != null && user.getRegSource().matches("selfService")) {
-                data.put("subDomain", "platform");
-                data.put("path", "/self-service");
-            }
-        }
+        data.put("code", otp);
 
         payload.put("data", data);
 
@@ -2356,9 +2417,11 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         payload.put("from", from);
 
         payload.put("version", "v3");
-        payload.put("sendgrid_template_id", this.getSendgridTemplateId());
+
         if (user.getRegSource() != null && user.getRegSource().matches("selfService")) {
             payload.put("sendgrid_template_id", this.getSendgridSelfServiceTemplateId());
+        } else {
+            payload.put("sendgrid_template_id", this.getSendgridTemplateId());
         }
 
         ArrayList<String> recipients = new ArrayList<String>();
@@ -2367,11 +2430,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         payload.put("recipients", recipients);
 
         msg.setPayload(payload);
-        try {
-            this.eventBusServiceClient.reFireEvent(msg);
-        } catch (Exception e) {
-            logger.error("Error occured while publishing the events to new kafka.");
-        }
+        this.eventBusServiceClient.reFireEvent(msg);
     }
 
     private void send2faCodeEmailEvent(UserOtp user, Integer duration) {

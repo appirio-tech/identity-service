@@ -2,12 +2,15 @@ package com.appirio.tech.core.service.identity.representation;
 
 import org.joda.time.DateTime;
 
+import com.appirio.tech.core.service.identity.util.ldap.MemberStatus;
+
 public class UserOtp {
 
 	private Long id;
 	private Long userId;
 	private String handle;
 	private String email;
+	private String status;
 	private String otp;
 	private DateTime expireAt;
 	private String resendToken;
@@ -46,6 +49,14 @@ public class UserOtp {
 		this.email = email;
 	}
 
+	public String getStatus() {
+		return this.status;
+	}
+
+	public void setStatus(String status) {
+		this.status = status;
+	}
+
 	public String getOtp() {
 		return otp;
 	}
@@ -78,11 +89,15 @@ public class UserOtp {
 		this.resend = resend;
 	}
 
-	public Integer getFailCount() {
+	public int getFailCount() {
 		return failCount;
 	}
 
-	public void setFailCount(Integer failCount) {
+	public void setFailCount(int failCount) {
 		this.failCount = failCount;
+	}
+
+	public Boolean isActive() {
+		return MemberStatus.ACTIVE.getValue().equals(this.status);
 	}
 }

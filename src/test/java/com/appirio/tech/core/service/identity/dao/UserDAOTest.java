@@ -1069,7 +1069,7 @@ public class UserDAOTest {
 			assertNull(user.getCredential().getActivationCode());
 		}
 		
-		verify(testee).createUser(eq(user), any());
+		verify(testee).createUser(eq(user));
 		verify(testee).createSecurityUser(newUserId, user.getHandle(), user.getCredential().getEncodedPassword());
 		int emailStatus = user.isActive() ? Constants.EMAIL_STATUS_ID_ACTIVE : Constants.EMAIL_STATUS_ID_INACTIVE;
 		verify(testee).registerEmail(newUserId, newEmailId, user.getEmail(), emailStatus);
@@ -1172,7 +1172,7 @@ public class UserDAOTest {
 		assertNotNull("register(user) should not return null", result);
 		assertEquals(result.getId(), String.valueOf(newUserId));
 		
-		verify(testee).createUser(eq(user), anyString());
+		verify(testee).createUser(eq(user));
 		verify(testee).createSecurityUser(newUserId, user.getHandle(), user.getCredential().getEncodedPassword());
 		verify(testee).registerEmail(newUserId, newEmailId, user.getEmail(), Constants.EMAIL_STATUS_ID_INACTIVE);
 		verify(testee).createCoder(eq(user));
@@ -1926,14 +1926,14 @@ public class UserDAOTest {
 	public void testActivate() throws Exception {
 		
 		UserDAO testee = mock(UserDAO.class);
-		doCallRealMethod().when(testee).activate(any(User.class));
+		doCallRealMethod().when(testee).activate(anyLong());
 		
 		// test data
 		long userId = 123456L;
 		User user = createTestUser(userId);
 		
 		// test
-		testee.activate(user);
+		testee.activate(userId);
 		
 		// verify
 		assertTrue("User should be active after activation.", user.isActive());
@@ -1947,7 +1947,7 @@ public class UserDAOTest {
 	public void testActivate_IAEWhenUserIsInvalid() throws Exception {
 		
 		UserDAO testee = mock(UserDAO.class);
-		doCallRealMethod().when(testee).activate(any(User.class));
+		doCallRealMethod().when(testee).activate(anyLong());
 		
 		// test data
 		long userId = 123456L;
@@ -1956,7 +1956,7 @@ public class UserDAOTest {
 		
 		// test
 		try {
-			testee.activate(user);
+			testee.activate(userId);
 			fail("IllegalArgumentException should be thrown in the previous step.");
 		} catch (IllegalArgumentException e) {
 		}
@@ -1977,12 +1977,12 @@ public class UserDAOTest {
 		User user = createTestUser(userId);
 
 		UserDAO testee = mock(UserDAO.class);
-		doCallRealMethod().when(testee).activate(any(User.class));
+		doCallRealMethod().when(testee).activate(anyLong());
 		doThrow(RuntimeException.class).when(testee).activateLDAP(userId);
 		
 		// test
 		try {
-			testee.activate(user);
+			testee.activate(userId);
 			fail("RuntimeException should be thrown in the previous step.");
 		} catch (RuntimeException e) {
 		}
