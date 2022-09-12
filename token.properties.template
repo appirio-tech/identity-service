@@ -73,6 +73,8 @@
 @application.ssotoken.salt@={{APP_TOKEN}}
 @application.cors.enabled@=false
 
+@application.resend.token.secret@={{APP_RESEND_TOKEN_SECRET}}
+
 @authorization.database.schema@=Authorization
 @authorization.database.user@={{AUTH_DB_USER}}
 @authorization.database.password@={{AUTH_DB_PASSWORD}}

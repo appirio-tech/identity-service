@@ -19,6 +19,7 @@ context:
   sendGrid2faOtpTemplateId: @application.sendgrid.2fa.otp.template.id@
   jwtExpirySeconds: 600
   cookieExpirySeconds: 7776000
+  resendTokenSecret: @application.resend.token.secret@
 
 # Database
 database:

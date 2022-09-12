@@ -25,6 +25,12 @@ public class Credential {
 	
 	private String resetToken;
 
+	private String resendToken;
+
+	private Boolean activationBlocked;
+
+	private Boolean canResend;
+
 	@JsonIgnore
 	public String getEncodedPassword() {
 		return encodedPassword;
@@ -103,5 +109,29 @@ public class Credential {
 			return false;
 		String defaultPassword = Utils.getEncodedDefaultPassword();
 		return encPassword.equals(defaultPassword);
+	}
+
+	public String getResendToken() {
+		return resendToken;
+	}
+
+	public void setResendToken(String resendToken) {
+		this.resendToken = resendToken;
+	}
+
+	public Boolean getActivationBlocked() {
+		return activationBlocked;
+	}
+
+	public void setActivationBlocked(Boolean activationBlocked) {
+		this.activationBlocked = activationBlocked;
+	}
+
+	public Boolean getCanResend() {
+		return canResend;
+	}
+
+	public void setCanResend(Boolean canResend) {
+		this.canResend = canResend;
 	}
 }

@@ -10,17 +10,17 @@ public class User2faFactory {
     public static final String SCOPE_DELIMITER = ",";
 
     /**
-     * Represents the create scopes for machine token validation.
+     * Represents the mfa enable scopes for machine token validation.
      */
     public static final String[] EnableScopes = { "enable:user_2fa", "all:user_2fa" };
 
     /**
-     * Represents the create scopes for machine token validation.
+     * Represents the dice verification scopes for machine token validation.
      */
     public static final String[] VerifyScopes = { "verify:user_2fa", "all:user_2fa" };
 
     /**
-     * Represents the update scopes for machine token validation.
+     * Represents the dice credential issuer scopes for machine token validation.
      */
     public static final String[] CredentialIssuerScopes = { "cred:user_2fa", "all:user_2fa" };
 

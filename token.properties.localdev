@@ -53,6 +53,8 @@
 @application.ssotoken.salt@=SSOTOKEN_KEY
 @application.cors.enabled@=true
 
+@application.resend.token.secret@=dummy
+
 @authorization.database.schema@=dummy
 @authorization.database.user@=dummy
 @authorization.database.password@=topcoder

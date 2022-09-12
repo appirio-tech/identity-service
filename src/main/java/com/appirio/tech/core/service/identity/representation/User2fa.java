@@ -1,20 +1,29 @@
 package com.appirio.tech.core.service.identity.representation;
 
+import org.joda.time.DateTime;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class User2fa {
 
-	private long id;
+	private Long id;
 	private long userId;
+	@JsonIgnore
 	private String handle;
-	private String firstName;
+	@JsonIgnore
 	private String email;
-	private Boolean enabled;
-	private Boolean verified;
+	private Boolean mfaEnabled;
+	private Boolean diceEnabled;
+	private Long createdBy;
+	private DateTime createdAt;
+	private Long modifiedBy;
+	private DateTime modifiedAt;
 
-	public long getId() {
+	public Long getId() {
 		return id;
 	}
 
-	public void setId(long id) {
+	public void setId(Long id) {
 		this.id = id;
 	}
 
@@ -34,14 +43,6 @@ public class User2fa {
 		this.handle = handle;
 	}
 
-	public String getFirstName() {
-		return firstName;
-	}
-
-	public void setFirstName(String firstName) {
-		this.firstName = firstName;
-	}
-
 	public String getEmail() {
 		return email;
 	}
@@ -50,19 +51,52 @@ public class User2fa {
 		this.email = email;
 	}
 
-	public Boolean getEnabled() {
-		return enabled;
+	public Boolean getMfaEnabled() {
+		return mfaEnabled;
 	}
 
-	public void setEnabled(Boolean enabled) {
-		this.enabled = enabled;
+	public void setMfaEnabled(Boolean mfaEnabled) {
+		this.mfaEnabled = mfaEnabled;
 	}
 
-	public Boolean getVerified() {
-		return verified;
+	public Boolean getDiceEnabled() {
+		return diceEnabled;
 	}
 
-	public void setVerified(Boolean verified) {
-		this.verified = verified;
+	public void setDiceEnabled(Boolean diceEnabled) {
+		this.diceEnabled = diceEnabled;
 	}
+
+	public Long getCreatedBy() {
+		return createdBy;
+	}
+
+	public void setCreatedBy(Long createdBy) {
+		this.createdBy = createdBy;
+	}
+
+	public DateTime getCreatedAt() {
+		return createdAt;
+	}
+
+	public void setCreatedAt(DateTime createdAt) {
+		this.createdAt = createdAt;
+	}
+
+	public Long getModifiedBy() {
+		return modifiedBy;
+	}
+
+	public void setModifiedBy(Long modifiedBy) {
+		this.modifiedBy = modifiedBy;
+	}
+
+	public DateTime getModifiedAt() {
+		return modifiedAt;
+	}
+
+	public void setModifiedAt(DateTime modifiedAt) {
+		this.modifiedAt = modifiedAt;
+	}
+
 }
