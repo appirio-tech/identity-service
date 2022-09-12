@@ -256,7 +256,7 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
 
     @SqlUpdate("INSERT INTO common_oltp.user_otp_email " +
             "(user_id, mode, otp, expire_at, resend, fail_count) VALUES " +
-            "(:userId, :mode, :otp, current_timestamp + (:duration ||' minutes')::interval, :resendToken, :resend, :failCount)")
+            "(:userId, :mode, :otp, current_timestamp + (:duration ||' minutes')::interval, :resend, :failCount)")
     public abstract int insertUserOtp(@Bind("userId") long userId, @Bind("mode") int mode, @Bind("otp") String otp,
             @Bind("duration") int duration, @Bind("resend") boolean resend, @Bind("failCount") int failCount);
 
