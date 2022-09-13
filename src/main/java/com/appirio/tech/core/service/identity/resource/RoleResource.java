@@ -100,14 +100,11 @@ public class RoleResource implements GetResource<Role>, DDLResource<Role>{
 		List<Role> roles;
 		boolean isAdminAccess = Utils.hasAdminRole(authUser);
 		if (authUser.isMachine()) {
-			logger.info(authUser.getToken());
 		    if (authUser.getScope() == null || !authUser.getScope().contains("read:roles")) {
 			throw new APIRuntimeException(HttpServletResponse.SC_FORBIDDEN, "The machine user should have the scope as 'read:roles'");
 		    } else {
 			isAdminAccess = true;
 		    }
-		} else {
-			logger.info(authUser.getUserId());
 		}
 
 		TCID subjectId = null;
