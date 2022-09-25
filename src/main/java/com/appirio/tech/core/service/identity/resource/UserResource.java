@@ -1920,7 +1920,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     }
 
     @POST
-    @Path("/resendEmailOtp")
+    @Path("/resendOtpEmail")
     @Timed
     public ApiResponse resendOtp(
             @Valid PostPutRequest<UserOtp> postRequest,
