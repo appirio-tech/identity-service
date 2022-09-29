@@ -187,15 +187,6 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
 
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
-            "SELECT mfa.id AS id, u.user_id AS userId, u.handle AS handle, e.address AS email, mfa.mfa_enabled AS mfaEnabled, mfa.dice_enabled AS diceEnabled, mfa.created_by AS createdBy, mfa.created_at AS createdAt, mfa.modified_by AS modifiedBy, mfa.modified_at AS modifiedAt " +
-            "FROM common_oltp.user AS u JOIN common_oltp.email AS e ON e.user_id = u.user_id AND e.email_type_id = 1 AND e.primary_ind = 1 " +
-            "LEFT JOIN common_oltp.user_2fa AS mfa ON mfa.user_id = u.user_id " +
-            "WHERE LOWER(e.address) = LOWER(:email)"
-    )
-    public abstract List<User2fa> findAllUser2faByEmail(@Bind("email") String email);
-
-    @RegisterMapperFactory(TCBeanMapperFactory.class)
-    @SqlQuery(
             "SELECT mfa.id AS id, u.user_id AS userId, u.handle AS handle, mfa.mfa_enabled AS mfaEnabled, mfa.dice_enabled AS diceEnabled, mfa.created_by AS createdBy, mfa.created_at AS createdAt, mfa.modified_by AS modifiedBy, mfa.modified_at AS modifiedAt " +
             "FROM common_oltp.user AS u " +
             "LEFT JOIN common_oltp.user_2fa AS mfa ON mfa.user_id = u.user_id " +
@@ -528,22 +519,7 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
         }
         return users.get(0);
     }
-
-    public User2fa findUser2faByEmail(String email) {
-        List<User2fa> users = findAllUser2faByEmail(email);
-        if (users == null || users.size() == 0)
-            return null;
-
-        if (users.size() == 1)
-            return users.get(0);
-
-        for (User2fa user : users) {
-            if (user.getEmail().equals(email))
-                return user;
-        }
-        return users.get(0);
-    }
-    
+  
     /**
      *
      * @param email - case sensitive search

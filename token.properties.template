@@ -12,7 +12,6 @@
 @application.sendgrid.welcome.template.id@={{SENDGRID_WELCOME_EMAIL_TEMPLATE_ID}}
 @application.sendgrid.selfservice.template.id@={{SENDGRID_SELF_SERVICE_RESEND_ACTIVATION_EMAIL_TEMPLATE_ID}}
 @application.sendgrid.selfservice.welcome.template.id@={{SENDGRID_SELF_SERVICE_WELCOME_EMAIL_TEMPLATE_ID}}
-@application.sendgrid.2fa.invitation.template.id@={{SENDGRID_2FA_INVITATION_TEMPLATE_ID}}
 @application.sendgrid.2fa.otp.template.id@={{SENDGRID_2FA_OTP_TEMPLATE_ID}}
 
 @ldap.host@={{LDAP_SERVER}}
@@ -97,6 +96,4 @@
 @m2mAuthConfig.userProfiles.read@={{M2MAUTHCONFIG_USERPROFILES_READ}}
 @m2mAuthConfig.userProfiles.update@={{M2MAUTHCONFIG_USERPROFILES_UPDATE}}
 @m2mAuthConfig.userProfiles.delete@={{M2MAUTHCONFIG_USERPROFILES_DELETE}}
-@m2mAuthConfig.user2fa.enable@={{M2MAUTHCONFIG_USER2FA_ENABLE}}
-@m2mAuthConfig.user2fa.verify@={{M2MAUTHCONFIG_USER2FA_VERIFY}}
 @m2mAuthConfig.user2fa.credential@={{M2MAUTHCONFIG_USER2FA_CREDENTIAL}}

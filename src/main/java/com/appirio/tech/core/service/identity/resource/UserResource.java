@@ -69,7 +69,6 @@ import com.appirio.tech.core.service.identity.representation.Country;
 import com.appirio.tech.core.service.identity.representation.Credential;
 import com.appirio.tech.core.service.identity.representation.CredentialRequest;
 import com.appirio.tech.core.service.identity.representation.DiceConnection;
-import com.appirio.tech.core.service.identity.representation.DiceVerification;
 import com.appirio.tech.core.service.identity.representation.User2fa;
 import com.appirio.tech.core.service.identity.representation.UserDiceAttributes;
 import com.appirio.tech.core.service.identity.representation.UserOtp;
@@ -136,8 +135,6 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     private String sendgridSelfServiceTemplateId;
 
     private String sendgridSelfServiceWelcomeTemplateId;
-
-    private String sendgrid2faInvitationTemplateId;
 
     private String sendgrid2faOtpTemplateId;
     
@@ -1632,9 +1629,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             throw new APIRuntimeException(SC_BAD_REQUEST,
                     String.format(MSG_TEMPLATE_MANDATORY, "mfaEnabled or diceEnabled"));
         }
-        if (!hasAdminRole && ((user2fa.getDiceEnabled() != null && user2fa.getDiceEnabled() == false)
-                || (user2fa.getMfaEnabled() != null && user2fa.getMfaEnabled() == false))) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, "You cannot disable mfa options");
+        if (!hasAdminRole && (user2fa.getDiceEnabled() != null && user2fa.getDiceEnabled() == false)) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, "You cannot disable dice");
         }
         logger.info(String.format("update user 2fa(%s) - mfa: %s, dice: %s", resourceId, user2fa.getMfaEnabled(),
                 user2fa.getDiceEnabled()));
@@ -1643,6 +1639,10 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if (user2faInDb == null)
             throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
 
+        if (!hasAdminRole && (user2fa.getMfaEnabled() != null && user2fa.getMfaEnabled() == false
+                && user2faInDb.getDiceEnabled() != null && user2faInDb.getDiceEnabled() == true)) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, "You cannot disable mfa");
+        }
         if (user2fa.getMfaEnabled() == null) {
             user2fa.setMfaEnabled(user2faInDb.getMfaEnabled() == null ? false : user2faInDb.getMfaEnabled());
         }
@@ -1707,8 +1707,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
                     .header("x-api-key", diceAuth.getDiceApiKey())
                     .execute();
         } catch (Exception e) {
-            logger.error("Error when calling 2fa submit api", e);
-            throw new APIRuntimeException(SC_INTERNAL_SERVER_ERROR, "Error when calling 2fa submit api");
+            logger.error("Error when calling dice connection api", e);
+            throw new APIRuntimeException(SC_INTERNAL_SERVER_ERROR, "Error when calling dice connection api");
         }
         if (response.getStatusCode() != HttpURLConnection.HTTP_CREATED) {
             throw new APIRuntimeException(HttpURLConnection.HTTP_INTERNAL_ERROR,
@@ -1842,45 +1842,6 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         }
         userDao.updateDiceConnectionStatus(user.getDiceConnectionId(), true);
         return ApiResponseFactory.createResponse("SUCCESS");
-    }
-
-    @PUT
-    @Path("/diceVerification")
-    @Timed
-    public ApiResponse updateDiceVerification(
-            @Auth AuthUser authUser,
-            @Valid PostPutRequest<DiceVerification> putRequest,
-            @Context HttpServletRequest request) {
-
-        Utils.checkAccess(authUser, user2faFactory.getVerifyScopes(), Utils.AdminRoles);
-        checkParam(putRequest);
-        DiceVerification verification = putRequest.getParam();
-
-        if (verification.getEmail() == null || verification.getEmail().length() == 0) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Email address"));
-        }
-        if (verification.getVerified() == null) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Verified"));
-        }
-        logger.info(String.format("update 2fa verification (%s) - %b", verification.getEmail(),
-                verification.getVerified()));
-
-        // find user by email
-        User2fa user2fa = userDao.findUser2faByEmail(verification.getEmail());
-
-        // return 404 if user is not found
-        if (user2fa == null)
-            throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
-
-        if (user2fa.getId() == null) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, "MFA is not enabled for user");
-        }
-
-        if (verification.getVerified() && (user2fa.getDiceEnabled() == null || !user2fa.getDiceEnabled())) {
-            userDao.updateUser2fa(user2fa.getId(), user2fa.getMfaEnabled(), true,
-                    authUser.isMachine() ? 0 : Utils.toLongValue(authUser.getUserId()));
-        }
-        return ApiResponseFactory.createResponse("User verification updated");
     }
 
     @POST
@@ -2363,14 +2324,6 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
     public void setSendgridSelfServiceTemplateId(String sendgridSelfServiceTemplateId) {
         this.sendgridSelfServiceTemplateId = sendgridSelfServiceTemplateId;
-    }
-
-    public String getSendgrid2faInvitationTemplateId() {
-        return sendgrid2faInvitationTemplateId;
-    }
-
-    public void setSendgrid2faInvitationTemplateId(String sendgrid2faInvitationTemplateId) {
-        this.sendgrid2faInvitationTemplateId = sendgrid2faInvitationTemplateId;
     }
 
     public String getSendgrid2faOtpTemplateId() {

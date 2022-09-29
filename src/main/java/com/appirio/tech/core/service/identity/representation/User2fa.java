@@ -10,8 +10,6 @@ public class User2fa {
 	private long userId;
 	@JsonIgnore
 	private String handle;
-	@JsonIgnore
-	private String email;
 	private Boolean mfaEnabled;
 	private Boolean diceEnabled;
 	private Long createdBy;
@@ -41,14 +39,6 @@ public class User2fa {
 
 	public void setHandle(String handle) {
 		this.handle = handle;
-	}
-
-	public String getEmail() {
-		return email;
-	}
-
-	public void setEmail(String email) {
-		this.email = email;
 	}
 
 	public Boolean getMfaEnabled() {

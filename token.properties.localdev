@@ -11,7 +11,6 @@
 @application.sendgrid.welcome.template.id@=dummy
 @application.sendgrid.selfservice.template.id@=dummy
 @application.sendgrid.selfservice.welcome.template.id@=dummy
-@application.sendgrid.2fa.invitation.template.id@=dummy
 @application.sendgrid.2fa.otp.template.id@=dummy
 
 @ldap.host@=127.0.0.1
@@ -75,6 +74,4 @@
 @m2mAuthConfig.userProfiles.read@=read:user_profiles,all:user_profiles
 @m2mAuthConfig.userProfiles.update@=update:user_profiles,all:user_profiles
 @m2mAuthConfig.userProfiles.delete@=delete:user_profiles,all:user_profiles
-@m2mAuthConfig.user2fa.enable@=enable:user_2fa,all:user_2fa
-@m2mAuthConfig.user2fa.verify@=verify:user_2fa,all:user_2fa
-@m2mAuthConfig.user2fa.credential@=cred:user_2fa,all:user_2fa
+@m2mAuthConfig.user2fa.credential@=cred:user_2fa
