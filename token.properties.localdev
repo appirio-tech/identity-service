@@ -3,6 +3,7 @@
 @application.database.user@=informix
 @application.database.password@=informix
 @application.database.host@=127.0.0.1
+@application.database.name@=topcoderdev
 @application.database.port@=9088
 
 @auth.secret@=AUTH_SECRET

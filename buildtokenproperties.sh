@@ -44,6 +44,7 @@ M2MAUTHCONFIG_USER2FA_CREDENTIAL=$(eval "echo \$${ENV}_M2MAUTHCONFIG_USER2FA_CRE
 DOMAIN=$(eval "echo \$${ENV}_DOMAIN")
 SMTP=$(eval "echo \$${ENV}_SMTP")
 DB_HOST_IP=$(eval "echo \$${ENV}_DB_HOST_IP")
+DB_NAME=$(eval "echo \$${ENV}_DB_NAME")
 LDAP_SERVER=$(eval "echo \$${ENV}_LDAP_SERVER")
 REDIS_HOST=$(eval "echo \$${ENV}_REDIS_HOST")
 AUTH_DB_HOST=$(eval "echo \$${ENV}_AUTH_DB_HOST")
@@ -68,6 +69,7 @@ perl -pi -e "s/\{\{ENV_DOMAIN\}\}/$DOMAIN/g" $CONFFILENAME
 perl -pi -e "s/\{\{ENV\}\}/$ENV/g" $CONFFILENAME
 perl -pi -e "s/\{\{ENV_SMTP\}\}/$SMTP/g" $CONFFILENAME
 perl -pi -e "s/\{\{DB_HOST_IP\}\}/$DB_HOST_IP/g" $CONFFILENAME
+perl -pi -e "s/\{\{DB_NAME\}\}/$DB_NAME/g" $CONFFILENAME
 perl -pi -e "s/\{\{LDAP_SERVER\}\}/$LDAP_SERVER/g" $CONFFILENAME
 perl -pi -e "s/\{\{REDIS_HOST\}\}/$REDIS_HOST/g" $CONFFILENAME
 perl -pi -e "s/\{\{AUTH_DB_HOST\}\}/$AUTH_DB_HOST/g" $CONFFILENAME

@@ -5,6 +5,7 @@
 @application.database.user@={{DB_USER}}
 @application.database.password@={{DB_PASSWORD}}
 @application.database.host@={{DB_HOST_IP}}
+@application.database.name@={{DB_NAME}}
 @application.database.port@=5432
 
 #sendgrid
