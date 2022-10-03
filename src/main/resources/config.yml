@@ -33,7 +33,7 @@ database:
   password: @application.database.password@
 
   # the JDBC URL
-  url: jdbc:postgresql://@application.database.host@:@application.database.port@/topcoderdev?currentSchema=common_oltp
+  url: jdbc:postgresql://@application.database.host@:@application.database.port@/postgres?currentSchema=common_oltp
 
   validationQuery: SELECT 1
 
