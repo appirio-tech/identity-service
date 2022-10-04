@@ -94,9 +94,7 @@ auth0New:
   nonInteractiveClientSecret: @auth0.new.nonInteractive.clientSecret@
 
 diceAuth:
-  diceUrl: @diceAuth.diceUrl@
   diceApiUrl: @diceAuth.diceApiUrl@
-  diceVerifier: @diceAuth.diceVerifier@
   diceApiKey: @diceAuth.diceApiKey@
   credDefId: @diceAuth.credDefId@
   otpDuration: @diceAuth.otpDuration@

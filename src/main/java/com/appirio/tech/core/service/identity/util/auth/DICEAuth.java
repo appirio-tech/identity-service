@@ -5,13 +5,7 @@ import javax.validation.constraints.NotNull;
 public class DICEAuth {
 
     @NotNull
-    private String diceUrl;
-
-    @NotNull
     private String diceApiUrl;
-
-    @NotNull
-    private String diceVerifier;
 
     @NotNull
     private String diceApiKey;
@@ -27,22 +21,11 @@ public class DICEAuth {
     public DICEAuth() {
     }
 
-    public DICEAuth(String diceUrl, String diceApiUrl, String diceVerifier, String diceApiKey, String credDefId,
-            Integer otpDuration) {
-        this.diceUrl = diceUrl;
+    public DICEAuth(String diceApiUrl, String diceApiKey, String credDefId, Integer otpDuration) {
         this.diceApiUrl = diceApiUrl;
-        this.diceVerifier = diceVerifier;
         this.diceApiKey = diceApiKey;
         this.credDefId = credDefId;
         this.otpDuration = otpDuration;
-    }
-
-    public String getDiceUrl() {
-        return diceUrl;
-    }
-
-    public void setDiceUrl(String diceUrl) {
-        this.diceUrl = diceUrl;
     }
 
     public String getDiceApiUrl() {
@@ -51,14 +34,6 @@ public class DICEAuth {
 
     public void setDiceApiUrl(String diceApiUrl) {
         this.diceApiUrl = diceApiUrl;
-    }
-
-    public String getDiceVerifier() {
-        return diceVerifier;
-    }
-
-    public void setDiceVerifier(String diceVerifier) {
-        this.diceVerifier = diceVerifier;
     }
 
     public String getDiceApiKey() {

@@ -86,9 +86,7 @@ auth0New:
   nonInteractiveClientSecret: AUTH0-NI-CLIENT-SECRET
 
 diceAuth:
-  diceUrl: dummy
   diceApiUrl: dummy
-  diceVerifier: dummy
   diceApiKey: dummy
   credDefId: dummy
   otpDuration: 10

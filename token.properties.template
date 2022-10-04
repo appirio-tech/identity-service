@@ -51,9 +51,7 @@
 @auth0.new.nonInteractive.clientSecret@={{AUTH0_NEW_NONINTERACTIVE_ID_SECRET}}
 @auth0.new.domain@={{AUTH0_NEW_DOMAIN}}
 
-@diceAuth.diceUrl@={{DICEAUTH_DICE_URL}}
 @diceAuth.diceApiUrl@={{DICEAUTH_DICE_API_URL}}
-@diceAuth.diceVerifier@={{DICEAUTH_DICE_VERIFIER}}
 @diceAuth.diceApiKey@={{DICEAUTH_DICE_API_KEY}}
 @diceAuth.credDefId@={{DICEAUTH_CREDDEFID}}
 @diceAuth.otpDuration@={{DICEAUTH_OTP_DURATION}}
