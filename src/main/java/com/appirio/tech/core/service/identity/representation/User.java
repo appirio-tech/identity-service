@@ -42,7 +42,7 @@ public class User extends AbstractIdResource {
 	private String utmCampaign;
 	private List<Role> roles;
 	private Boolean mfaEnabled;
-	private Boolean mfaVerified;
+	private Boolean diceEnabled;
 	
     /**
      * Represents the ssoLogin attribute.
@@ -199,12 +199,12 @@ public class User extends AbstractIdResource {
 		this.mfaEnabled = mfaEnabled;
 	}
 
-	public Boolean getMfaVerified() {
-		return mfaVerified;
+	public Boolean getDiceEnabled() {
+		return diceEnabled;
 	}
 
-	public void setMfaVerified(Boolean mfaVerified) {
-		this.mfaVerified = mfaVerified;
+	public void setDiceEnabled(Boolean diceEnabled) {
+		this.diceEnabled = diceEnabled;
 	}
 	
 	@JsonIgnore

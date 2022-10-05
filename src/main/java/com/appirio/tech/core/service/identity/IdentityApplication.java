@@ -242,7 +242,6 @@ public class IdentityApplication extends APIApplication<IdentityConfiguration> {
 			userResource.setSendgridWelcomeTemplateId(Utils.getString("sendGridWelcomeTemplateId"));
 			userResource.setSendgridSelfServiceTemplateId(Utils.getString("sendGridSelfServiceTemplateId"));
 			userResource.setSendgridSelfServiceWelcomeTemplateId(Utils.getString("sendGridSelfServiceWelcomeTemplateId"));
-			userResource.setSendgrid2faInvitationTemplateId(Utils.getString("sendGrid2faInvitationTemplateId"));
 			userResource.setSendgrid2faOtpTemplateId(Utils.getString("sendGrid2faOtpTemplateId"));
     	// this secret _used_ to be different from the one used in AuthorizationResource.
     	// it _was_ the secret x2. (userResource.setSecret(getSecret()+getSecret());)
@@ -251,6 +250,7 @@ public class IdentityApplication extends APIApplication<IdentityConfiguration> {
 		// the exposure is: The user will have a ten minute, user-level token, with no roles, which they can use
 		// to call general topcoder API services (minimal exposure)
     	userResource.setSecret(getSecret());
+		userResource.setResendTokenSecret(Utils.getString("resendTokenSecret"));
     	environment.jersey().register(userResource);
 		final ClientDAO clientDao = authjdbi.onDemand(ClientDAO.class);
 		environment.jersey().register(clientDao);

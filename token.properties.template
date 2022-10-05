@@ -5,6 +5,7 @@
 @application.database.user@={{DB_USER}}
 @application.database.password@={{DB_PASSWORD}}
 @application.database.host@={{DB_HOST_IP}}
+@application.database.name@={{DB_NAME}}
 @application.database.port@=5432
 
 #sendgrid
@@ -12,7 +13,6 @@
 @application.sendgrid.welcome.template.id@={{SENDGRID_WELCOME_EMAIL_TEMPLATE_ID}}
 @application.sendgrid.selfservice.template.id@={{SENDGRID_SELF_SERVICE_RESEND_ACTIVATION_EMAIL_TEMPLATE_ID}}
 @application.sendgrid.selfservice.welcome.template.id@={{SENDGRID_SELF_SERVICE_WELCOME_EMAIL_TEMPLATE_ID}}
-@application.sendgrid.2fa.invitation.template.id@={{SENDGRID_2FA_INVITATION_TEMPLATE_ID}}
 @application.sendgrid.2fa.otp.template.id@={{SENDGRID_2FA_OTP_TEMPLATE_ID}}
 
 @ldap.host@={{LDAP_SERVER}}
@@ -51,9 +51,7 @@
 @auth0.new.nonInteractive.clientSecret@={{AUTH0_NEW_NONINTERACTIVE_ID_SECRET}}
 @auth0.new.domain@={{AUTH0_NEW_DOMAIN}}
 
-@diceAuth.diceUrl@={{DICEAUTH_DICE_URL}}
 @diceAuth.diceApiUrl@={{DICEAUTH_DICE_API_URL}}
-@diceAuth.diceVerifier@={{DICEAUTH_DICE_VERIFIER}}
 @diceAuth.diceApiKey@={{DICEAUTH_DICE_API_KEY}}
 @diceAuth.credDefId@={{DICEAUTH_CREDDEFID}}
 @diceAuth.otpDuration@={{DICEAUTH_OTP_DURATION}}
@@ -72,6 +70,8 @@
 @application.password.key@={{APP_KEY}}
 @application.ssotoken.salt@={{APP_TOKEN}}
 @application.cors.enabled@=false
+
+@application.resend.token.secret@={{APP_RESEND_TOKEN_SECRET}}
 
 @authorization.database.schema@=Authorization
 @authorization.database.user@={{AUTH_DB_USER}}
@@ -95,6 +95,4 @@
 @m2mAuthConfig.userProfiles.read@={{M2MAUTHCONFIG_USERPROFILES_READ}}
 @m2mAuthConfig.userProfiles.update@={{M2MAUTHCONFIG_USERPROFILES_UPDATE}}
 @m2mAuthConfig.userProfiles.delete@={{M2MAUTHCONFIG_USERPROFILES_DELETE}}
-@m2mAuthConfig.user2fa.enable@={{M2MAUTHCONFIG_USER2FA_ENABLE}}
-@m2mAuthConfig.user2fa.verify@={{M2MAUTHCONFIG_USER2FA_VERIFY}}
 @m2mAuthConfig.user2fa.credential@={{M2MAUTHCONFIG_USER2FA_CREDENTIAL}}

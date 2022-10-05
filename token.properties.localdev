@@ -3,6 +3,7 @@
 @application.database.user@=informix
 @application.database.password@=informix
 @application.database.host@=127.0.0.1
+@application.database.name@=topcoderdev
 @application.database.port@=9088
 
 @auth.secret@=AUTH_SECRET
@@ -11,7 +12,6 @@
 @application.sendgrid.welcome.template.id@=dummy
 @application.sendgrid.selfservice.template.id@=dummy
 @application.sendgrid.selfservice.welcome.template.id@=dummy
-@application.sendgrid.2fa.invitation.template.id@=dummy
 @application.sendgrid.2fa.otp.template.id@=dummy
 
 @ldap.host@=127.0.0.1
@@ -31,9 +31,7 @@
 @auth0.new.clientSecret@=
 @auth0.new.domain@=dummy.auth0.com
 
-@diceAuth.diceUrl@=dummy
 @diceAuth.diceApiUrl@=dummy
-@diceAuth.diceVerifier@=dummy
 @diceAuth.diceApiKey@=dummy
 @diceAuth.credDefId@=dummy
 @diceAuth.otpDuration@=10
@@ -52,6 +50,8 @@
 @application.password.key@=PASSWORD_KEY
 @application.ssotoken.salt@=SSOTOKEN_KEY
 @application.cors.enabled@=true
+
+@application.resend.token.secret@=dummy
 
 @authorization.database.schema@=dummy
 @authorization.database.user@=dummy
@@ -73,6 +73,4 @@
 @m2mAuthConfig.userProfiles.read@=read:user_profiles,all:user_profiles
 @m2mAuthConfig.userProfiles.update@=update:user_profiles,all:user_profiles
 @m2mAuthConfig.userProfiles.delete@=delete:user_profiles,all:user_profiles
-@m2mAuthConfig.user2fa.enable@=enable:user_2fa,all:user_2fa
-@m2mAuthConfig.user2fa.verify@=verify:user_2fa,all:user_2fa
-@m2mAuthConfig.user2fa.credential@=cred:user_2fa,all:user_2fa
+@m2mAuthConfig.user2fa.credential@=cred:user_2fa

@@ -67,7 +67,7 @@ store_test_output: &store_test_output
 maven_do_build: &maven_do_build
           name: Doing Maven Build
           command: |
-            _JAVA_OPTIONS=-Djdk.net.URLClassPath.disableClassPathURLCheck=true mvn -f ~/project/pom.xml -DskipTests package
+            _JAVA_OPTIONS=-Djdk.net.URLClassPath.disableClassPathURLCheck=true mvn -f ~/project/pom.xml package -Dmaven.test.skip
             
 
 build_deploy_steps: &build_deploy_steps

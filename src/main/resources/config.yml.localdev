@@ -86,9 +86,7 @@ auth0New:
   nonInteractiveClientSecret: AUTH0-NI-CLIENT-SECRET
 
 diceAuth:
-  diceUrl: dummy
   diceApiUrl: dummy
-  diceVerifier: dummy
   diceApiKey: dummy
   credDefId: dummy
   otpDuration: 10
@@ -165,9 +163,7 @@ m2mAuthConfig:
     update: update:user_profiles,all:user_profiles
     delete: delete:user_profiles,all:user_profiles
   user2fa:
-    enable: enable:user-2fa,all:user-2fa
-    verify: verify:user-2fa,all:user-2fa
-    credential: cred:user-2fa,all:user-2fa
+    credential: cred:user-2fa
   
 # Server settings
 server:
