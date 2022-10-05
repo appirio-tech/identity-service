@@ -882,7 +882,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
                 user.getCredential().setCanResend(true);
             }
             user.getCredential().setResendToken(
-                    generateResendToken(user.getId().getId(), otpActivationAud, activationCodeExpiration));
+                    generateResendToken(user.getId().getId(), otpActivationAud, activationCodeExpiration * 60));
         }
         return ApiResponseFactory.createResponse(user);
     }
