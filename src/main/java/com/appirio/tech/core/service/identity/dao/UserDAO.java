@@ -137,6 +137,12 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
     )
     public abstract List<User> findUsersByEmail(@Bind("email") String email);
 
+    @SqlQuery("SELECT COUNT(e2.email_id) " +
+            "FROM common_oltp.user AS u LEFT JOIN common_oltp.email AS e ON e.user_id = u.user_id " +
+            "LEFT JOIN common_oltp.email AS e2 ON LOWER(e2.address) = LOWER(e.address) " +
+            "WHERE u.user_id = :userId")
+    public abstract int getEmailCount(@Bind("userId") long userId);
+
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
             "SELECT mfa.id AS id, u.user_id AS userId, u.handle AS handle, u.first_name AS firstName, e.address AS email, mfa.mfa_enabled AS mfaEnabled, mfa.dice_enabled AS diceEnabled" +
