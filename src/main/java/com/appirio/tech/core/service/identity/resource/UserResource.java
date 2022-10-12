@@ -1643,7 +1643,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
                 && user2faInDb.getDiceEnabled() != null && user2faInDb.getDiceEnabled() == true)) {
             throw new APIRuntimeException(SC_BAD_REQUEST, "You cannot disable mfa");
         }
-        if (user2fa.getMfaEnabled() && user2faInDb.getId() == null) {
+        if (user2faInDb.getId() == null) {
             if (userDao.getEmailCount(userId) > 1) {
                 throw new APIRuntimeException(SC_BAD_REQUEST, "You have multiple accounts registered with same email. Please contact with support.");
             }
