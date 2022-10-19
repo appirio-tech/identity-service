@@ -9,6 +9,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
@@ -436,8 +437,15 @@ public class AuthorizationResource implements GetResource<Authorization> {
             @Context HttpServletRequest request) throws Exception {
         if(clientId==null || clientId.length()==0 || clientSecret==null || clientSecret.length()==0)
             throw new APIRuntimeException(HttpServletResponse.SC_BAD_REQUEST, "Bad Request");            
-        logger.info(request);
+        Enumeration<String> headerNames = request.getHeaderNames();
+
+        if (headerNames != null) {
+                while (headerNames.hasMoreElements()) {
+                    logger.info("Header: " + request.getHeader(headerNames.nextElement()));
+                }
+        }
         logger.info(clientId);
+        logger.info(clientSecret);
         // Authenticate with clientId and secret
         if(getServiceAccountAuthenticator()==null)
             throw new IllegalStateException("serviceAccountAuthenticator is not specified.");
