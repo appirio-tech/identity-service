@@ -362,6 +362,7 @@ public class AuthorizationResource implements GetResource<Authorization> {
         
         Authorization auth = postRequest != null ? postRequest.getParam() : null;
         boolean isRs256Token = false;
+        logger.info(request);
         if (auth == null) {
             // Creating Authorization with Auth0 access token
             String authCode = HttpUtil.getAuthorizationParam("Auth0Code", request);
