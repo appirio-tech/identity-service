@@ -436,7 +436,8 @@ public class AuthorizationResource implements GetResource<Authorization> {
             @Context HttpServletRequest request) throws Exception {
         if(clientId==null || clientId.length()==0 || clientSecret==null || clientSecret.length()==0)
             throw new APIRuntimeException(HttpServletResponse.SC_BAD_REQUEST, "Bad Request");            
-        
+        logger.info(request);
+        logger.info(clientId);
         // Authenticate with clientId and secret
         if(getServiceAccountAuthenticator()==null)
             throw new IllegalStateException("serviceAccountAuthenticator is not specified.");
