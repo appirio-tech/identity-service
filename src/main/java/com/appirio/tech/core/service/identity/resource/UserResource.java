@@ -1337,6 +1337,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if(MemberStatus.UNVERIFIED == MemberStatus.getByValue(oldStatus) &&
             MemberStatus.ACTIVE == MemberStatus.getByValue(user.getStatus())) {
             notifyWelcome(userInDB);
+            assignDefaultUserRole(userInDB);
         }
         
         return ApiResponseFactory.createResponse(userInDB);
