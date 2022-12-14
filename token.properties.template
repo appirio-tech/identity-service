@@ -55,6 +55,8 @@
 @diceAuth.diceApiKey@={{DICEAUTH_DICE_API_KEY}}
 @diceAuth.credDefId@={{DICEAUTH_CREDDEFID}}
 @diceAuth.otpDuration@={{DICEAUTH_OTP_DURATION}}
+@diceAuth.slackKey@={{SLACK_BOT_KEY}}
+@diceAuth.slackChannelId@={{SLACK_CHANNEL_ID}}
 
 @zendesk.secret@={{ZENDESK_KEY}}
 @zendesk.idprefix@={{ZENDESK_ID}}
