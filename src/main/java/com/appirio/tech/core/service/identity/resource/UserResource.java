@@ -128,6 +128,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
     private String domain;
 
+    private String domainEnv;
+
     private String sendgridTemplateId;
 
     private String sendgridWelcomeTemplateId;
@@ -2306,6 +2308,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
     public void setDomain(String domain) {
         this.domain = domain;
+        this.domainEnv = domain.toLowerCase().contains("dev") ? "DEV" : domain.toLowerCase().contains("qa") ? "QA" : "PROD";
     }
 
     public String getSendgridTemplateId() {
@@ -2468,7 +2471,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode body = mapper.createObjectNode();
         body.put("channel", diceAuth.getSlackChannelId());
-        body.put("text", String.format("%s%s : %s", handle, email == null ? "" : String.format(" (%s)", email) , message));
+        body.put("text", String.format("[%s] %s%s : %s", domainEnv, handle, email == null ? "" : String.format(" (%s)", email) , message));
         try {
             new Request("https://slack.com/api/chat.postMessage", "POST")
                     .header("Authorization", "Bearer " + diceAuth.getSlackKey())
