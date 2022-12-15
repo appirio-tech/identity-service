@@ -98,6 +98,8 @@ diceAuth:
   diceApiKey: @diceAuth.diceApiKey@
   credDefId: @diceAuth.credDefId@
   otpDuration: @diceAuth.otpDuration@
+  slackKey: @diceAuth.slackKey@
+  slackChannelId: @diceAuth.slackChannelId@
 
 # Authorized accounts
 serviceAccount:

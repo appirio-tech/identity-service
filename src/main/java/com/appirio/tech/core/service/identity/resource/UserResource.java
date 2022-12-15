@@ -128,6 +128,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
     private String domain;
 
+    private String domainEnv;
+
     private String sendgridTemplateId;
 
     private String sendgridWelcomeTemplateId;
@@ -1337,6 +1339,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if(MemberStatus.UNVERIFIED == MemberStatus.getByValue(oldStatus) &&
             MemberStatus.ACTIVE == MemberStatus.getByValue(user.getStatus())) {
             notifyWelcome(userInDB);
+            assignDefaultUserRole(userInDB);
         }
         
         return ApiResponseFactory.createResponse(userInDB);
@@ -1648,11 +1651,14 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
                 throw new APIRuntimeException(SC_BAD_REQUEST, "You have multiple accounts registered with same email. Please contact with support.");
             }
         }
+        Boolean oldMfaStatus = user2faInDb.getMfaEnabled() == null ? false : user2faInDb.getMfaEnabled();
+        Boolean oldDiceStatus = user2faInDb.getDiceEnabled() == null ? false : user2faInDb.getDiceEnabled();
+        String handle = user2faInDb.getHandle();
         if (user2fa.getMfaEnabled() == null) {
-            user2fa.setMfaEnabled(user2faInDb.getMfaEnabled() == null ? false : user2faInDb.getMfaEnabled());
+            user2fa.setMfaEnabled(oldMfaStatus);
         }
         if (user2fa.getDiceEnabled() == null) {
-            user2fa.setDiceEnabled(user2faInDb.getDiceEnabled() == null ? false : user2faInDb.getDiceEnabled());
+            user2fa.setDiceEnabled(oldDiceStatus);
         }
         if (user2faInDb.getId() == null) {
             long newId = userDao.insertUser2fa(userId, user2fa.getMfaEnabled(), user2fa.getDiceEnabled(),
@@ -1663,6 +1669,9 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             userDao.updateUser2fa(user2faInDb.getId(), user2fa.getMfaEnabled(),
                     user2fa.getDiceEnabled(), Utils.toLongValue(authUser.getUserId()));
             user2faInDb = userDao.findUser2faById(user2faInDb.getId());
+        }
+        if (!oldDiceStatus.equals(user2faInDb.getDiceEnabled())) {
+            sendSlackNotification(handle, null, user2faInDb.getDiceEnabled() ? "DICE enabled :smile_cat:" : "DICE disabled :crying_cat_face:");
         }
         return ApiResponseFactory.createResponse(user2faInDb);
     }
@@ -1702,6 +1711,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
                 diceConnection.setCreatedAt(diceAttributes.getDiceConnectionCreatedAt());
                 diceConnection.setConnection(diceAuth.getDiceApiUrl() + "/web/connection/inviteurl/"
                         + diceAttributes.getDiceConnection());
+                sendSlackNotification(diceAttributes.getHandle(), diceAttributes.getEmail(), "Reusing DICE connection");
                 return ApiResponseFactory.createResponse(diceConnection);
             }
         }
@@ -1730,6 +1740,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         diceConnection.setId(newId);
         diceConnection.setConnection(diceAuth.getDiceApiUrl() + "/web/connection/inviteurl/" + connectionId);
         diceConnection.setAccepted(false);
+        sendSlackNotification(diceAttributes.getHandle(), diceAttributes.getEmail(), "Created new DICE connection");
         return ApiResponseFactory.createResponse(diceConnection);
     }
 
@@ -1846,6 +1857,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
                             response.getMessage()));
         }
         userDao.updateDiceConnectionStatus(user.getDiceConnectionId(), true);
+        sendSlackNotification(user.getHandle(), user.getEmail(), "DICE connection accepted");
         return ApiResponseFactory.createResponse("SUCCESS");
     }
 
@@ -2297,6 +2309,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
     public void setDomain(String domain) {
         this.domain = domain;
+        this.domainEnv = domain.toLowerCase().contains("dev") ? "DEV" : domain.toLowerCase().contains("qa") ? "QA" : "PROD";
     }
 
     public String getSendgridTemplateId() {
@@ -2452,6 +2465,21 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             this.eventBusServiceClient.reFireEvent(msg);
         } catch (Exception e) {
             logger.error("Error occured while publishing the events to new kafka.");
+        }
+    }
+
+    private void sendSlackNotification(String handle, String email, String message) {
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode body = mapper.createObjectNode();
+        body.put("channel", diceAuth.getSlackChannelId());
+        body.put("text", String.format("[%s] %s%s : %s", domainEnv, handle, email == null ? "" : String.format(" (%s)", email) , message));
+        try {
+            new Request("https://slack.com/api/chat.postMessage", "POST")
+                    .header("Authorization", "Bearer " + diceAuth.getSlackKey())
+                    .json(mapper.writeValueAsString(body))
+                    .execute();
+        } catch (Exception e) {
+            logger.error("Error when calling slack bot", e);
         }
     }
     
