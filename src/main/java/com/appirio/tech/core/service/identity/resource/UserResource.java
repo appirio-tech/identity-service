@@ -1653,6 +1653,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         }
         Boolean oldMfaStatus = user2faInDb.getMfaEnabled() == null ? false : user2faInDb.getMfaEnabled();
         Boolean oldDiceStatus = user2faInDb.getDiceEnabled() == null ? false : user2faInDb.getDiceEnabled();
+        String handle = user2faInDb.getHandle();
         if (user2fa.getMfaEnabled() == null) {
             user2fa.setMfaEnabled(oldMfaStatus);
         }
@@ -1670,7 +1671,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             user2faInDb = userDao.findUser2faById(user2faInDb.getId());
         }
         if (!oldDiceStatus.equals(user2faInDb.getDiceEnabled())) {
-            sendSlackNotification(user2faInDb.getHandle(), null, user2faInDb.getDiceEnabled() ? "DICE enabled" : "DICE disabled");
+            sendSlackNotification(handle, null, user2faInDb.getDiceEnabled() ? "DICE enabled :smile_cat:" : "DICE disabled :crying_cat_face:");
         }
         return ApiResponseFactory.createResponse(user2faInDb);
     }
