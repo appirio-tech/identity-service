@@ -92,7 +92,7 @@ echo "copying LDAP keystore file"
 #cp /mnt/ebs/deploy/topcoder/ap-identity/conf/$CONFIG/TC.prod.ldap.keystore $DOCKER_DIR/TC.prod.ldap.keystore
 #aws s3 cp s3://appirio-platform-$CONFIG/application/tc-api-core/$CONFIG/TC.prod.ldap.new.keystore $DOCKER_DIR/TC.prod.ldap.keystore
 
-if [ "$CONFIG" == qa ]; then
+if [ "$CONFIG" = "qa" ]; then
 	aws s3 cp s3://tc-buildproperties-$CONFIG/tc-api-core/TC.prod.ldap.new.keystore $DOCKER_DIR/TC.prod.ldap.keystore
 else
     aws s3 cp s3://appirio-platform-$CONFIG/application/tc-api-core/$CONFIG/TC.prod.ldap.new.keystore $DOCKER_DIR/TC.prod.ldap.keystore
