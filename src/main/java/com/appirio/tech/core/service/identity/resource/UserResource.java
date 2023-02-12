@@ -818,6 +818,9 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         User user = userDao.authenticate(handleOrEmail, password);
         
         if (user != null && user.getId() != null) {
+            if (!user.getStatus().equals(MemberStatus.ACTIVE.getValue()) && !user.getStatus().equals(MemberStatus.UNVERIFIED.getValue())) {
+                throw new APIRuntimeException(SC_UNAUTHORIZED, "Account is deactivated.");
+            }
             List<Role> roles = roleDao.getRolesBySubjectId(Long.parseLong(user.getId().getId()));
             user.setRoles(roles);
         }
@@ -867,7 +870,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         // temp - just for testing
         user.setRegSource(userDao.generateSSOToken(Long.parseLong(user.getId().getId())));
 
-        if (!user.isActive()) {
+        if (user.getStatus().equals(MemberStatus.UNVERIFIED.getValue())) {
             UserOtp activation = userDao.findUserOtpByUserId(Utils.toLongValue(user.getId()), otpActivationMode);
             if (user.getCredential() == null) {
                 user.setCredential(new Credential());
@@ -912,12 +915,12 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
           throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "email"));
 
       User user = userDao.findUserByEmail(email);
-      user.setCredential(new Credential());
-      user.getCredential().setPassword(password);
-
-      if(user==null) {
-          throw new APIRuntimeException(SC_UNAUTHORIZED, "Credentials are incorrect.");
+      if (user == null) {
+          throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
       }
+      if (user.getCredential() == null)
+          user.setCredential(new Credential());
+      user.getCredential().setPassword(password);
 
       // SSO users can't reset their password.
       List<UserProfile> ssoProfiles = userDao.getSSOProfiles(Utils.toLongValue(user.getId()));
@@ -929,22 +932,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
           throw new APIRuntimeException(SC_BAD_REQUEST, error);
       }
 
-      User dbUser = null;
-      if(dbUser==null && user.getEmail()!=null) {
-          logger.debug(String.format("Auth0: findUserByEmail(%s)", user.getEmail()));
-          dbUser = this.userDao.findUserByEmail(user.getEmail());
-      }
-
-      if(dbUser==null) {
-            throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
-      }
-
-      if(dbUser.getCredential()==null)
-          dbUser.setCredential(new Credential());
-      dbUser.getCredential().setPassword(user.getCredential().getPassword());
-
-      logger.debug(String.format("Auth0: updating password for user: %s", dbUser.getHandle()));
-      userDao.updatePassword(dbUser);
+      logger.debug(String.format("Auth0: updating password for user: %s", user.getHandle()));
+      userDao.updatePassword(user);
 
       return ApiResponseFactory.createResponse("password updated successfully.");
    }
@@ -1062,6 +1051,9 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if(userActivation.isActive()) {
             throw new APIRuntimeException(SC_BAD_REQUEST, MSG_TEMPLATE_USER_ALREADY_ACTIVATED);
         }
+        if (!userActivation.getStatus().equals(MemberStatus.UNVERIFIED.getValue())) {
+            throw new APIRuntimeException(SC_FORBIDDEN, "Account is deactivated");
+        }
         if (userActivation.getId() == null) {
             throw new APIRuntimeException(SC_NOT_FOUND, "No activation code found");
         }
@@ -1113,18 +1105,21 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if(userActivation.isActive()) {
             return ApiResponseFactory.createResponse(MSG_TEMPLATE_USER_ALREADY_ACTIVATED);
         }
+        if (!userActivation.getStatus().equals(MemberStatus.UNVERIFIED.getValue())) {
+            throw new APIRuntimeException(SC_FORBIDDEN, "Account is deactivated");
+        }
         if (userActivation.getId() == null) {
             throw new APIRuntimeException(SC_NOT_FOUND, "No activation code found");
         }
 
         if (userActivation.getFailCount() >= 3) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, "Blocked");
+            throw new APIRuntimeException(SC_BAD_REQUEST, "Too many attempts");
         } else if (userActivation.getExpireAt().isBeforeNow()) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, "Expired");
+            throw new APIRuntimeException(SC_BAD_REQUEST, "Activation code expired");
         } else if (!userActivation.getOtp().equals(activationRequest.getOtp())) {
             userDao.updateUserOtpAttempt(userActivation.getId(), userActivation.getFailCount() + 1);
             if (userActivation.getFailCount() >= 2) {
-                throw new APIRuntimeException(SC_BAD_REQUEST, "Blocked");
+                throw new APIRuntimeException(SC_BAD_REQUEST, "Too many attempts");
             }
             throw new APIRuntimeException(SC_BAD_REQUEST, "Wrong Activation Code");
         }
