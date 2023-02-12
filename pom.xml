@@ -8,7 +8,7 @@
   <packaging>jar</packaging>
 
   <properties>
-    <amazon.aws.version>1.11.508</amazon.aws.version>
+    <amazon.aws.version>1.12.186</amazon.aws.version>
     <jackson-version>[2.5.1,2.9.0)</jackson-version>
   </properties>
 
