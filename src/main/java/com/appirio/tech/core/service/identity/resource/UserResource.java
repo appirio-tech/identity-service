@@ -501,6 +501,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
         checkParam(postRequest);
 
+        String defaultRoleToAssign = "Topcoder Talent";
+
         User user = postRequest.getParam();
 
         // The user should have UserProfile when registering with it's social account.
@@ -511,6 +513,11 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
                 user.setCredential(new Credential());
             user.getCredential().setPassword(Utils.getString("defaultPassword", "default-password"));
         }
+
+        if (user.getDefaultRole().equalsIgnoreCase("Topcoder Customer")) {
+            defaultRoleToAssign = "Topcoder Customer";
+        }
+
         String error = user.validate();
         if (error == null)
             error = validateHandle(user.getHandle());
@@ -577,6 +584,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if (user.getRegSource() != null && user.getRegSource().matches("selfService")) {
             assignRoleByName("Self-Service Customer", user);
         }
+
+        assignRoleByName(defaultRoleToAssign, user);
 
         // publish event
         publishUserEvent("event.user.created", user);
