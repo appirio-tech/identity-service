@@ -501,7 +501,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
         checkParam(postRequest);
 
-        String defaultRoleToAssign = "Topcoder Talent";
+        String primaryRole = "Topcoder Talent";
 
         User user = postRequest.getParam();
 
@@ -514,8 +514,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             user.getCredential().setPassword(Utils.getString("defaultPassword", "default-password"));
         }
 
-        if (Utils.getString(user.getDefaultRole(), "Topcoder Talent").equalsIgnoreCase("Topcoder Customer")) {
-            defaultRoleToAssign = "Topcoder Customer";
+        if (Utils.getString(user.getPrimaryRole(), "Topcoder Talent").equalsIgnoreCase("Topcoder Customer")) {
+            primaryRole = "Topcoder Customer";
         }
 
         String error = user.validate();
@@ -585,7 +585,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             assignRoleByName("Self-Service Customer", user);
         }
 
-        assignRoleByName(defaultRoleToAssign, user);
+        assignRoleByName(primaryRole, user);
 
         // publish event
         publishUserEvent("event.user.created", user);

@@ -44,7 +44,7 @@ public class User extends AbstractIdResource {
 	private Boolean mfaEnabled;
 	private Boolean diceEnabled;
 
-	private String defaultRole;
+	private String primaryRole;
 	
     /**
      * Represents the ssoLogin attribute.
@@ -59,12 +59,12 @@ public class User extends AbstractIdResource {
 		this.handle = handle;
 	}
 
-	public String getDefaultRole() {
-		return defaultRole;
+	public String getPrimaryRole() {
+		return primaryRole;
 	}
 
-	public void setDefaultRole(String defaultRole) {
-		this.defaultRole = defaultRole;
+	public void setPrimaryRole(String primaryRole) {
+		this.primaryRole = primaryRole;
 	}
 	
 	public String getEmail() {
