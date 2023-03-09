@@ -497,7 +497,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             @Valid PostPutRequest<User> postRequest,
             @Context HttpServletRequest request) {
 
-        logger.info("createObject");
+        logger.info("createObject: " + postRequest.getParam().getHandle() + " : " + postRequest.getParam().getPrimaryRole());
 
         checkParam(postRequest);
 
