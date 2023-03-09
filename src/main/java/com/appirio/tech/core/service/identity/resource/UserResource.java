@@ -513,11 +513,18 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
                 user.setCredential(new Credential());
             user.getCredential().setPassword(Utils.getString("defaultPassword", "default-password"));
         }
-        final String userPrimaryRole = Utils.getString(user.getPrimaryRole(), "Topcoder Talent");
+        String userPrimaryRole = user.getPrimaryRole();
+        logger.info("User Primary Role: " + userPrimaryRole);
+        if (userPrimaryRole == null) {
+            logger.info("User Primary Role is null. Setting it to Topcoder Talent");
+            userPrimaryRole = "Topcoder Talent";
+        }
         logger.info(user.getEmail() + ": User Primary Role: " + userPrimaryRole);
         if (userPrimaryRole.equalsIgnoreCase("Topcoder Customer")) {
             primaryRole = "Topcoder Customer";
         }
+
+        logger.info("Assigning primary role: " + primaryRole);
 
         String error = user.validate();
         if (error == null)
