@@ -909,6 +909,18 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         return ApiResponseFactory.createResponse(user);
     }
 
+    @POST
+    @Path("/changeRole")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Timed
+    public ApiResponse changeRole(
+            @Auth AuthUser authUser,
+            @FormParam("primaryRole") String primaryRole,
+            @Context HttpServletRequest request) throws Exception {
+        logger.info("Reqeust to change role for user: " + authUser.getHandle() + " to role: " + primaryRole);
+        return ApiResponseFactory.createResponse("changeRole");
+    }
+
     /**
      * API to change password for a user (by email)
      * This is supposed to be called from Auth0 custom connection.
