@@ -911,13 +911,12 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
     @POST
     @Path("/changeRole")
-    @Consumes(MediaType.APPLICATION_JSON)
     @Timed
     public ApiResponse changeRole(
             @Auth AuthUser authUser,
-            @FormParam("primaryRole") String primaryRole,
+            @Valid PostPutRequest<Map<String, String>> requestBody,
             @Context HttpServletRequest request) throws Exception {
-        logger.info("Reqeust to change role for user: " + authUser.getHandle() + " to role: " + primaryRole);
+        logger.info("Request to change role for user: " + authUser.getHandle() + " to role: " + requestBody.getParam().getOrDefault("primaryRole", "Topcoder User"));
         return ApiResponseFactory.createResponse("changeRole");
     }
 
