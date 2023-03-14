@@ -910,13 +910,27 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     }
 
     @POST
-    @Path("/changeRole")
+    @Path("/updatePrimaryRole")
     @Timed
     public ApiResponse changeRole(
             @Auth AuthUser authUser,
             @Valid PostPutRequest<Map<String, String>> requestBody,
             @Context HttpServletRequest request) throws Exception {
-        logger.info("Request to change role for user: " + authUser.getHandle() + " to role: " + requestBody.getParam().getOrDefault("primaryRole", "Topcoder User"));
+        final String newRole = requestBody.getParam().get("primaryRole");
+        if (!newRole.equalsIgnoreCase("Topcoder Talent") && !newRole.equalsIgnoreCase("Topcoder Customer")) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, "Invalid role: " + newRole);
+        }
+        final String roleToRemove = newRole.equalsIgnoreCase("Topcoder Talent") ? "Topcoder Customer" : "Topcoder Talent";
+
+        if (authUser.getRoles().stream().anyMatch(role -> role.equals(newRole))) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, "User already has the role: " + newRole);
+        }
+
+        Long userId = Utils.toLongValue(authUser.getUserId());
+
+        deassignRoleByName(roleToRemove, userId);
+        assignRoleByName(newRole, userId);
+
         return ApiResponseFactory.createResponse("changeRole");
     }
 
@@ -2632,13 +2646,17 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         }
     }
 
-    private void assignRoleByName(String roleName, User user) {
+    private long getRoleIdFromName(String roleName) {
         Role role = roleDao.findRoleByName(roleName);
         if (role == null) {
             logger.error("No role found for '" + roleName + "'");
             throw new IllegalStateException("Unable to assign user role " + roleName);
         }
-        long roleId = Long.parseLong(role.getId().toString());
+        return Long.parseLong(role.getId().toString());
+    }
+
+    private void assignRoleByName(String roleName, User user) {
+        long roleId = getRoleIdFromName(roleName);
 
         try {
             long userId = Long.parseLong(user.getId().toString());
@@ -2651,6 +2669,32 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             }
         } catch (Exception e) {
             logger.error("Unable to assign '" + roleName + "' role to user " + user.getId(), e);
+        }
+    }
+
+    private void assignRoleByName(String roleName, long userId) {
+        long roleId = getRoleIdFromName(roleName);
+
+        try {
+            int rows = roleDao.assignRole(roleId, userId, userId);
+
+            if (rows == 0) {
+                logger.error("No assignment row created when assigning '" + roleName + "' role to user " + userId);
+            } else if (logger.isDebugEnabled()) {
+                logger.debug(String.format("Created role assignment for user %d", userId));
+            }
+        } catch (Exception e) {
+            logger.error("Unable to assign '" + roleName + "' role to user " + userId, e);
+        }
+    }
+
+    private void deassignRoleByName(String roleName, long userId) {
+        long roleId = getRoleIdFromName(roleName);
+
+        try {
+            roleDao.deassignRole(roleId, userId);
+        } catch (Exception e) {
+            logger.error("Unable to de-assign '" + roleName + "' role to user " + userId, e);
         }
     }
 }
