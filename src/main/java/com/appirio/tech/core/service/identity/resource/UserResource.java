@@ -921,22 +921,18 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             throw new APIRuntimeException(SC_BAD_REQUEST, "Invalid role: " + newRole);
         }
         final String roleToRemove = newRole.equalsIgnoreCase("Topcoder Talent") ? "Topcoder Customer" : "Topcoder Talent";
+        Long userId = Utils.toLongValue(authUser.getUserId());
 
-        if (authUser.getRoles().stream().anyMatch(role -> role.equals(newRole))) {
+        List<Role> roles = roleDao.getRolesBySubjectId(userId);
+
+        if (roles.stream().anyMatch(role -> role.getRoleName().equalsIgnoreCase(newRole))) {
             throw new APIRuntimeException(SC_BAD_REQUEST, "User already has the role: " + newRole);
         }
-
-        logger.info("Auth User: " + authUser.getUserId());
-        logger.info("Auth User Handle: " + authUser.getHandle());
-        logger.info("Auth User Roles: " + authUser.getRoles());
-        logger.info("Auth User Token: " + authUser.getToken());
-
-        Long userId = Utils.toLongValue(authUser.getUserId());
 
         deassignRoleByName(roleToRemove, userId);
         assignRoleByName(newRole, userId);
 
-        return ApiResponseFactory.createResponse("changeRole");
+        return ApiResponseFactory.createResponse(newRole);
     }
 
     /**
