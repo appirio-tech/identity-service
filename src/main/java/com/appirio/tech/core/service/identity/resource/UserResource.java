@@ -926,6 +926,10 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             throw new APIRuntimeException(SC_BAD_REQUEST, "User already has the role: " + newRole);
         }
 
+        logger.info("Auth User: " + authUser.getUserId());
+        logger.info("Auth User Handle: " + authUser.getHandle());
+        logger.info("Auth User Roles: " + authUser.getRoles());
+
         Long userId = Utils.toLongValue(authUser.getUserId());
 
         deassignRoleByName(roleToRemove, userId);
