@@ -929,6 +929,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         logger.info("Auth User: " + authUser.getUserId());
         logger.info("Auth User Handle: " + authUser.getHandle());
         logger.info("Auth User Roles: " + authUser.getRoles());
+        logger.info("Auth User Token: " + authUser.getToken());
 
         Long userId = Utils.toLongValue(authUser.getUserId());
 
