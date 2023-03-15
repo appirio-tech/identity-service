@@ -920,7 +920,6 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if (!newRole.equalsIgnoreCase("Topcoder Talent") && !newRole.equalsIgnoreCase("Topcoder Customer")) {
             throw new APIRuntimeException(SC_BAD_REQUEST, "Invalid role: " + newRole);
         }
-        final String roleToRemove = newRole.equalsIgnoreCase("Topcoder Talent") ? "Topcoder Customer" : "Topcoder Talent";
         Long userId = Utils.toLongValue(authUser.getUserId());
 
         List<Role> roles = roleDao.getRolesBySubjectId(userId);
@@ -929,7 +928,9 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             throw new APIRuntimeException(SC_BAD_REQUEST, "User already has the role: " + newRole);
         }
 
-        deassignRoleByName(roleToRemove, userId);
+        deassignRoleByName("Topcoder Talent", userId);
+        deassignRoleByName("Topcoder Customer", userId);
+
         assignRoleByName(newRole, userId);
 
         return ApiResponseFactory.createResponse(newRole);
