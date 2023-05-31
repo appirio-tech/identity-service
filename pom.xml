@@ -362,7 +362,7 @@
     </repository>
     <repository>
       <id>Appirio Technology Maven Repository</id>
-      <url>http://maven.topcoder-dev.com:8080/</url>
+      <url>https://maven.topcoder-dev.com/</url>
       <snapshots>
         <updatePolicy>always</updatePolicy>
       </snapshots>
