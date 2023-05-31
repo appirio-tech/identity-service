@@ -38,17 +38,19 @@ save_cache_settings_core: &save_cache_settings_core
 maven_configuration_v1: &maven_configuration_v1
           name: Configuring maven
           command: |
-            MVNSERVERSETTING='<server>\n  <id>tcrepo</id> \n <username>${env.MVNUSERNAME}</username> \n <password>${env.MVNPASSWD}</password> \n  </server> '
-            C=$(echo $MVNSERVERSETTING | sed 's/\//\\\//g')
-            sudo sed -i.bak "/<\/servers>/ s/.*/${C}\n&/" /opt/apache-maven/conf/settings.xml
-            MVNSERVERSETTING='<server>\n  <id>tcreposnap</id> \n <username>${env.MVNUSERNAME}</username> \n <password>${env.MVNPASSWD}</password> \n  </server> '
-            C=$(echo $MVNSERVERSETTING | sed 's/\//\\\//g')
-            sudo sed -i.bak "/<\/servers>/ s/.*/${C}\n&/" /opt/apache-maven/conf/settings.xml     
+            # MVNSERVERSETTING='<server>\n  <id>tcrepo</id> \n <username>${env.MVNUSERNAME}</username> \n <password>${env.MVNPASSWD}</password> \n  </server> '
+            # C=$(echo $MVNSERVERSETTING | sed 's/\//\\\//g')
+            # sudo sed -i.bak "/<\/servers>/ s/.*/${C}\n&/" /opt/apache-maven/conf/settings.xml
+            # MVNSERVERSETTING='<server>\n  <id>tcreposnap</id> \n <username>${env.MVNUSERNAME}</username> \n <password>${env.MVNPASSWD}</password> \n  </server> '
+            # C=$(echo $MVNSERVERSETTING | sed 's/\//\\\//g')
+            # sudo sed -i.bak "/<\/servers>/ s/.*/${C}\n&/" /opt/apache-maven/conf/settings.xml     
             sudo sed -i '/<mirror>/,/<\/mirror>/d' /opt/apache-maven/conf/settings.xml
 
 restore_mvn_offline: &restore_mvn_offline
           name: maven restore go offline
-          command: _JAVA_OPTIONS=-Djdk.net.URLClassPath.disableClassPathURLCheck=true mvn -f ~/project/pom.xml dependency:go-offline
+          command: |
+             source awsenvconf
+             _JAVA_OPTIONS=-Djdk.net.URLClassPath.disableClassPathURLCheck=true mvn -f ~/project/pom.xml dependency:go-offline
 
 restore_mvn_core_offline: &restore_mvn_core_offline
           name: maven restore core dependency go offline
