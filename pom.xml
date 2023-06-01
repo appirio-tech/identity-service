@@ -360,16 +360,6 @@
         <updatePolicy>always</updatePolicy>
       </releases>
     </repository>
-    <repository>
-      <id>Appirio Technology Maven Repository</id>
-      <url>https://maven.topcoder-dev.com/</url>
-      <snapshots>
-        <updatePolicy>always</updatePolicy>
-      </snapshots>
-      <releases>
-        <updatePolicy>always</updatePolicy>
-      </releases>
-    </repository>
   </repositories>
   <distributionManagement>
     <snapshotRepository>
