@@ -96,6 +96,7 @@ auth0New:
 diceAuth:
   diceApiUrl: @diceAuth.diceApiUrl@
   diceApiKey: @diceAuth.diceApiKey@
+  tcApiKey: @diceAuth.tcApiKey@
   credDefId: @diceAuth.credDefId@
   otpDuration: @diceAuth.otpDuration@
   slackKey: @diceAuth.slackKey@

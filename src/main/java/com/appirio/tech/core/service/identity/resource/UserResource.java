@@ -1804,6 +1804,62 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     }
 
     @POST
+    @Path("/dice-status")
+    @Timed
+    public ApiResponse diceStatus(@Valid PostPutRequest<DiceStatusRequest> postRequest,
+            @Context HttpServletRequest request) {
+        if (!diceAuth.isValidAPIKey(request)) {
+            throw new APIRuntimeException(SC_FORBIDDEN, "Forbidden");
+        }
+        checkParam(postRequest);
+        DiceStatusRequest status = postRequest.getParam();
+        if (status.getEvent() == null) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "event"));
+        }
+        if (status.getConnectionId() == null) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "connectionId"));
+        }
+        switch (status.getEvent()) {
+            case "connection-created":
+                handleConnectionCreatedEvent(status.getConnectionId(), status.getJobId());
+                break;
+            case "connection-accepted":
+                handleConnectionAcceptedEvent(status.getConnectionId());
+                break;
+            case "connection-declined":
+                handleConnectionDeclinedEvent(status.getConnectionId());
+                break;
+            case "credential-declined":
+                handleCredentialDeclinedEvent(status.getConnectionId());
+                break;
+            default:
+                throw new APIRuntimeException(SC_BAD_REQUEST,
+                        String.format("%s is not valid event", status.getEvent()));
+        }
+
+        return ApiResponseFactory.createResponse("SUCCESS");
+    }
+
+    private void handleConnectionCreatedEvent(String connectionId, String jobId) {
+        if (jobId == null) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "jobId"));
+        }
+
+    }
+
+    private void handleConnectionAcceptedEvent(String connectionId) {
+
+    }
+
+    private void handleConnectionDeclinedEvent(String connectionId) {
+
+    }
+
+    private void handleCredentialDeclinedEvent(String connectionId) {
+
+    }
+
+    @POST
     @Path("/2faCredentials")
     @Timed
     public ApiResponse issueCredentials(

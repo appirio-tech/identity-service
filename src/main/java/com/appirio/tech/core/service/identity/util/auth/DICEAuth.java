@@ -1,5 +1,6 @@
 package com.appirio.tech.core.service.identity.util.auth;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotNull;
 
 public class DICEAuth {
@@ -9,6 +10,9 @@ public class DICEAuth {
 
     @NotNull
     private String diceApiKey;
+
+    @NotNull
+    private String tcApiKey;
 
     @NotNull
     private String credDefId;
@@ -27,10 +31,11 @@ public class DICEAuth {
     public DICEAuth() {
     }
 
-    public DICEAuth(String diceApiUrl, String diceApiKey, String credDefId, Integer otpDuration, String slackKey,
-            String slackChannelId) {
+    public DICEAuth(String diceApiUrl, String diceApiKey, String tcApiKey, String credDefId, Integer otpDuration,
+            String slackKey, String slackChannelId) {
         this.diceApiUrl = diceApiUrl;
         this.diceApiKey = diceApiKey;
+        this.tcApiKey = tcApiKey;
         this.credDefId = credDefId;
         this.otpDuration = otpDuration;
         this.slackKey = slackKey;
@@ -51,6 +56,14 @@ public class DICEAuth {
 
     public void setDiceApiKey(String diceApiKey) {
         this.diceApiKey = diceApiKey;
+    }
+
+    public String getTcApiKey() {
+        return tcApiKey;
+    }
+
+    public void setTcApiKey(String tcApiKey) {
+        this.tcApiKey = tcApiKey;
     }
 
     public String getCredDefId() {
@@ -91,5 +104,12 @@ public class DICEAuth {
 
     public void setSlackChannelId(String slackChannelId) {
         this.slackChannelId = slackChannelId;
+    }
+
+    public boolean isValidAPIKey(HttpServletRequest request) {
+        String apiKeyHeader = request.getHeader("X-API-KEY");
+
+        // Check if the X-API-KEY header is present and matches the valid API key
+        return apiKeyHeader != null && apiKeyHeader.equals(tcApiKey);
     }
 }

@@ -53,6 +53,7 @@
 
 @diceAuth.diceApiUrl@={{DICEAUTH_DICE_API_URL}}
 @diceAuth.diceApiKey@={{DICEAUTH_DICE_API_KEY}}
+@diceAuth.tcApiKey@={{DICEAUTH_TC_API_KEY}}
 @diceAuth.credDefId@={{DICEAUTH_CREDDEFID}}
 @diceAuth.otpDuration@={{DICEAUTH_OTP_DURATION}}
 @diceAuth.slackKey@={{SLACK_BOT_KEY}}
