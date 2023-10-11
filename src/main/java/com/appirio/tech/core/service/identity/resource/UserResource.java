@@ -63,18 +63,19 @@ import java.util.stream.Collectors;
 import static com.appirio.tech.core.service.identity.util.Constants.*;
 import static javax.servlet.http.HttpServletResponse.*;
 
-
 /**
  * UserResource provides the user endpoints to manage the users.
  *
  * <p>
  * Changes in the version 1.1 72h TC Identity Service API Enhancements v1.0
  * - add createOrUpdateSSOUserLogin method
- * - getObject will return an user with ssoLogin flag and providers info stored in the profiles fields
+ * - getObject will return an user with ssoLogin flag and providers info stored
+ * in the profiles fields
  * </p>
  *
  * <p>
- * Version 1.2 - Fast 48hrs!! Topcoder Identity Service - Support Event Bus Publishing v1.0
+ * Version 1.2 - Fast 48hrs!! Topcoder Identity Service - Support Event Bus
+ * Publishing v1.0
  * - fire event message via event bus client when publish event
  * </p>
  *
@@ -101,9 +102,9 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     private final User2faFactory user2faFactory;
     protected UserDAO userDao;
     protected CacheService cacheService;
-    private int resetTokenExpirySeconds = 30 * 60; //30min
-    private int resendActivationCodeExpirySeconds = 30 * 60; //30min
-    private int oneTimeTokenExpirySeconds = 10 * 60; //10min
+    private int resetTokenExpirySeconds = 30 * 60; // 30min
+    private int resendActivationCodeExpirySeconds = 30 * 60; // 30min
+    private int oneTimeTokenExpirySeconds = 10 * 60; // 10min
     private String domain;
     private String domainEnv;
     private String sendgridTemplateId;
@@ -172,7 +173,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         this(userDao, roleDao, cacheService, eventProducer, eventBusServiceClient, null, null);
     }
 
-    private static void checkAccessAndUserProfile(AuthUser authUser, long userId, UserProfile profile, String[] allowedScopes) {
+    private static void checkAccessAndUserProfile(AuthUser authUser, long userId, UserProfile profile,
+            String[] allowedScopes) {
         Utils.checkAccess(authUser, allowedScopes, Utils.AdminRoles);
 
         if (userId <= 0) {
@@ -219,8 +221,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     @Timed
     @Path("/{userId}/SSOUserLogin")
     public ApiResponse createSSOUserLogin(@Auth AuthUser authUser,
-                                          @PathParam("userId") long userId,
-                                          @Valid PostPutRequest<UserProfile> postRequest) {
+            @PathParam("userId") long userId,
+            @Valid PostPutRequest<UserProfile> postRequest) {
         UserProfile profile = postRequest.getParam();
 
         checkAccessAndUserProfile(authUser, userId, profile, userProfilesFactory.getCreateScopes());
@@ -235,7 +237,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             int count = ssoUserDao.checkUserIdAndProviderId(userId, providerId);
             if (count > 0) {
                 throw new APIRuntimeException(SC_BAD_REQUEST,
-                        "The user and provider already exist, userId:" + userId + ", provider:" + profile.getProvider());
+                        "The user and provider already exist, userId:" + userId + ", provider:"
+                                + profile.getProvider());
             }
             ssoUserDao.createSSOUser(userId, profile);
 
@@ -261,8 +264,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     @Timed
     @Path("/{userId}/SSOUserLogin")
     public ApiResponse updateSSOUserLogin(@Auth AuthUser authUser,
-                                          @PathParam("userId") long userId,
-                                          @Valid PostPutRequest<UserProfile> postRequest) {
+            @PathParam("userId") long userId,
+            @Valid PostPutRequest<UserProfile> postRequest) {
         UserProfile profile = postRequest.getParam();
         checkAccessAndUserProfile(authUser, userId, profile, userProfilesFactory.getUpdateScopes());
 
@@ -275,7 +278,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             }
             int count = ssoUserDao.checkUserIdAndProviderId(userId, providerId);
             if (count == 0) {
-                throw new APIRuntimeException(SC_NOT_FOUND, "The user and provider do not exist, userId:" + userId + ", provider:" + profile.getProvider());
+                throw new APIRuntimeException(SC_NOT_FOUND,
+                        "The user and provider do not exist, userId:" + userId + ", provider:" + profile.getProvider());
             }
 
             ssoUserDao.updateSSOUser(userId, profile);
@@ -300,7 +304,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     @Timed
     @Path("/{userId}/SSOUserLogin")
     public ApiResponse deleteSSOUserLogin(@Auth AuthUser authUser,
-                                          @PathParam("userId") long userId, @QueryParam("provider") String provider, @QueryParam("providerId") Long providerId) {
+            @PathParam("userId") long userId, @QueryParam("provider") String provider,
+            @QueryParam("providerId") Long providerId) {
         Utils.checkAccess(authUser, userProfilesFactory.getDeleteScopes(), Utils.AdminRoles);
         if (userId <= 0) {
             throw new APIRuntimeException(SC_BAD_REQUEST, "userId should be positive:" + userId);
@@ -316,7 +321,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             if (providerId != null) {
                 int count = ssoUserDao.checkUserIdAndProviderId(userId, providerId);
                 if (count == 0) {
-                    throw new APIRuntimeException(SC_NOT_FOUND, "The user and provider do not exist, userId:" + userId + ", providerId:" + providerId);
+                    throw new APIRuntimeException(SC_NOT_FOUND,
+                            "The user and provider do not exist, userId:" + userId + ", providerId:" + providerId);
                 }
             } else {
                 providerId = ssoUserDao.getSSOProviderIdByName(provider);
@@ -328,9 +334,11 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             int count = ssoUserDao.checkUserIdAndProviderId(userId, providerId);
             if (count == 0) {
                 if (provider != null) {
-                    throw new APIRuntimeException(SC_NOT_FOUND, "The user and provider do not exist, userId:" + userId + ", provider:" + provider);
+                    throw new APIRuntimeException(SC_NOT_FOUND,
+                            "The user and provider do not exist, userId:" + userId + ", provider:" + provider);
                 } else {
-                    throw new APIRuntimeException(SC_NOT_FOUND, "The user and provider do not exist, userId:" + userId + ", providerId:" + providerId);
+                    throw new APIRuntimeException(SC_NOT_FOUND,
+                            "The user and provider do not exist, userId:" + userId + ", providerId:" + providerId);
                 }
 
             }
@@ -356,7 +364,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     @Timed
     @Path("/{userId}/SSOUserLogins")
     public ApiResponse getSSOUserLoginsByUserId(@Auth AuthUser authUser,
-                                                @PathParam("userId") long userId) {
+            @PathParam("userId") long userId) {
         Utils.checkAccess(authUser, userProfilesFactory.getReadScopes(), Utils.AdminRoles);
         if (userId <= 0) {
             throw new APIRuntimeException(SC_BAD_REQUEST, "userId should be positive:" + userId);
@@ -437,7 +445,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             @Valid PostPutRequest<User> postRequest,
             @Context HttpServletRequest request) {
 
-        logger.info("createObject: " + postRequest.getParam().getHandle() + " : " + postRequest.getParam().getPrimaryRole());
+        logger.info("createObject: " + postRequest.getParam().getHandle() + " : "
+                + postRequest.getParam().getPrimaryRole());
 
         checkParam(postRequest);
 
@@ -448,7 +457,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         // The user should have UserProfile when registering with it's social account.
         // And password is set to the default value.
         if (user.getProfile() != null &&
-                (user.getCredential() == null || user.getCredential().getPassword() == null || user.getCredential().getPassword().length() == 0)) {
+                (user.getCredential() == null || user.getCredential().getPassword() == null
+                        || user.getCredential().getPassword().length() == 0)) {
             if (user.getCredential() == null)
                 user.setCredential(new Credential());
             user.getCredential().setPassword(Utils.getString("defaultPassword", "default-password"));
@@ -495,27 +505,40 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         logger.debug(String.format("registering user: %s", user.getHandle()));
         userDao.register(user);
 
-        // COMMENTING THE LINES AS CODE FOR ADDING MEMBERS TO THE GROUPS MOVED TO MEMBER-GROUP-PROCESSOR
+        // COMMENTING THE LINES AS CODE FOR ADDING MEMBERS TO THE GROUPS MOVED TO
+        // MEMBER-GROUP-PROCESSOR
         // TODO: This is a temporary fix for the urgent issue. This should be fixed.
-        /* if(user.getProfile()!=null && "wipro-adfs".equalsIgnoreCase(user.getProfile().getProvider()) ) {
-        	logger.info(String.format("Adding Wipro user to the Wipro-All group. (%s, %s, %s)", user.getId(), user.getHandle(), user.getProfile().getUserId() ));
-            addToGroupById(user, 20000000L);
-        }
-
-        if(user.getProfile()!=null && "Zurich".equalsIgnoreCase(user.getProfile().getProvider()) ) {
-            logger.info(String.format("Adding Zurich user to the Zurich - Parent Group group. (%s, %s, %s)", user.getId(), user.getHandle(), user.getProfile().getUserId() ));
-            addToGroupById(user, 20000145L);
-        }
-
-        if(user.getProfile()!=null && "CreditSuisse".equalsIgnoreCase(user.getProfile().getProvider()) ) {
-            logger.info(String.format("Adding CreditSuisse user to the CreditSuisse - Main group. (%s, %s, %s)", user.getId(), user.getHandle(), user.getProfile().getUserId() ));
-            addToGroupById(user, 20000044L);
-        } */
+        /*
+         * if(user.getProfile()!=null &&
+         * "wipro-adfs".equalsIgnoreCase(user.getProfile().getProvider()) ) {
+         * logger.info(String.
+         * format("Adding Wipro user to the Wipro-All group. (%s, %s, %s)",
+         * user.getId(), user.getHandle(), user.getProfile().getUserId() ));
+         * addToGroupById(user, 20000000L);
+         * }
+         * 
+         * if(user.getProfile()!=null &&
+         * "Zurich".equalsIgnoreCase(user.getProfile().getProvider()) ) {
+         * logger.info(String.
+         * format("Adding Zurich user to the Zurich - Parent Group group. (%s, %s, %s)",
+         * user.getId(), user.getHandle(), user.getProfile().getUserId() ));
+         * addToGroupById(user, 20000145L);
+         * }
+         * 
+         * if(user.getProfile()!=null &&
+         * "CreditSuisse".equalsIgnoreCase(user.getProfile().getProvider()) ) {
+         * logger.info(String.
+         * format("Adding CreditSuisse user to the CreditSuisse - Main group. (%s, %s, %s)"
+         * , user.getId(), user.getHandle(), user.getProfile().getUserId() ));
+         * addToGroupById(user, 20000044L);
+         * }
+         */
 
         // registration mail with activation code for inactive user
         if (!user.isActive()) {
             String otp = Utils.generateRandomString(ALPHABET_DIGITS_EN, 6);
-            userDao.insertUserOtp(Utils.toLongValue(user.getId()), otpActivationMode, otp, activationCodeExpiration, false, 0);
+            userDao.insertUserOtp(Utils.toLongValue(user.getId()), otpActivationMode, otp, activationCodeExpiration,
+                    false, 0);
             logger.debug(String.format("sending registration mail to: %s (%s)", user.getEmail(), user.getHandle()));
             // publish event.
             sendActivationEmailEvent(user, otp);
@@ -595,7 +618,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if (cred != null && cred.getPassword() != null) {
             // currentPassword is required and must match with registered password
             if (cred.getCurrentPassword() == null)
-                throw new APIRuntimeException(SC_BAD_REQUEST, String.format(Constants.MSG_TEMPLATE_MANDATORY, "Current password"));
+                throw new APIRuntimeException(SC_BAD_REQUEST,
+                        String.format(Constants.MSG_TEMPLATE_MANDATORY, "Current password"));
             if (!userInDB.getCredential().isCurrentPassword(cred.getCurrentPassword()))
                 throw new APIRuntimeException(SC_BAD_REQUEST, Constants.MSG_TEMPLATE_INVALID_CURRENT_PASSWORD);
         }
@@ -634,7 +658,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             @Auth AuthUser authUser,
             @PathParam("resourceId") String resourceId,
             @Context HttpServletRequest request) {
-        //TODO:
+        // TODO:
         throw new APIRuntimeException(SC_NOT_IMPLEMENTED);
     }
 
@@ -666,7 +690,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if (user == null)
             throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
 
-        // to handle fake social account, adding below check before verifiying from auth0
+        // to handle fake social account, adding below check before verifiying from
+        // auth0
         if (profile.getContext() == null) {
             profile.setContext(new HashMap<>());
         }
@@ -679,7 +704,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             throw new APIRuntimeException(SC_NOT_FOUND, "social user account not exist on Auth0");
         }
 
-        logger.info(String.format("addSocialProfile(%s, {%s, %s})", resourceId, profile.getUserId(), profile.getProviderType()));
+        logger.info(String.format("addSocialProfile(%s, {%s, %s})", resourceId, profile.getUserId(),
+                profile.getProviderType()));
         userDao.addSocialProfile(userId, profile);
 
         return ApiResponseFactory.createResponse(profile);
@@ -692,7 +718,9 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         String auth0UserId = profile.getContext() != null ? profile.getContext().get("auth0UserId") : null;
         if (auth0UserId == null) {
             auth0UserId = profile.getProviderType() + "|" + profile.getUserId();
-            logger.warn("Profile does not have 'auth0UserId' in its context. It has been built with 'providerType' and 'userId': " + auth0UserId);
+            logger.warn(
+                    "Profile does not have 'auth0UserId' in its context. It has been built with 'providerType' and 'userId': "
+                            + auth0UserId);
         }
         logger.info(String.format("setAccessToken(%s)", auth0UserId));
         try {
@@ -720,7 +748,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         logger.info(String.format("deleteUserProfile(%s, %s)", resourceId, provider));
 
         if (resourceId == null)
-            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(Constants.MSG_TEMPLATE_MANDATORY, "resourceId"));
+            throw new APIRuntimeException(SC_BAD_REQUEST,
+                    String.format(Constants.MSG_TEMPLATE_MANDATORY, "resourceId"));
         if (provider == null)
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(Constants.MSG_TEMPLATE_MANDATORY, "provider"));
 
@@ -729,7 +758,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
         ProviderType providerType = ProviderType.getByName(provider);
         if (providerType == null)
-            throw new APIRuntimeException(HttpServletResponse.SC_BAD_REQUEST, String.format(MSG_TEMPLATE_UNSUPPORTED_PROVIDER, provider));
+            throw new APIRuntimeException(HttpServletResponse.SC_BAD_REQUEST,
+                    String.format(MSG_TEMPLATE_UNSUPPORTED_PROVIDER, provider));
 
         List<UserProfile> profiles = null;
         if (providerType.isSocial) {
@@ -740,7 +770,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             userDao.deleteSocialProfiles(userId, providerType);
         } else if (providerType.isEnterprise) {
             // TODO
-            throw new APIRuntimeException(HttpServletResponse.SC_NOT_IMPLEMENTED, String.format(MSG_TEMPLATE_UNSUPPORTED_PROVIDER, provider));
+            throw new APIRuntimeException(HttpServletResponse.SC_NOT_IMPLEMENTED,
+                    String.format(MSG_TEMPLATE_UNSUPPORTED_PROVIDER, provider));
         }
 
         return ApiResponseFactory.createResponse(profiles);
@@ -775,7 +806,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         User user = userDao.authenticate(handleOrEmail, password);
 
         if (user != null && user.getId() != null) {
-            if (!user.getStatus().equals(MemberStatus.ACTIVE.getValue()) && !user.getStatus().equals(MemberStatus.UNVERIFIED.getValue())) {
+            if (!user.getStatus().equals(MemberStatus.ACTIVE.getValue())
+                    && !user.getStatus().equals(MemberStatus.UNVERIFIED.getValue())) {
                 throw new APIRuntimeException(SC_UNAUTHORIZED, "Account is deactivated.");
             }
             List<Role> roles = roleDao.getRolesBySubjectId(Long.parseLong(user.getId().getId()));
@@ -791,7 +823,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
     /**
      * API to return roles for a user (by email)
-     * This is supposed to be called from Auth0 custom connection (needed for social logins).
+     * This is supposed to be called from Auth0 custom connection (needed for social
+     * logins).
      *
      * @param email
      * @param request
@@ -1055,7 +1088,6 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         return ApiResponseFactory.createResponse("SUCCESS");
     }
 
-
     @PUT
     @Path("/activate")
     @Timed
@@ -1076,7 +1108,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if (activationRequest.getResendToken() == null) {
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "resendToken"));
         }
-        if (!verifyResendToken(activationRequest.getUserId().toString(), otpActivationAud, activationRequest.getResendToken())) {
+        if (!verifyResendToken(activationRequest.getUserId().toString(), otpActivationAud,
+                activationRequest.getResendToken())) {
             throw new APIRuntimeException(SC_FORBIDDEN, "Invalid token");
         }
         logger.info(String.format("activateUser(%s)", activationRequest.getUserId()));
@@ -1220,8 +1253,10 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     }
 
     /**
-     * This endpoint is used to update email of a specified user (only) in the registration flow.
-     * A bearer token is needed in Authorization header, which is created by getOneTimeToken().
+     * This endpoint is used to update email of a specified user (only) in the
+     * registration flow.
+     * A bearer token is needed in Authorization header, which is created by
+     * getOneTimeToken().
      *
      * @param resourceId User ID
      * @param email      New email address
@@ -1326,14 +1361,13 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         return ApiResponseFactory.createResponse(userInDB);
     }
 
-
     protected void checkParam(PostPutRequest request) {
         if (request == null || request.getParam() == null) {
             throw new APIRuntimeException(SC_BAD_REQUEST, "The request does not contain param data.");
         }
     }
 
-    //TODO: should be PATCH?
+    // TODO: should be PATCH?
     @PUT
     @Path("/resetPassword")
     @Timed
@@ -1400,7 +1434,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         logger.info(String.format("getResetToken(%s, %s)", handle, email));
 
         if ((email == null || email.length() == 0) && (handle == null || handle.length() == 0)) {
-            throw new APIRuntimeException(HttpURLConnection.HTTP_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Email or password"));
+            throw new APIRuntimeException(HttpURLConnection.HTTP_BAD_REQUEST,
+                    String.format(MSG_TEMPLATE_MANDATORY, "Email or password"));
         }
 
         User user = null;
@@ -1419,7 +1454,6 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         List<UserProfile> ssoProfiles = userDao.getSSOProfiles(Utils.toLongValue(user.getId()));
         if (ssoProfiles != null && ssoProfiles.size() > 0)
             throw new APIRuntimeException(HttpURLConnection.HTTP_FORBIDDEN, MSG_TEMPLATE_NOT_ALLOWED_TO_RESET_PASSWORD);
-
 
         logger.debug(String.format("user[%s].handle: %s", user.getId(), user.getHandle()));
 
@@ -1485,7 +1519,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         logger.info(String.format("validateHandle(%s)", handle));
 
         if (handle == null || handle.length() == 0)
-            throw new APIRuntimeException(HttpServletResponse.SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "handle"));
+            throw new APIRuntimeException(HttpServletResponse.SC_BAD_REQUEST,
+                    String.format(MSG_TEMPLATE_MANDATORY, "handle"));
 
         User user = new User();
         user.setHandle(handle);
@@ -1508,7 +1543,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         logger.info(String.format("validateEmail(%s)", email));
 
         if (email == null || email.length() == 0)
-            throw new APIRuntimeException(HttpServletResponse.SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "email"));
+            throw new APIRuntimeException(HttpServletResponse.SC_BAD_REQUEST,
+                    String.format(MSG_TEMPLATE_MANDATORY, "email"));
 
         User user = new User();
         user.setEmail(email);
@@ -1532,16 +1568,19 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         logger.info(String.format("validateSocial(userId=%s, provider=%s)", socialUserId, socialProvider));
 
         if (socialUserId == null || socialUserId.length() == 0)
-            throw new APIRuntimeException(HttpServletResponse.SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "socialUserId"));
+            throw new APIRuntimeException(HttpServletResponse.SC_BAD_REQUEST,
+                    String.format(MSG_TEMPLATE_MANDATORY, "socialUserId"));
         if (socialProvider == null || socialProvider.length() == 0)
-            throw new APIRuntimeException(HttpServletResponse.SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "socialProvider"));
+            throw new APIRuntimeException(HttpServletResponse.SC_BAD_REQUEST,
+                    String.format(MSG_TEMPLATE_MANDATORY, "socialProvider"));
 
         UserProfile profile = new UserProfile();
         profile.setUserId(socialUserId);
         profile.setProviderType(socialProvider);
 
         if (profile.getProviderTypeEnum() == null || !profile.getProviderTypeEnum().isSocial)
-            throw new APIRuntimeException(HttpServletResponse.SC_BAD_REQUEST, String.format(MSG_TEMPLATE_UNSUPPORTED_PROVIDER, socialProvider));
+            throw new APIRuntimeException(HttpServletResponse.SC_BAD_REQUEST,
+                    String.format(MSG_TEMPLATE_UNSUPPORTED_PROVIDER, socialProvider));
 
         String err = validateSocialProfile(profile);
 
@@ -1629,7 +1668,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         }
         if (user2faInDb.getId() == null) {
             if (userDao.getEmailCount(userId) > 1) {
-                throw new APIRuntimeException(SC_BAD_REQUEST, "You have multiple accounts registered with same email. Please contact with support.");
+                throw new APIRuntimeException(SC_BAD_REQUEST,
+                        "You have multiple accounts registered with same email. Please contact with support.");
             }
         }
         Boolean oldMfaStatus = user2faInDb.getMfaEnabled() == null ? false : user2faInDb.getMfaEnabled();
@@ -1652,7 +1692,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             user2faInDb = userDao.findUser2faById(user2faInDb.getId());
         }
         if (!oldDiceStatus.equals(user2faInDb.getDiceEnabled())) {
-            sendSlackNotification(handle, null, user2faInDb.getDiceEnabled() ? "DICE enabled :smile_cat:" : "DICE disabled :crying_cat_face:");
+            sendSlackNotification(handle, null,
+                    user2faInDb.getDiceEnabled() ? "DICE enabled :smile_cat:" : "DICE disabled :crying_cat_face:");
         }
         return ApiResponseFactory.createResponse(user2faInDb);
     }
@@ -1865,7 +1906,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         }
 
         String otp = Utils.generateRandomString(ALPHABET_DIGITS_EN, 6);
-        String resendToken = generateResendToken(userOtp.getUserId().toString(), otp2faAud, diceAuth.getOtpDuration().intValue() * 60);
+        String resendToken = generateResendToken(userOtp.getUserId().toString(), otp2faAud,
+                diceAuth.getOtpDuration().intValue() * 60);
         if (userOtp.getId() == null) {
             userDao.insertUserOtp(userOtp.getUserId(), otp2faMode, otp, diceAuth.getOtpDuration(), false, 0);
         } else {
@@ -2001,7 +2043,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
         // return 400 when token has been issued
         if (token != null)
-            throw new APIRuntimeException(HttpURLConnection.HTTP_BAD_REQUEST, "One-Time Token has been issued."); //TODO: MSG
+            throw new APIRuntimeException(HttpURLConnection.HTTP_BAD_REQUEST, "One-Time Token has been issued."); // TODO:
+                                                                                                                  // MSG
 
         // generate token
         token = generateOneTimeToken(user, getDomain(), getOneTimeTokenExpirySeconds());
@@ -2078,7 +2121,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
     protected void checkResourceId(TCID id) {
         if (id == null) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(Constants.MSG_TEMPLATE_MANDATORY, "resourceId"));
+            throw new APIRuntimeException(SC_BAD_REQUEST,
+                    String.format(Constants.MSG_TEMPLATE_MANDATORY, "resourceId"));
         }
 
         if (!Utils.isValid(id))
@@ -2086,8 +2130,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     }
 
     protected String getTopicForUpdatedStatus(String newStatus) {
-        return MemberStatus.ACTIVE.getValue().equals(newStatus) ?
-                "event.user.activated" : "event.user.deactivated";
+        return MemberStatus.ACTIVE.getValue().equals(newStatus) ? "event.user.activated" : "event.user.deactivated";
     }
 
     protected boolean isValidStatusValue(String status) {
@@ -2097,7 +2140,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     protected String getResetPasswordUrlPrefix(HttpServletRequest request) {
         String resetPasswordUrlPrefix = request.getParameter("resetPasswordUrlPrefix");
         if (resetPasswordUrlPrefix != null) {
-            // Sanitize / ensure domains other than topcoder.com or topcoder-dev.com can't be used.
+            // Sanitize / ensure domains other than topcoder.com or topcoder-dev.com can't
+            // be used.
             int i = resetPasswordUrlPrefix.indexOf("://");
             i = i < 0 ? 0 : i + 3;
             String domainName = resetPasswordUrlPrefix.substring(i);
@@ -2117,9 +2161,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         String source = request.getParameter("source");
         String domain = getDomain() != null ? getDomain() : "topcoder.com";
         String template = "https://%s.%s/reset-password";
-        return "connect".equalsIgnoreCase(source) ?
-                String.format(template, "connect", domain) :
-                String.format(template, "www", domain);
+        return "connect".equalsIgnoreCase(source) ? String.format(template, "connect", domain)
+                : String.format(template, "www", domain);
     }
 
     protected String generateResetToken() {
@@ -2166,7 +2209,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
     /**
      * Validates country#code and country#name.
-     * If the country has value on these fields, the method checks they are existing in "country" table.
+     * If the country has value on these fields, the method checks they are existing
+     * in "country" table.
      *
      * @param country the country to validate
      * @return null if country is valid. otherwise error message.
@@ -2224,7 +2268,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if (userId != null) {
             List<UserProfile> profiles = userDao.getSocialProfiles(userId, provider);
             if (profiles != null && profiles.size() > 0)
-                return MSG_TEMPLATE_USER_ALREADY_BOUND_WITH_PROVIDER; // user is already bound with the specified provider
+                return MSG_TEMPLATE_USER_ALREADY_BOUND_WITH_PROVIDER; // user is already bound with the specified
+                                                                      // provider
         }
 
         if (userDao.socialUserExists(profile))
@@ -2291,7 +2336,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
     public void setDomain(String domain) {
         this.domain = domain;
-        this.domainEnv = domain.toLowerCase().contains("dev") ? "DEV" : domain.toLowerCase().contains("qa") ? "QA" : "PROD";
+        this.domainEnv = domain.toLowerCase().contains("dev") ? "DEV"
+                : domain.toLowerCase().contains("qa") ? "QA" : "PROD";
     }
 
     public String getSendgridTemplateId() {
@@ -2345,7 +2391,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     protected void publishUserEvent(String topic, User user) {
         if (user == null)
             return;
-        logger.info(String.format("Publishing a user event to '%s'. userId: %s, handle: %s", topic, user.getId(), user.getHandle()));
+        logger.info(String.format("Publishing a user event to '%s'. userId: %s, handle: %s", topic, user.getId(),
+                user.getHandle()));
 
         /**
          * trigger event for new kafka
@@ -2454,7 +2501,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode body = mapper.createObjectNode();
         body.put("channel", diceAuth.getSlackChannelId());
-        body.put("text", String.format("[%s] %s%s : %s", domainEnv, handle, email == null ? "" : String.format(" (%s)", email), message));
+        body.put("text", String.format("[%s] %s%s : %s", domainEnv, handle,
+                email == null ? "" : String.format(" (%s)", email), message));
         try {
             new Request("https://slack.com/api/chat.postMessage", "POST")
                     .header("Authorization", "Bearer " + diceAuth.getSlackKey())
@@ -2466,7 +2514,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     }
 
     protected NotificationPayload createActivationNotificationPayload(User user, String redirectUrl) {
-        //If for Connect registration, send activation email with activation code only.
+        // If for Connect registration, send activation email with activation code only.
         boolean codeOnly = user.getUtmSource() != null && user.getUtmSource().contains("connect");
         if (codeOnly)
             return new NotificationPayload.ActivationCodeOnlyPayload(user, redirectUrl);
@@ -2476,7 +2524,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
     protected void notifyPasswordReset(User user, String resetToken, String resetPasswordUrlPrefix) {
         publishNotificationEvent(
-                new NotificationPayload.PasswordResetPayload(user, resetToken, getResetTokenExpirySeconds(), resetPasswordUrlPrefix).getMailRepresentation());
+                new NotificationPayload.PasswordResetPayload(user, resetToken, getResetTokenExpirySeconds(),
+                        resetPasswordUrlPrefix).getMailRepresentation());
     }
 
     protected void notifyWelcome(User user) {
@@ -2502,7 +2551,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             if (topic != null) {
                 logger.debug(String.format("Publishing an event to '%s'.", topic));
             }
-            //throw new IllegalStateException("eventProducer must be configured.");
+            // throw new IllegalStateException("eventProducer must be configured.");
 
             try {
                 this.fireEvent(payload);
@@ -2518,14 +2567,16 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             logger.debug(String.format("Publishing an event to '%s'.", topic));
             String strPayload = this.objectMapper.writeValueAsString(payload);
 
-          /* JIRA-Plat-130
-            try {
-                this.eventProducer.publish(topic, strPayload);
-            } catch (Exception e) {
-                logger.error(String.format("Failed to publish an event. topic: %s, payload: %s", topic, strPayload), e);
-            }
-           */
-
+            /*
+             * JIRA-Plat-130
+             * try {
+             * this.eventProducer.publish(topic, strPayload);
+             * } catch (Exception e) {
+             * logger.error(String.
+             * format("Failed to publish an event. topic: %s, payload: %s", topic,
+             * strPayload), e);
+             * }
+             */
 
         } catch (Exception e) {
             logger.error(String.format("Failed to convert the payload - %s", payload), e);
