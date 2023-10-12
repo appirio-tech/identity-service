@@ -4,24 +4,25 @@ import org.joda.time.DateTime;
 
 public class UserDiceAttributes {
 
-	private Long id;
+	private Long mfaId;
 	private long userId;
 	private String handle;
 	private String firstName;
-	private String email;
 	private Boolean mfaEnabled;
 	private Boolean diceEnabled;
 	private Long diceConnectionId;
+	private String diceJobId;
 	private String diceConnection;
 	private Boolean diceConnectionAccepted;
+	private DateTime diceJobCreatedAt;
 	private DateTime diceConnectionCreatedAt;
 
-	public Long getId() {
-		return id;
+	public Long getMfaId() {
+		return mfaId;
 	}
 
-	public void setId(Long id) {
-		this.id = id;
+	public void setMfaId(Long mfaId) {
+		this.mfaId = mfaId;
 	}
 
 	public long getUserId() {
@@ -46,14 +47,6 @@ public class UserDiceAttributes {
 
 	public void setFirstName(String firstName) {
 		this.firstName = firstName;
-	}
-
-	public String getEmail() {
-		return email;
-	}
-
-	public void setEmail(String email) {
-		this.email = email;
 	}
 
 	public Boolean getMfaEnabled() {
@@ -88,12 +81,28 @@ public class UserDiceAttributes {
 		this.diceConnection = diceConnection;
 	}
 
+	public String getDiceJobId() {
+		return diceJobId;
+	}
+
+	public void setDiceJobId(String diceJobId) {
+		this.diceJobId = diceJobId;
+	}
+
 	public Boolean getDiceConnectionAccepted() {
 		return diceConnectionAccepted;
 	}
 
 	public void setDiceConnectionAccepted(Boolean diceConnectionAccepted) {
 		this.diceConnectionAccepted = diceConnectionAccepted;
+	}
+
+	public DateTime getDiceJobCreatedAt() {
+		return diceJobCreatedAt;
+	}
+
+	public void setDiceJobCreatedAt(DateTime diceJobCreatedAt) {
+		this.diceJobCreatedAt = diceJobCreatedAt;
 	}
 
 	public DateTime getDiceConnectionCreatedAt() {

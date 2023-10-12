@@ -1718,30 +1718,55 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         }
         Long userId = Utils.toLongValue(id);
 
-        UserDiceAttributes diceAttributes = userDao.findUserDiceAttributesByUserId(userId);
+        UserDiceAttributes diceAttributes = userDao.findUserDiceByUserId(userId);
         if (diceAttributes == null)
             throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
-        if (diceAttributes.getId() == null) {
+        if (diceAttributes.getMfaId() == null || !diceAttributes.getMfaEnabled()) {
             throw new APIRuntimeException(SC_BAD_REQUEST, "MFA is not enabled for user");
         }
-        if (diceAttributes.getDiceConnectionId() != null) {
-            if (!diceAttributes.getDiceConnectionAccepted()
-                    && DateTime.now().isBefore(diceAttributes.getDiceConnectionCreatedAt().plusMinutes(5))) {
-                DiceConnection diceConnection = new DiceConnection();
-                diceConnection.setId(diceAttributes.getDiceConnectionId());
-                diceConnection.setAccepted(diceAttributes.getDiceConnectionAccepted());
-                diceConnection.setCreatedAt(diceAttributes.getDiceConnectionCreatedAt());
-                diceConnection.setConnection(diceAuth.getDiceApiUrl() + "/web/connection/inviteurl/"
-                        + diceAttributes.getDiceConnection());
-                sendSlackNotification(diceAttributes.getHandle(), diceAttributes.getEmail(), "Reusing DICE connection");
-                return ApiResponseFactory.createResponse(diceConnection);
-            }
+        if (diceAttributes.getDiceEnabled()) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, "DICE is already enabled");
         }
+        if (diceAttributes.getDiceConnectionId() != null) {
+            DiceConnection diceConnection = new DiceConnection();
+            if (diceAttributes.getDiceConnection() != null) {
+                diceConnection.setConnection(
+                        diceAuth.getDiceApiUrl() + "/web/connection/inviteurl/" + diceAttributes.getDiceConnection());
+                diceConnection.setAccepted(diceAttributes.getDiceConnectionAccepted());
+            }
+            return ApiResponseFactory.createResponse(diceConnection);
+        }
+
         Response response;
+        Email userEmail = userDao.findUserPrimaryEmail(userId);
+        List<Role> roles = roleDao.getRolesBySubjectId(userId);
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode body = mapper.createObjectNode();
+        body.put("invitee_name", diceAttributes.getHandle());
+        body.put("auto_accept", true);
+        body.put("auto_offer", true);
+        body.put("send_connection_invite", false);
+        ObjectNode email = mapper.createObjectNode();
+        email.put("invitee_email", userEmail.getAddress());
+        body.set("email", email);
+        ArrayNode inviteModes = mapper.createArrayNode();
+        inviteModes.add("email");
+        body.set("invite_modes", inviteModes);
+        ObjectNode attributes = mapper.createObjectNode();
+        attributes.put("Name", diceAttributes.getFirstName());
+        attributes.put("Email", userEmail.getAddress());
+        attributes.put("Role", roles.stream().map(x -> x.getRoleName()).collect(Collectors.joining(",")));
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.YEAR, 1);
+        attributes.put("Valid_Till", new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZ").format(cal.getTime()));
+        body.set("attributes", attributes);
         try {
             response = new Request(diceAuth.getDiceApiUrl() + "/connection/invitation", "POST")
-                    .param("emailId", diceAttributes.getEmail())
+                    .header("org_id", resourceId)
+                    .header("invoked_by", resourceId)
                     .header("x-api-key", diceAuth.getDiceApiKey())
+                    .header("Authorization", "Bearer " + "")
+                    .json(mapper.writeValueAsString(body))
                     .execute();
         } catch (Exception e) {
             logger.error("Error when calling dice connection api", e);
@@ -1752,17 +1777,11 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
                     String.format("Got unexpected response from remote service. %d %s", response.getStatusCode(),
                             response.getMessage()));
         }
-        String connectionId = response.getText();
-        logger.info("Connection created: " + connectionId);
-        if (diceAttributes.getDiceConnectionId() != null) {
-            userDao.deleteDiceConnection(diceAttributes.getDiceConnectionId());
-        }
-        long newId = userDao.insertDiceConnection(diceAttributes.getUserId(), connectionId, false);
+        String jobId = response.getText();
+        logger.info("Job created: " + jobId);
+        userDao.insertDiceConnection(jobId, userId);
         DiceConnection diceConnection = new DiceConnection();
-        diceConnection.setId(newId);
-        diceConnection.setConnection(diceAuth.getDiceApiUrl() + "/web/connection/inviteurl/" + connectionId);
-        diceConnection.setAccepted(false);
-        sendSlackNotification(diceAttributes.getHandle(), diceAttributes.getEmail(), "Created new DICE connection");
+        sendSlackNotification(diceAttributes.getHandle(), userEmail.getAddress(), "Created new DICE connection");
         return ApiResponseFactory.createResponse(diceConnection);
     }
 
@@ -1844,11 +1863,11 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if (jobId == null) {
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "jobId"));
         }
-
+        userDao.updateDiceConnection(jobId, connectionId);
     }
 
     private void handleConnectionAcceptedEvent(String connectionId) {
-
+        userDao.updateDiceConnectionStatus(connectionId, true);
     }
 
     private void handleConnectionDeclinedEvent(String connectionId) {

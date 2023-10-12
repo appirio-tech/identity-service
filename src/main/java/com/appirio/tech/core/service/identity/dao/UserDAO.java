@@ -145,37 +145,33 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
 
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
-            "SELECT mfa.id AS id, u.user_id AS userId, u.handle AS handle, u.first_name AS firstName, e.address AS email, mfa.mfa_enabled AS mfaEnabled, mfa.dice_enabled AS diceEnabled" +
-            ", dc.id AS diceConnectionId, dc.connection AS diceConnection, dc.accepted AS diceConnectionAccepted, dc.created_at AS diceConnectionCreatedAt " +
-            "FROM common_oltp.user AS u LEFT JOIN common_oltp.email AS e ON e.user_id = u.user_id AND e.email_type_id = 1 AND e.primary_ind = 1 " +
+            "SELECT mfa.id AS mfaId, u.user_id AS userId, u.handle AS handle, u.first_name AS firstName, mfa.mfa_enabled AS mfaEnabled, mfa.dice_enabled AS diceEnabled" +
+            ", dc.id AS diceConnectionId, dc.job_id AS diceJobId, dc.connection AS diceConnection, dc.accepted AS diceConnectionAccepted, dc.created_at AS diceJobCreatedAt" +
+            ", dc.con_created_at AS diceConnectionCreatedAt" +
+            "FROM common_oltp.user AS u " +
             "LEFT JOIN common_oltp.user_2fa AS mfa ON mfa.user_id = u.user_id " +
             "LEFT JOIN common_oltp.dice_connection AS dc ON dc.user_id = u.user_id " +
             "WHERE u.user_id = :userId")
-    public abstract UserDiceAttributes findUserDiceAttributesByUserId(@Bind("userId") long userId);
-
-    @RegisterMapperFactory(TCBeanMapperFactory.class)
-    @SqlQuery(
-            "SELECT mfa.id AS id, u.user_id AS userId, u.handle AS handle, u.first_name AS firstName, e.address AS email, mfa.mfa_enabled AS mfaEnabled, mfa.dice_enabled AS diceEnabled" +
-            ", dc.id AS diceConnectionId, dc.connection AS diceConnection, dc.accepted AS diceConnectionAccepted, dc.created_at AS diceConnectionCreatedAt " +
-            "FROM common_oltp.user AS u JOIN common_oltp.email AS e ON e.user_id = u.user_id " +
-            "LEFT JOIN common_oltp.user_2fa AS mfa ON mfa.user_id = u.user_id " +
-            "LEFT JOIN common_oltp.dice_connection AS dc ON dc.user_id = u.user_id " +
-            "WHERE  LOWER(e.address) = LOWER(:email)")
-    public abstract List<UserDiceAttributes> findAllUserDiceAttributesByEmail(@Bind("email") String email);
+    public abstract UserDiceAttributes findUserDiceByUserId(@Bind("userId") long userId);
 
     @SqlQuery("INSERT INTO common_oltp.dice_connection " +
-            "(user_id, connection, accepted) VALUES " +
-            "(:userId, :connection, :accepted) RETURNING id")
-    public abstract long insertDiceConnection(@Bind("userId") long userId, @Bind("connection") String connection, @Bind("accepted") boolean accepted);
+            "(job_id, user_id) VALUES " +
+            "(:jobId, :userId)")
+    public abstract long insertDiceConnection(@Bind("jobId") String jobId, @Bind("userId") long userId);
 
     @SqlUpdate("DELETE FROM common_oltp.dice_connection " +
             "WHERE id=:id")
     public abstract int deleteDiceConnection(@Bind("id") long id);
 
     @SqlUpdate("UPDATE common_oltp.dice_connection SET " +
+            "connection=:connection " +
+            "WHERE job_id=:jobId")
+    public abstract int updateDiceConnection(@Bind("jobId") String jobId, @Bind("connection") String connection);
+
+    @SqlUpdate("UPDATE common_oltp.dice_connection SET " +
             "accepted=:accepted " +
-            "WHERE id=:id")
-    public abstract int updateDiceConnectionStatus(@Bind("id") long id, @Bind("accepted") boolean accepted);
+            "WHERE connection=:connection")
+    public abstract int updateDiceConnectionStatus(@Bind("connection") String connection, @Bind("accepted") boolean accepted);
 
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
@@ -482,6 +478,10 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
         User paramUser = new User();
         return paramUser;
     }
+
+    public Email findUserPrimaryEmail(long userId) {
+        return createEmailDAO().findPrimaryEmail(userId);
+    }
     
     public User findUserByEmail(String email) {
         if(email==null || email.length()==0)
@@ -508,21 +508,6 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
         }
         
         // nothing matched with email parameter in the result, returns the first one.
-        return users.get(0);
-    }
-
-    public UserDiceAttributes findUserDiceAttributesByEmail(String email) {
-        List<UserDiceAttributes> users = findAllUserDiceAttributesByEmail(email);
-        if (users == null || users.size() == 0)
-            return null;
-
-        if (users.size() == 1)
-            return users.get(0);
-
-        for (UserDiceAttributes user : users) {
-            if (user.getEmail().equals(email))
-                return user;
-        }
         return users.get(0);
     }
   
