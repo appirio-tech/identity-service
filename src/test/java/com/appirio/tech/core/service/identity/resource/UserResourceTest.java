@@ -27,7 +27,6 @@ import com.appirio.tech.core.service.identity.util.auth.Auth0Client;
 import com.appirio.tech.core.service.identity.util.cache.CacheService;
 import com.appirio.tech.core.service.identity.util.event.MailRepresentation;
 import com.appirio.tech.core.service.identity.util.ldap.MemberStatus;
-import com.appirio.tech.core.service.identity.util.m2mscope.User2faFactory;
 import com.appirio.tech.core.service.identity.util.m2mscope.UserProfilesFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -69,8 +68,6 @@ public class UserResourceTest {
     private final RoleDAO mockRoleDao = mock(RoleDAO.class);
     
     private final UserProfilesFactory userProfilesFactory = new UserProfilesFactory();
-
-    private final User2faFactory user2faFactory = new User2faFactory();
     
     @Before
     @SuppressWarnings("serial")
@@ -147,7 +144,7 @@ public class UserResourceTest {
         doNothing().when(eventProducer).publish(anyString(), anyString());
         ObjectMapper objectMapper = mock(ObjectMapper.class);
         when(objectMapper.writeValueAsString(anyObject())).thenReturn("payload");
-        UserResource testee = spy(new UserResource(userDao, mockRoleDao, cache, eventProducer, null, userProfilesFactory, user2faFactory));
+        UserResource testee = spy(new UserResource(userDao, mockRoleDao, cache, eventProducer, null, userProfilesFactory));
         
         // Creating mock: PostPutRequest - give mock user
         UserProfile userProfile = new UserProfile();

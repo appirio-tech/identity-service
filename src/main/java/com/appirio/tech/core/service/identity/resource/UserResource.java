@@ -31,7 +31,6 @@ import com.appirio.tech.core.service.identity.util.cache.CacheService;
 import com.appirio.tech.core.service.identity.util.event.MailRepresentation;
 import com.appirio.tech.core.service.identity.util.event.NotificationPayload;
 import com.appirio.tech.core.service.identity.util.ldap.MemberStatus;
-import com.appirio.tech.core.service.identity.util.m2mscope.User2faFactory;
 import com.appirio.tech.core.service.identity.util.m2mscope.UserProfilesFactory;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTCreator;
@@ -39,14 +38,14 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.codahale.metrics.annotation.Timed;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.dropwizard.auth.Auth;
 import io.dropwizard.jersey.PATCH;
 import org.apache.log4j.Logger;
-import org.joda.time.DateTime;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -54,6 +53,8 @@ import javax.validation.Valid;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.text.SimpleDateFormat;
@@ -99,7 +100,6 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
      */
     private final EventBusServiceClient eventBusServiceClient;
     private final UserProfilesFactory userProfilesFactory;
-    private final User2faFactory user2faFactory;
     protected UserDAO userDao;
     protected CacheService cacheService;
     private int resetTokenExpirySeconds = 30 * 60; // 30min
@@ -134,8 +134,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             RoleDAO roleDao,
             CacheService cacheService,
             EventProducer eventProducer,
-            EventBusServiceClient eventBusServiceClient, UserProfilesFactory userProfilesFactory,
-            User2faFactory user2faFactory) {
+            EventBusServiceClient eventBusServiceClient, UserProfilesFactory userProfilesFactory) {
         this.userDao = userDao;
         this.roleDao = roleDao;
         this.cacheService = cacheService;
@@ -146,12 +145,6 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             this.userProfilesFactory = new UserProfilesFactory();
         } else {
             this.userProfilesFactory = userProfilesFactory;
-        }
-        if (user2faFactory == null) {
-            // create a default one
-            this.user2faFactory = new User2faFactory();
-        } else {
-            this.user2faFactory = user2faFactory;
         }
     }
 
@@ -170,7 +163,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             CacheService cacheService,
             EventProducer eventProducer,
             EventBusServiceClient eventBusServiceClient) {
-        this(userDao, roleDao, cacheService, eventProducer, eventBusServiceClient, null, null);
+        this(userDao, roleDao, cacheService, eventProducer, eventBusServiceClient, null);
     }
 
     private static void checkAccessAndUserProfile(AuthUser authUser, long userId, UserProfile profile,
@@ -896,8 +889,6 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             throw new APIRuntimeException(SC_BAD_REQUEST, "Invalid role: " + newRole);
         }
 
-        List<Role> roles = roleDao.getRolesBySubjectId(userId);
-
         deassignRoleByName("Topcoder Talent", userId);
         deassignRoleByName("Topcoder Customer", userId);
 
@@ -1361,10 +1352,11 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         return ApiResponseFactory.createResponse(userInDB);
     }
 
-    protected void checkParam(PostPutRequest request) {
+    protected <T> T checkParam(PostPutRequest<T> request) {
         if (request == null || request.getParam() == null) {
             throw new APIRuntimeException(SC_BAD_REQUEST, "The request does not contain param data.");
         }
+        return request.getParam();
     }
 
     // TODO: should be PATCH?
@@ -1672,8 +1664,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
                         "You have multiple accounts registered with same email. Please contact with support.");
             }
         }
-        Boolean oldMfaStatus = user2faInDb.getMfaEnabled() == null ? false : user2faInDb.getMfaEnabled();
-        Boolean oldDiceStatus = user2faInDb.getDiceEnabled() == null ? false : user2faInDb.getDiceEnabled();
+        boolean oldMfaStatus = user2faInDb.getMfaEnabled() == null ? false : user2faInDb.getMfaEnabled();
+        boolean oldDiceStatus = user2faInDb.getDiceEnabled() == null ? false : user2faInDb.getDiceEnabled();
         String handle = user2faInDb.getHandle();
         if (user2fa.getMfaEnabled() == null) {
             user2fa.setMfaEnabled(oldMfaStatus);
@@ -1691,8 +1683,11 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
                     user2fa.getDiceEnabled(), Utils.toLongValue(authUser.getUserId()));
             user2faInDb = userDao.findUser2faById(user2faInDb.getId());
         }
-        if (!oldDiceStatus.equals(user2faInDb.getDiceEnabled())) {
-            sendSlackNotification(handle, null,
+        if (oldDiceStatus && !user2faInDb.getDiceEnabled()) {
+            userDao.deleteDiceConnection(userId);
+        }
+        if (user2faInDb.getDiceEnabled() != oldDiceStatus) {
+            sendSlackNotification(handle,
                     user2faInDb.getDiceEnabled() ? "DICE enabled :smile_cat:" : "DICE disabled :crying_cat_face:");
         }
         return ApiResponseFactory.createResponse(user2faInDb);
@@ -1704,7 +1699,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     public ApiResponse getDiceConnection(
             @Auth AuthUser authUser,
             @PathParam("resourceId") String resourceId,
-            @Context HttpServletRequest request) {
+            @Context HttpServletRequest request) throws JsonParseException, JsonMappingException, IOException {
 
         if (authUser == null) {
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Authentication user"));
@@ -1736,8 +1731,17 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             }
             return ApiResponseFactory.createResponse(diceConnection);
         }
+        String jobId = sendDiceInvitation(diceAttributes);
+        logger.info("Job created: " + jobId);
+        userDao.insertDiceConnection(jobId, userId);
+        DiceConnection diceConnection = new DiceConnection();
+        sendSlackNotification(diceAttributes.getHandle(), "Created new DICE connection");
+        return ApiResponseFactory.createResponse(diceConnection);
+    }
 
-        Response response;
+    private String sendDiceInvitation(UserDiceAttributes diceAttributes)
+            throws JsonParseException, JsonMappingException, IOException {
+        long userId = diceAttributes.getUserId();
         Email userEmail = userDao.findUserPrimaryEmail(userId);
         List<Role> roles = roleDao.getRolesBySubjectId(userId);
         ObjectMapper mapper = new ObjectMapper();
@@ -1752,18 +1756,31 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         ArrayNode inviteModes = mapper.createArrayNode();
         inviteModes.add("email");
         body.set("invite_modes", inviteModes);
-        ObjectNode attributes = mapper.createObjectNode();
-        attributes.put("Name", diceAttributes.getFirstName());
-        attributes.put("Email", userEmail.getAddress());
-        attributes.put("Role", roles.stream().map(x -> x.getRoleName()).collect(Collectors.joining(",")));
+        ObjectNode credentialData = mapper.createObjectNode();
+        credentialData.put("schema_name", diceAuth.getSchemaName());
+        credentialData.put("schema_version", diceAuth.getSchemaVersion());
+        ArrayNode attributes = mapper.createArrayNode();
+        ObjectNode nameAttr = attributes.addObject();
+        ObjectNode emailAttr = attributes.addObject();
+        ObjectNode roleAttr = attributes.addObject();
+        ObjectNode validUntilAttr = attributes.addObject();
+        nameAttr.put("name", "Name");
+        nameAttr.put("value", diceAttributes.getFirstName());
+        emailAttr.put("name", "Email");
+        emailAttr.put("value", userEmail.getAddress());
+        roleAttr.put("name", "Role");
+        roleAttr.put("value", roles.stream().map(x -> x.getRoleName()).collect(Collectors.joining(",")));
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.YEAR, 1);
-        attributes.put("Valid_Till", new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZ").format(cal.getTime()));
-        body.set("attributes", attributes);
+        validUntilAttr.put("name", "Valid_Till");
+        validUntilAttr.put("value", new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZ").format(cal.getTime()));
+        credentialData.set("attributes", attributes);
+        body.set("credential_data", credentialData);
+        Response response;
         try {
             response = new Request(diceAuth.getDiceApiUrl() + "/connection/invitation", "POST")
-                    .header("org_id", resourceId)
-                    .header("invoked_by", resourceId)
+                    .header("org_id", diceAuth.getOrgId())
+                    .header("invoked_by", diceAuth.getUserId())
                     .header("x-api-key", diceAuth.getDiceApiKey())
                     .header("Authorization", "Bearer " + "")
                     .json(mapper.writeValueAsString(body))
@@ -1772,54 +1789,14 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             logger.error("Error when calling dice connection api", e);
             throw new APIRuntimeException(SC_INTERNAL_SERVER_ERROR, "Error when calling dice connection api");
         }
-        if (response.getStatusCode() != HttpURLConnection.HTTP_CREATED) {
+        if (response.getStatusCode() != HttpURLConnection.HTTP_OK) {
             throw new APIRuntimeException(HttpURLConnection.HTTP_INTERNAL_ERROR,
                     String.format("Got unexpected response from remote service. %d %s", response.getStatusCode(),
                             response.getMessage()));
         }
-        String jobId = response.getText();
-        logger.info("Job created: " + jobId);
-        userDao.insertDiceConnection(jobId, userId);
-        DiceConnection diceConnection = new DiceConnection();
-        sendSlackNotification(diceAttributes.getHandle(), userEmail.getAddress(), "Created new DICE connection");
-        return ApiResponseFactory.createResponse(diceConnection);
-    }
-
-    @GET
-    @Path("/{resourceId}/diceConnection/{connectionId}")
-    @Timed
-    public ApiResponse getDiceConnectionStatus(
-            @Auth AuthUser authUser,
-            @PathParam("resourceId") String resourceId,
-            @PathParam("connectionId") String connectionId,
-            @Context HttpServletRequest request) {
-
-        if (authUser == null) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Authentication user"));
-        }
-        TCID id = new TCID(resourceId);
-        if (!Utils.isValid(id)) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, Constants.MSG_TEMPLATE_INVALID_ID);
-        }
-        if (!id.equals(authUser.getUserId())) {
-            throw new APIRuntimeException(SC_FORBIDDEN, "Forbidden");
-        }
-        Long userId = Utils.toLongValue(id);
-
-        TCID connectionTCId = new TCID(connectionId);
-        if (!Utils.isValid(connectionTCId)) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, Constants.MSG_TEMPLATE_INVALID_ID);
-        }
-        Long diceConnectionId = Utils.toLongValue(connectionTCId);
-
-        DiceConnection diceConnection = userDao.findDiceConnection(userId, diceConnectionId);
-
-        if (diceConnection == null) {
-            throw new APIRuntimeException(SC_NOT_FOUND, "Connection not found");
-        }
-        diceConnection.setConnection(diceAuth.getDiceApiUrl() + "/web/connection/inviteurl/"
-                + diceConnection.getConnection());
-        return ApiResponseFactory.createResponse(diceConnection);
+        DiceInvitationResponse diceInvitation = new ObjectMapper().readValue(response.getText(),
+                DiceInvitationResponse.class);
+        return diceInvitation.getJobId();
     }
 
     @POST
@@ -1876,86 +1853,6 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
     private void handleCredentialDeclinedEvent(String connectionId) {
 
-    }
-
-    @POST
-    @Path("/2faCredentials")
-    @Timed
-    public ApiResponse issueCredentials(
-            @Auth AuthUser authUser,
-            @Valid PostPutRequest<CredentialRequest> postRequest,
-            @Context HttpServletRequest request) {
-        Utils.checkAccess(authUser, user2faFactory.getCredentialIssuerScopes(), Utils.AdminRoles);
-        checkParam(postRequest);
-        CredentialRequest credential = postRequest.getParam();
-
-        if (credential.getEmail() == null || credential.getEmail().length() == 0) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Email address"));
-        }
-        if (credential.getConnectionId() == null || credential.getConnectionId().length() == 0) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Connection Id"));
-        }
-        logger.info(String.format("issue credential (%s)", credential.getEmail()));
-
-        // find user by email
-        UserDiceAttributes user = userDao.findUserDiceAttributesByEmail(credential.getEmail());
-
-        // return 404 if user is not found
-        if (user == null)
-            throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
-        if (user.getId() == null) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, "MFA is not enabled for user");
-        }
-        if (user.getDiceConnectionId() == null
-                || !user.getDiceConnection().equals(credential.getConnectionId())) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, "Connection not created or renewed");
-        }
-        List<Role> roles = roleDao.getRolesBySubjectId(user.getUserId());
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectNode body = mapper.createObjectNode();
-        body.put("comment", "TC credential");
-        body.put("connection_id", credential.getConnectionId());
-        body.put("cred_def_id", diceAuth.getCredDefId());
-        ObjectNode preview = mapper.createObjectNode();
-        preview.put("@type", diceAuth.getCredPreview());
-        ArrayNode attributes = mapper.createArrayNode();
-        ObjectNode name = attributes.addObject();
-        ObjectNode email = attributes.addObject();
-        ObjectNode role = attributes.addObject();
-        ObjectNode validUntil = attributes.addObject();
-        name.put("name", "Name");
-        name.put("value", user.getFirstName());
-        email.put("name", "Email");
-        email.put("value", user.getEmail());
-        role.put("name", "Role");
-        role.put("value", roles.stream().map(x -> x.getRoleName()).collect(Collectors.joining(",")));
-        Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.YEAR, 1);
-        validUntil.put("name", "Valid_Till");
-        validUntil.put("value", new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZ").format(cal.getTime()));
-        body.set("credential_preview", preview);
-        preview.set("attributes", attributes);
-        Response response;
-        try {
-            response = new Request(diceAuth.getDiceApiUrl() + "/cred/issuance/offer", "POST")
-                    .header("x-api-key", diceAuth.getDiceApiKey())
-                    .json(mapper.writeValueAsString(body))
-                    .execute();
-        } catch (JsonProcessingException e) {
-            logger.error("Error when processing JSON content", e);
-            throw new APIRuntimeException(SC_INTERNAL_SERVER_ERROR, "Error when calling credentialoffer api");
-        } catch (Exception e) {
-            logger.error("Error when calling credentialoffer api", e);
-            throw new APIRuntimeException(SC_INTERNAL_SERVER_ERROR, "Error when calling credentialoffer api");
-        }
-        if (response.getStatusCode() != HttpURLConnection.HTTP_CREATED) {
-            throw new APIRuntimeException(HttpURLConnection.HTTP_INTERNAL_ERROR,
-                    String.format("Got unexpected response from remote service. %d %s", response.getStatusCode(),
-                            response.getMessage()));
-        }
-        userDao.updateDiceConnectionStatus(user.getDiceConnectionId(), true);
-        sendSlackNotification(user.getHandle(), user.getEmail(), "DICE connection accepted");
-        return ApiResponseFactory.createResponse("SUCCESS");
     }
 
     @POST
@@ -2572,12 +2469,11 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         }
     }
 
-    private void sendSlackNotification(String handle, String email, String message) {
+    private void sendSlackNotification(String handle, String message) {
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode body = mapper.createObjectNode();
         body.put("channel", diceAuth.getSlackChannelId());
-        body.put("text", String.format("[%s] %s%s : %s", domainEnv, handle,
-                email == null ? "" : String.format(" (%s)", email), message));
+        body.put("text", String.format("[%s] %s : %s", domainEnv, handle, message));
         try {
             new Request("https://slack.com/api/chat.postMessage", "POST")
                     .header("Authorization", "Bearer " + diceAuth.getSlackKey())
@@ -2639,8 +2535,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             throw new IllegalStateException("objectMapper must be configured.");
 
         try {
-            logger.debug(String.format("Publishing an event to '%s'.", topic));
-            String strPayload = this.objectMapper.writeValueAsString(payload);
+            // logger.debug(String.format("Publishing an event to '%s'.", topic));
+            // String strPayload = this.objectMapper.writeValueAsString(payload);
 
             /*
              * JIRA-Plat-130

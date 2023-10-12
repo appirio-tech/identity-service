@@ -160,8 +160,8 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
     public abstract long insertDiceConnection(@Bind("jobId") String jobId, @Bind("userId") long userId);
 
     @SqlUpdate("DELETE FROM common_oltp.dice_connection " +
-            "WHERE id=:id")
-    public abstract int deleteDiceConnection(@Bind("id") long id);
+            "WHERE user_id=:userId")
+    public abstract int deleteDiceConnection(@Bind("userId") long userId);
 
     @SqlUpdate("UPDATE common_oltp.dice_connection SET " +
             "connection=:connection " +

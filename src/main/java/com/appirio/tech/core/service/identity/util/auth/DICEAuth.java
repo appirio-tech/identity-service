@@ -12,10 +12,19 @@ public class DICEAuth {
     private String diceApiKey;
 
     @NotNull
+    private String orgId;
+
+    @NotNull
+    private String userId;
+
+    @NotNull
     private String tcApiKey;
 
     @NotNull
-    private String credDefId;
+    private String schemaName;
+
+    @NotNull
+    private String schemaVersion;
 
     @NotNull
     private Integer otpDuration;
@@ -26,17 +35,18 @@ public class DICEAuth {
     @NotNull
     private String slackChannelId;
 
-    private String credPreview = "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/credential-preview";
-
     public DICEAuth() {
     }
 
-    public DICEAuth(String diceApiUrl, String diceApiKey, String tcApiKey, String credDefId, Integer otpDuration,
-            String slackKey, String slackChannelId) {
+    public DICEAuth(String diceApiUrl, String diceApiKey, String orgId, String userId, String tcApiKey,
+            String schemaName, String schemaVersion, Integer otpDuration, String slackKey, String slackChannelId) {
         this.diceApiUrl = diceApiUrl;
         this.diceApiKey = diceApiKey;
+        this.orgId = orgId;
+        this.userId = userId;
         this.tcApiKey = tcApiKey;
-        this.credDefId = credDefId;
+        this.schemaName = schemaName;
+        this.schemaVersion = schemaVersion;
         this.otpDuration = otpDuration;
         this.slackKey = slackKey;
         this.slackChannelId = slackChannelId;
@@ -58,6 +68,22 @@ public class DICEAuth {
         this.diceApiKey = diceApiKey;
     }
 
+    public String getOrgId() {
+        return orgId;
+    }
+
+    public void setOrgId(String orgId) {
+        this.orgId = orgId;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+
     public String getTcApiKey() {
         return tcApiKey;
     }
@@ -66,12 +92,20 @@ public class DICEAuth {
         this.tcApiKey = tcApiKey;
     }
 
-    public String getCredDefId() {
-        return credDefId;
+    public String getSchemaName() {
+        return schemaName;
     }
 
-    public void setCredDefId(String credDefId) {
-        this.credDefId = credDefId;
+    public void setSchemaName(String schemaName) {
+        this.schemaName = schemaName;
+    }
+
+    public String getSchemaVersion() {
+        return schemaVersion;
+    }
+
+    public void setSchemaVersion(String schemaVersion) {
+        this.schemaVersion = schemaVersion;
     }
 
     public Integer getOtpDuration() {
@@ -80,14 +114,6 @@ public class DICEAuth {
 
     public void setOtpDuration(Integer otpDuration) {
         this.otpDuration = otpDuration;
-    }
-
-    public String getCredPreview() {
-        return credPreview;
-    }
-
-    public void setCredPreview(String credPreview) {
-        this.credPreview = credPreview;
     }
 
     public String getSlackKey() {

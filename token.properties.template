@@ -53,8 +53,11 @@
 
 @diceAuth.diceApiUrl@={{DICEAUTH_DICE_API_URL}}
 @diceAuth.diceApiKey@={{DICEAUTH_DICE_API_KEY}}
+@diceAuth.orgId@={{DICEAUTH_ORG_ID}}
+@diceAuth.userId@={{DICEAUTH_USER_ID}}
 @diceAuth.tcApiKey@={{DICEAUTH_TC_API_KEY}}
-@diceAuth.credDefId@={{DICEAUTH_CREDDEFID}}
+@diceAuth.schemaName@={{DICEAUTH_SCHEMA_NAME}}
+@diceAuth.schemaVersion@={{DICEAUTH_SCHEMA_VERSION}}
 @diceAuth.otpDuration@={{DICEAUTH_OTP_DURATION}}
 @diceAuth.slackKey@={{SLACK_BOT_KEY}}
 @diceAuth.slackChannelId@={{SLACK_CHANNEL_ID}}
@@ -98,4 +101,3 @@
 @m2mAuthConfig.userProfiles.read@={{M2MAUTHCONFIG_USERPROFILES_READ}}
 @m2mAuthConfig.userProfiles.update@={{M2MAUTHCONFIG_USERPROFILES_UPDATE}}
 @m2mAuthConfig.userProfiles.delete@={{M2MAUTHCONFIG_USERPROFILES_DELETE}}
-@m2mAuthConfig.user2fa.credential@={{M2MAUTHCONFIG_USER2FA_CREDENTIAL}}

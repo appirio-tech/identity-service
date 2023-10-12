@@ -96,8 +96,11 @@ auth0New:
 diceAuth:
   diceApiUrl: @diceAuth.diceApiUrl@
   diceApiKey: @diceAuth.diceApiKey@
+  orgId: @diceAuth.orgId@
+  userId: @diceAuth.userId@
   tcApiKey: @diceAuth.tcApiKey@
-  credDefId: @diceAuth.credDefId@
+  schemaName: @diceAuth.schemaName@
+  schemaVersion: @diceAuth.schemaVersion@
   otpDuration: @diceAuth.otpDuration@
   slackKey: @diceAuth.slackKey@
   slackChannelId: @diceAuth.slackChannelId@
@@ -166,8 +169,6 @@ m2mAuthConfig:
     read: @m2mAuthConfig.userProfiles.read@
     update: @m2mAuthConfig.userProfiles.update@
     delete: @m2mAuthConfig.userProfiles.delete@
-  user2fa:
-    credential: @m2mAuthConfig.user2fa.credential@
   
 # Server settings
 server:
