@@ -1780,13 +1780,16 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         validUntilAttr.put("value", new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZ").format(cal.getTime()));
         credentialData.set("attributes", attributes);
         body.set("credential_data", credentialData);
+        String token = DICEAuth.getDiceAuthToken(diceAuth.getDiceApiUrl(), diceAuth.getUserId(),
+                diceAuth.getOrgId(), diceAuth.getDiceApiKey());
         Response response;
         try {
             response = new Request(diceAuth.getDiceApiUrl() + "/connection/invitation", "POST")
                     .header("org_id", diceAuth.getOrgId())
                     .header("invoked_by", diceAuth.getUserId())
                     .header("x-api-key", diceAuth.getDiceApiKey())
-                    .header("Authorization", "Bearer " + "")
+                    .header("Authorization",
+                            "Bearer " + token)
                     .json(mapper.writeValueAsString(body))
                     .execute();
         } catch (Exception e) {
