@@ -1784,15 +1784,13 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
                 diceAuth.getOrgId(), diceAuth.getDiceApiKey());
         Response response;
         try {
-            String json = mapper.writeValueAsString(body);
-            logger.info(json);
             response = new Request(diceAuth.getDiceApiUrl() + "/connection/invitation", "POST")
                     .header("org_id", diceAuth.getOrgId())
                     .header("invoked_by", diceAuth.getUserId())
                     .header("x-api-key", diceAuth.getDiceApiKey())
                     .header("Authorization",
                             "Bearer " + token)
-                    .json(json)
+                    .json(mapper.writeValueAsString(body))
                     .execute();
         } catch (Exception e) {
             logger.error("Error when calling dice connection api", e);

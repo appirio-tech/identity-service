@@ -154,7 +154,7 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
             "WHERE u.user_id = :userId")
     public abstract UserDiceAttributes findUserDiceByUserId(@Bind("userId") long userId);
 
-    @SqlQuery("INSERT INTO common_oltp.dice_connection " +
+    @SqlUpdate("INSERT INTO common_oltp.dice_connection " +
             "(job_id, user_id) VALUES " +
             "(:jobId, :userId)")
     public abstract long insertDiceConnection(@Bind("jobId") String jobId, @Bind("userId") long userId);
@@ -172,13 +172,6 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
             "accepted=:accepted " +
             "WHERE connection=:connection")
     public abstract int updateDiceConnectionStatus(@Bind("connection") String connection, @Bind("accepted") boolean accepted);
-
-    @RegisterMapperFactory(TCBeanMapperFactory.class)
-    @SqlQuery(
-            "SELECT dc.id AS id, dc.connection AS connection, dc.accepted AS accepted, dc.created_at AS createdAt " +
-            "FROM common_oltp.dice_connection AS dc " +
-            "WHERE dc.id = :id AND dc.user_id = :userId")
-    public abstract DiceConnection findDiceConnection(@Bind("userId") long userId, @Bind("id") long id);
 
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
