@@ -1733,7 +1733,11 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         }
         String jobId = sendDiceInvitation(diceAttributes);
         logger.info("Job created: " + jobId);
-        userDao.insertDiceConnection(jobId, userId);
+        try {
+            userDao.insertDiceConnection(jobId, userId);
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        }
         DiceConnection diceConnection = new DiceConnection();
         sendSlackNotification(diceAttributes.getHandle(), "Created new DICE connection");
         return ApiResponseFactory.createResponse(diceConnection);

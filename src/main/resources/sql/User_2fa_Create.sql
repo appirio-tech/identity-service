@@ -6,7 +6,7 @@ ALTER TABLE common_oltp.dice_connection
 ADD COLUMN job_id CHARACTER VARYING(50),
 ADD COLUMN con_created_at TIMESTAMP(6) WITHOUT TIME ZONE;
 
-UPDATE common_oltp.dice_connection SET job_id="0";
+UPDATE common_oltp.dice_connection SET job_id='0';
 
 ALTER TABLE common_oltp.dice_connection 
 ALTER COLUMN job_id SET NOT NULL

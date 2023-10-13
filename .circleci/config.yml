@@ -148,7 +148,7 @@ workflows:
           context : org-global
           filters:
             branches:
-              only: [dev, 'feature/default-role']
+              only: [dev, 'PLAT-3601']
       # Production build is executed on "master" branch only.
       - "build-prod":
           context : org-global
