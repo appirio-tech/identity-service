@@ -188,7 +188,7 @@ public class DICEAuth {
         if (cachedToken == null || isAppCachedTokenExpired) {
             Response response;
             try {
-                response = new Request(diceApiUrl + "api-token", "GET").header("org_id", orgId)
+                response = new Request(diceApiUrl + "/api-token", "GET").header("org_id", orgId)
                         .header("invoked_by", userId).header("x-api-key", apiKey).execute();
             } catch (Exception e) {
                 logger.error("Error when calling dice auth token api", e);
