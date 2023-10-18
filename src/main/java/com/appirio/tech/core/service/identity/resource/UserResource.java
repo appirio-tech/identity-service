@@ -46,6 +46,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.dropwizard.auth.Auth;
 import io.dropwizard.jersey.PATCH;
 import org.apache.log4j.Logger;
+import org.joda.time.DateTime;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -1702,7 +1703,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             @Context HttpServletRequest request) throws JsonParseException, JsonMappingException, IOException {
 
         if (authUser == null) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "Authentication user"));
+            throw new APIRuntimeException(SC_UNAUTHORIZED,
+                    String.format(MSG_TEMPLATE_MANDATORY, "Authentication user"));
         }
         TCID id = new TCID(resourceId);
         if (!Utils.isValid(id)) {
@@ -1722,7 +1724,10 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if (diceAttributes.getDiceEnabled()) {
             throw new APIRuntimeException(SC_BAD_REQUEST, "DICE is already enabled");
         }
-        if (diceAttributes.getDiceConnectionId() != null) {
+        if (diceAttributes.getDiceConnectionId() != null && ((diceAttributes.getDiceConnection() == null
+                && DateTime.now().isBefore(diceAttributes.getDiceJobCreatedAt().plusMinutes(5)))
+                || (diceAttributes.getDiceConnection() != null
+                        && DateTime.now().isBefore(diceAttributes.getDiceConnectionCreatedAt().plusMinutes(15))))) {
             DiceConnection diceConnection = new DiceConnection();
             if (diceAttributes.getConnectionUrl() != null) {
                 diceConnection.setConnection(diceAttributes.getConnectionUrl());
@@ -1733,13 +1738,18 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         String jobId = sendDiceInvitation(diceAttributes);
         logger.info("Job created: " + jobId);
         try {
-            userDao.insertDiceConnection(jobId, userId);
+            if (diceAttributes.getDiceConnectionId() == null) {
+                userDao.insertDiceConnection(userId);
+                sendSlackNotification(diceAttributes.getHandle(), "Requested DICE connection");
+            } else {
+                userDao.renewDiceConnection(diceAttributes.getDiceConnectionId());
+                sendSlackNotification(diceAttributes.getHandle(), "Requested NEW DICE connection");
+            }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
+            sendSlackNotification(diceAttributes.getHandle(), "Error happened, please check the logs.");
         }
-        DiceConnection diceConnection = new DiceConnection();
-        sendSlackNotification(diceAttributes.getHandle(), "Created new DICE connection");
-        return ApiResponseFactory.createResponse(diceConnection);
+        return ApiResponseFactory.createResponse(new DiceConnection());
     }
 
     private String sendDiceInvitation(UserDiceAttributes diceAttributes)
@@ -1793,9 +1803,11 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
                     .execute();
         } catch (Exception e) {
             logger.error("Error when calling dice connection api", e);
+            sendSlackNotification(diceAttributes.getHandle(), "Error happened, please check the logs.");
             throw new APIRuntimeException(SC_INTERNAL_SERVER_ERROR, "Error when calling dice connection api");
         }
         if (response.getStatusCode() != HttpURLConnection.HTTP_OK) {
+            sendSlackNotification(diceAttributes.getHandle(), "Error happened, please check the logs.");
             throw new APIRuntimeException(HttpURLConnection.HTTP_INTERNAL_ERROR,
                     String.format("Got unexpected response from remote service. %d %s", response.getStatusCode(),
                             response.getMessage()));
@@ -1822,8 +1834,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "connectionId"));
         }
         switch (status.getEvent()) {
-            case "connection-created":
-                handleConnectionCreatedEvent(status.getConnectionId(), status.getJobId(), status.getShortUrl());
+            case "connection-invitation":
+                handleConnectionCreatedEvent(status.getConnectionId(), status.getEmailId(), status.getShortUrl());
                 break;
             case "connection-accepted":
                 handleConnectionAcceptedEvent(status.getConnectionId());
@@ -1842,19 +1854,21 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         return ApiResponseFactory.createResponse("SUCCESS");
     }
 
-    private void handleConnectionCreatedEvent(String connectionId, String jobId, String shortUrl) {
-        if (jobId == null || jobId.isEmpty()) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "jobId"));
+    private void handleConnectionCreatedEvent(String connectionId, String emailId, String shortUrl) {
+        if (emailId == null || emailId.isEmpty()) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "emailId"));
         }
 
         if (shortUrl == null || shortUrl.isEmpty()) {
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "shortUrl"));
         }
-        userDao.updateDiceConnection(jobId, connectionId, shortUrl);
+        userDao.updateDiceConnection(emailId, connectionId, shortUrl);
+        sendSlackNotification(emailId, "Connection created for user. - " + connectionId);
     }
 
     private void handleConnectionAcceptedEvent(String connectionId) {
         userDao.updateDiceConnectionStatus(connectionId, true);
+        sendSlackNotification("connectionId", "User accepted the connection");
     }
 
     private void handleConnectionDeclinedEvent(String connectionId) {

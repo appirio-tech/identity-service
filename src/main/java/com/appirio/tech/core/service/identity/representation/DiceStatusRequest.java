@@ -4,7 +4,7 @@ public class DiceStatusRequest {
 
 	private String event;
 	private String connectionId;
-	private String jobId;
+	private String emailId;
 	private String shortUrl;
 
 	public String getEvent() {
@@ -23,12 +23,12 @@ public class DiceStatusRequest {
 		this.connectionId = connectionId;
 	}
 
-	public String getJobId() {
-		return jobId;
+	public String getEmailId() {
+		return emailId;
 	}
 
-	public void setJobId(String jobId) {
-		this.jobId = jobId;
+	public void setEmailId(String emailId) {
+		this.emailId = emailId;
 	}
 
 	public String getShortUrl() {

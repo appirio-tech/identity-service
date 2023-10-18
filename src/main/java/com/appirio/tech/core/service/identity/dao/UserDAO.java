@@ -137,7 +137,7 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
     public abstract List<User> findUsersByEmail(@Bind("email") String email);
 
     @SqlQuery("SELECT COUNT(e2.email_id) " +
-            "FROM common_oltp.user AS u LEFT JOIN common_oltp.email AS e ON e.user_id = u.user_id AND e.email_type_id = 1 AND e.primary_ind = 1 " +
+            "FROM common_oltp.user AS u LEFT JOIN common_oltp.email AS e ON e.user_id = u.user_id AND e.email_type_id = 1 " +
             "LEFT JOIN common_oltp.email AS e2 ON LOWER(e2.address) = LOWER(e.address) " +
             "WHERE u.user_id = :userId")
     public abstract int getEmailCount(@Bind("userId") long userId);
@@ -145,7 +145,7 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
             "SELECT mfa.id AS mfaId, u.user_id AS userId, u.handle AS handle, u.first_name AS firstName, mfa.mfa_enabled AS mfaEnabled, mfa.dice_enabled AS diceEnabled" +
-            ", dc.id AS diceConnectionId, dc.job_id AS diceJobId, dc.connection AS diceConnection, dc.short_url AS connectionUrl, dc.accepted AS diceConnectionAccepted, dc.created_at AS diceJobCreatedAt" +
+            ", dc.id AS diceConnectionId, dc.connection AS diceConnection, dc.short_url AS connectionUrl, dc.accepted AS diceConnectionAccepted, dc.created_at AS diceJobCreatedAt" +
             ", dc.con_created_at AS diceConnectionCreatedAt " +
             "FROM common_oltp.user AS u " +
             "LEFT JOIN common_oltp.user_2fa AS mfa ON mfa.user_id = u.user_id " +
@@ -154,18 +154,23 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
     public abstract UserDiceAttributes findUserDiceByUserId(@Bind("userId") long userId);
 
     @SqlUpdate("INSERT INTO common_oltp.dice_connection " +
-            "(job_id, user_id) VALUES " +
-            "(:jobId, :userId)")
-    public abstract long insertDiceConnection(@Bind("jobId") String jobId, @Bind("userId") long userId);
+            "(user_id) VALUES " +
+            "(:userId)")
+    public abstract long insertDiceConnection(@Bind("userId") long userId);
 
     @SqlUpdate("DELETE FROM common_oltp.dice_connection " +
             "WHERE user_id=:userId")
     public abstract int deleteDiceConnection(@Bind("userId") long userId);
 
     @SqlUpdate("UPDATE common_oltp.dice_connection SET " +
-            "connection=:connection, short_url=:shortUrl " +
-            "WHERE job_id=:jobId")
-    public abstract int updateDiceConnection(@Bind("jobId") String jobId, @Bind("connection") String connection, @Bind("shortUrl") String shortUrl);
+            "connection=null, short_url=null, accepted=false, created_at=current_timestamp, con_created_at=null " +
+            "WHERE id=:id")
+    public abstract int renewDiceConnection(@Bind("id") long id);
+
+    @SqlUpdate("UPDATE common_oltp.dice_connection SET " +
+            "connection=:connection, short_url=:shortUrl, con_created_at = current_timestamp " +
+            "WHERE user_id=(SELECT user_id FROM common_oltp.email WHERE address=:email AND email_type_id = 1)")
+    public abstract int updateDiceConnection(@Bind("email") String email, @Bind("connection") String connection, @Bind("shortUrl") String shortUrl);
 
     @SqlUpdate("UPDATE common_oltp.dice_connection SET " +
             "accepted=:accepted " +

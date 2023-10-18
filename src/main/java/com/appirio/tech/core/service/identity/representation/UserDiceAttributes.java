@@ -11,7 +11,6 @@ public class UserDiceAttributes {
 	private Boolean mfaEnabled;
 	private Boolean diceEnabled;
 	private Long diceConnectionId;
-	private String diceJobId;
 	private String diceConnection;
 	private String connectionUrl;
 	private Boolean diceConnectionAccepted;
@@ -88,14 +87,6 @@ public class UserDiceAttributes {
 
 	public void setConnectionUrl(String connectionUrl) {
 		this.connectionUrl = connectionUrl;
-	}
-
-	public String getDiceJobId() {
-		return diceJobId;
-	}
-
-	public void setDiceJobId(String diceJobId) {
-		this.diceJobId = diceJobId;
 	}
 
 	public Boolean getDiceConnectionAccepted() {
