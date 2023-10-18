@@ -13,6 +13,7 @@ public class UserDiceAttributes {
 	private Long diceConnectionId;
 	private String diceJobId;
 	private String diceConnection;
+	private String connectionUrl;
 	private Boolean diceConnectionAccepted;
 	private DateTime diceJobCreatedAt;
 	private DateTime diceConnectionCreatedAt;
@@ -79,6 +80,14 @@ public class UserDiceAttributes {
 
 	public void setDiceConnection(String diceConnection) {
 		this.diceConnection = diceConnection;
+	}
+
+	public String getConnectionUrl() {
+		return connectionUrl;
+	}
+
+	public void setConnectionUrl(String connectionUrl) {
+		this.connectionUrl = connectionUrl;
 	}
 
 	public String getDiceJobId() {

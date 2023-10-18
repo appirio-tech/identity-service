@@ -5,6 +5,7 @@ public class DiceStatusRequest {
 	private String event;
 	private String connectionId;
 	private String jobId;
+	private String shortUrl;
 
 	public String getEvent() {
 		return event;
@@ -28,5 +29,13 @@ public class DiceStatusRequest {
 
 	public void setJobId(String jobId) {
 		this.jobId = jobId;
+	}
+
+	public String getShortUrl() {
+		return shortUrl;
+	}
+
+	public void setShortUrl(String shortUrl) {
+		this.shortUrl = shortUrl;
 	}
 }

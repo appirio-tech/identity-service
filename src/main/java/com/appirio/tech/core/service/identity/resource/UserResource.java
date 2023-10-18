@@ -1724,9 +1724,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         }
         if (diceAttributes.getDiceConnectionId() != null) {
             DiceConnection diceConnection = new DiceConnection();
-            if (diceAttributes.getDiceConnection() != null) {
-                diceConnection.setConnection(
-                        diceAuth.getDiceApiUrl() + "/web/connection/inviteurl/" + diceAttributes.getDiceConnection());
+            if (diceAttributes.getConnectionUrl() != null) {
+                diceConnection.setConnection(diceAttributes.getConnectionUrl());
                 diceConnection.setAccepted(diceAttributes.getDiceConnectionAccepted());
             }
             return ApiResponseFactory.createResponse(diceConnection);
@@ -1819,12 +1818,12 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if (status.getEvent() == null) {
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "event"));
         }
-        if (status.getConnectionId() == null) {
+        if (status.getConnectionId() == null || status.getConnectionId().isEmpty()) {
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "connectionId"));
         }
         switch (status.getEvent()) {
             case "connection-created":
-                handleConnectionCreatedEvent(status.getConnectionId(), status.getJobId());
+                handleConnectionCreatedEvent(status.getConnectionId(), status.getJobId(), status.getShortUrl());
                 break;
             case "connection-accepted":
                 handleConnectionAcceptedEvent(status.getConnectionId());
@@ -1843,11 +1842,15 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         return ApiResponseFactory.createResponse("SUCCESS");
     }
 
-    private void handleConnectionCreatedEvent(String connectionId, String jobId) {
-        if (jobId == null) {
+    private void handleConnectionCreatedEvent(String connectionId, String jobId, String shortUrl) {
+        if (jobId == null || jobId.isEmpty()) {
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "jobId"));
         }
-        userDao.updateDiceConnection(jobId, connectionId);
+
+        if (shortUrl == null || shortUrl.isEmpty()) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "shortUrl"));
+        }
+        userDao.updateDiceConnection(jobId, connectionId, shortUrl);
     }
 
     private void handleConnectionAcceptedEvent(String connectionId) {

@@ -35,7 +35,6 @@ import com.appirio.tech.core.service.identity.dao.ExternalAccountDAO.ExternalAcc
 import com.appirio.tech.core.service.identity.representation.Achievement;
 import com.appirio.tech.core.service.identity.representation.Country;
 import com.appirio.tech.core.service.identity.representation.Credential;
-import com.appirio.tech.core.service.identity.representation.DiceConnection;
 import com.appirio.tech.core.service.identity.representation.User2fa;
 import com.appirio.tech.core.service.identity.representation.UserDiceAttributes;
 import com.appirio.tech.core.service.identity.representation.UserOtp;
@@ -146,7 +145,7 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
             "SELECT mfa.id AS mfaId, u.user_id AS userId, u.handle AS handle, u.first_name AS firstName, mfa.mfa_enabled AS mfaEnabled, mfa.dice_enabled AS diceEnabled" +
-            ", dc.id AS diceConnectionId, dc.job_id AS diceJobId, dc.connection AS diceConnection, dc.accepted AS diceConnectionAccepted, dc.created_at AS diceJobCreatedAt" +
+            ", dc.id AS diceConnectionId, dc.job_id AS diceJobId, dc.connection AS diceConnection, dc.short_url AS connectionUrl, dc.accepted AS diceConnectionAccepted, dc.created_at AS diceJobCreatedAt" +
             ", dc.con_created_at AS diceConnectionCreatedAt " +
             "FROM common_oltp.user AS u " +
             "LEFT JOIN common_oltp.user_2fa AS mfa ON mfa.user_id = u.user_id " +
@@ -164,9 +163,9 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
     public abstract int deleteDiceConnection(@Bind("userId") long userId);
 
     @SqlUpdate("UPDATE common_oltp.dice_connection SET " +
-            "connection=:connection " +
+            "connection=:connection, short_url=:shortUrl " +
             "WHERE job_id=:jobId")
-    public abstract int updateDiceConnection(@Bind("jobId") String jobId, @Bind("connection") String connection);
+    public abstract int updateDiceConnection(@Bind("jobId") String jobId, @Bind("connection") String connection, @Bind("shortUrl") String shortUrl);
 
     @SqlUpdate("UPDATE common_oltp.dice_connection SET " +
             "accepted=:accepted " +
