@@ -1786,7 +1786,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.YEAR, 1);
         validUntilAttr.put("name", "Valid_Till");
-        validUntilAttr.put("value", new SimpleDateFormat("MM/dd/yyyy").format(cal.getTime()));
+        validUntilAttr.put("value", new SimpleDateFormat("MM/dd/yyyy HH:mm").format(cal.getTime()));
         credentialData.set("attributes", attributes);
         body.set("credential_data", credentialData);
         String token = DICEAuth.getDiceAuthToken(diceAuth.getDiceApiUrl(), diceAuth.getUserId(),
@@ -1833,6 +1833,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if (status.getConnectionId() == null || status.getConnectionId().isEmpty()) {
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "connectionId"));
         }
+        logger.info(status.getEvent());
         switch (status.getEvent()) {
             case "connection-invitation":
                 handleConnectionCreatedEvent(status.getConnectionId(), status.getEmailId(), status.getShortUrl());
