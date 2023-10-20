@@ -1871,11 +1871,11 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
 
     private void handleConnectionAcceptedEvent(String connectionId) {
         userDao.updateDiceConnectionStatus(connectionId, true);
-        sendSlackNotification("connectionId", "User accepted the connection");
+        sendSlackNotification(connectionId, "User accepted the connection");
     }
 
     private void handleCredentialIssuanceEvent(String connectionId) {
-
+        sendSlackNotification(connectionId, "User accepted the credential");
     }
 
     private void handleConnectionDeclinedEvent(String connectionId) {
