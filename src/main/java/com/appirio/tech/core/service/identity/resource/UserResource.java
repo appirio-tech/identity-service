@@ -1786,7 +1786,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.YEAR, 1);
         validUntilAttr.put("name", "Valid_Till");
-        validUntilAttr.put("value", new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZ").format(cal.getTime()));
+        validUntilAttr.put("value", new SimpleDateFormat("MM/dd/yyyy").format(cal.getTime()));
         credentialData.set("attributes", attributes);
         body.set("credential_data", credentialData);
         String token = DICEAuth.getDiceAuthToken(diceAuth.getDiceApiUrl(), diceAuth.getUserId(),
@@ -1837,8 +1837,11 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             case "connection-invitation":
                 handleConnectionCreatedEvent(status.getConnectionId(), status.getEmailId(), status.getShortUrl());
                 break;
-            case "connection-accepted":
+            case "connection-response":
                 handleConnectionAcceptedEvent(status.getConnectionId());
+                break;
+            case "credential-issuance":
+                handleCredentialIssuanceEvent(status.getConnectionId());
                 break;
             case "connection-declined":
                 handleConnectionDeclinedEvent(status.getConnectionId());
@@ -1869,6 +1872,10 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     private void handleConnectionAcceptedEvent(String connectionId) {
         userDao.updateDiceConnectionStatus(connectionId, true);
         sendSlackNotification("connectionId", "User accepted the connection");
+    }
+
+    private void handleCredentialIssuanceEvent(String connectionId) {
+
     }
 
     private void handleConnectionDeclinedEvent(String connectionId) {
