@@ -27,6 +27,6 @@ public class DiceConnection {
 	}
 
 	public void setDiceEnabled(Boolean diceEnabled) {
-		this.accepted = diceEnabled;
+		this.diceEnabled = diceEnabled;
 	}
 }
