@@ -1645,8 +1645,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             throw new APIRuntimeException(SC_BAD_REQUEST,
                     String.format(MSG_TEMPLATE_MANDATORY, "mfaEnabled or diceEnabled"));
         }
-        if (!hasAdminRole && (user2fa.getDiceEnabled() != null)) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, "You cannot update dice status");
+        if (user2fa.getDiceEnabled() != null && user2fa.getDiceEnabled().equals(true)) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, "You cannot enable dice");
         }
         logger.info(String.format("update user 2fa(%s) - mfa: %s, dice: %s", resourceId, user2fa.getMfaEnabled(),
                 user2fa.getDiceEnabled()));
@@ -1655,10 +1655,6 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if (user2faInDb == null)
             throw new APIRuntimeException(SC_NOT_FOUND, MSG_TEMPLATE_USER_NOT_FOUND);
 
-        if (!hasAdminRole && (user2fa.getMfaEnabled() != null && user2fa.getMfaEnabled() == false
-                && user2faInDb.getDiceEnabled() != null && user2faInDb.getDiceEnabled() == true)) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, "You cannot disable mfa");
-        }
         if (user2faInDb.getId() == null) {
             if (userDao.getEmailCount(userId) > 1) {
                 throw new APIRuntimeException(SC_BAD_REQUEST,
@@ -1668,6 +1664,9 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         boolean oldMfaStatus = user2faInDb.getMfaEnabled() == null ? false : user2faInDb.getMfaEnabled();
         boolean oldDiceStatus = user2faInDb.getDiceEnabled() == null ? false : user2faInDb.getDiceEnabled();
         String handle = user2faInDb.getHandle();
+        if (user2fa.getMfaEnabled() != null && !user2fa.getMfaEnabled()) {
+            user2fa.setDiceEnabled(false);
+        }
         if (user2fa.getMfaEnabled() == null) {
             user2fa.setMfaEnabled(oldMfaStatus);
         }
@@ -1686,10 +1685,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         }
         if (oldDiceStatus && !user2faInDb.getDiceEnabled()) {
             userDao.deleteDiceConnection(userId);
-        }
-        if (user2faInDb.getDiceEnabled() != oldDiceStatus) {
-            sendSlackNotification(handle,
-                    user2faInDb.getDiceEnabled() ? "DICE enabled :smile_cat:" : "DICE disabled :crying_cat_face:");
+            sendSlackNotification(handle, "DICE disabled :crying_cat_face:");
         }
         return ApiResponseFactory.createResponse(user2faInDb);
     }
@@ -1731,11 +1727,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
                 && DateTime.now().isBefore(diceAttributes.getDiceJobCreatedAt().plusMinutes(5)))
                 || (diceAttributes.getDiceConnection() != null
                         && DateTime.now().isBefore(diceAttributes.getDiceConnectionCreatedAt().plusMinutes(15))))) {
-            if (diceAttributes.getConnectionUrl() != null) {
-                diceConnection.setConnection(diceAttributes.getConnectionUrl());
-                diceConnection.setAccepted(diceAttributes.getDiceConnectionAccepted());
-            }
-            diceConnection.setAccepted(false);
+            diceConnection.setConnection(diceAttributes.getConnectionUrl());
+            diceConnection.setAccepted(diceAttributes.getDiceConnectionAccepted());
             return ApiResponseFactory.createResponse(diceConnection);
         }
         String jobId = sendDiceInvitation(diceAttributes);
@@ -1789,7 +1782,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.YEAR, 1);
         validUntilAttr.put("name", "Valid_Till");
-        validUntilAttr.put("value", new SimpleDateFormat("MM/dd/yyyy HH:mm").format(cal.getTime()));
+        validUntilAttr.put("value", new SimpleDateFormat("dd-MMM-yyyy HH:mm:ss").format(cal.getTime()));
         credentialData.set("attributes", attributes);
         body.set("credential_data", credentialData);
         String token = DICEAuth.getDiceAuthToken(diceAuth.getDiceApiUrl(), diceAuth.getUserId(),
