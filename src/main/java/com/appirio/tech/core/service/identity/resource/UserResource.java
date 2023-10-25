@@ -1645,8 +1645,8 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
             throw new APIRuntimeException(SC_BAD_REQUEST,
                     String.format(MSG_TEMPLATE_MANDATORY, "mfaEnabled or diceEnabled"));
         }
-        if (!hasAdminRole && (user2fa.getDiceEnabled() != null && user2fa.getDiceEnabled() == false)) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, "You cannot disable dice");
+        if (!hasAdminRole && (user2fa.getDiceEnabled() != null)) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, "You cannot update dice status");
         }
         logger.info(String.format("update user 2fa(%s) - mfa: %s, dice: %s", resourceId, user2fa.getMfaEnabled(),
                 user2fa.getDiceEnabled()));
@@ -1721,18 +1721,21 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if (diceAttributes.getMfaId() == null || !diceAttributes.getMfaEnabled()) {
             throw new APIRuntimeException(SC_BAD_REQUEST, "MFA is not enabled for user");
         }
+        DiceConnection diceConnection = new DiceConnection();
         if (diceAttributes.getDiceEnabled()) {
-            throw new APIRuntimeException(SC_BAD_REQUEST, "DICE is already enabled");
+            diceConnection.setDiceEnabled(true);
+            return ApiResponseFactory.createResponse(diceConnection);
         }
+        diceConnection.setDiceEnabled(false);
         if (diceAttributes.getDiceConnectionId() != null && ((diceAttributes.getDiceConnection() == null
                 && DateTime.now().isBefore(diceAttributes.getDiceJobCreatedAt().plusMinutes(5)))
                 || (diceAttributes.getDiceConnection() != null
                         && DateTime.now().isBefore(diceAttributes.getDiceConnectionCreatedAt().plusMinutes(15))))) {
-            DiceConnection diceConnection = new DiceConnection();
             if (diceAttributes.getConnectionUrl() != null) {
                 diceConnection.setConnection(diceAttributes.getConnectionUrl());
                 diceConnection.setAccepted(diceAttributes.getDiceConnectionAccepted());
             }
+            diceConnection.setAccepted(false);
             return ApiResponseFactory.createResponse(diceConnection);
         }
         String jobId = sendDiceInvitation(diceAttributes);
@@ -1833,7 +1836,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if (status.getConnectionId() == null || status.getConnectionId().isEmpty()) {
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "connectionId"));
         }
-        logger.info(status.getEvent());
+        logger.info(status);
         switch (status.getEvent()) {
             case "connection-invitation":
                 handleConnectionCreatedEvent(status.getConnectionId(), status.getEmailId(), status.getShortUrl());
@@ -1866,17 +1869,31 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if (shortUrl == null || shortUrl.isEmpty()) {
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "shortUrl"));
         }
-        userDao.updateDiceConnection(emailId, connectionId, shortUrl);
-        sendSlackNotification(emailId, "Connection created for user. - " + connectionId);
+        int updated = userDao.updateDiceConnection(emailId, connectionId, shortUrl);
+        if (updated == 0) {
+            sendSlackNotification(emailId, "Connection is not created for user. - " + connectionId);
+        } else {
+            sendSlackNotification(emailId, "Connection created for user. - " + connectionId);
+        }
     }
 
     private void handleConnectionAcceptedEvent(String connectionId) {
-        userDao.updateDiceConnectionStatus(connectionId, true);
-        sendSlackNotification(connectionId, "User accepted the connection");
+        int updated = userDao.updateDiceConnectionStatus(connectionId, true);
+        if (updated == 0) {
+            sendSlackNotification(connectionId, "User accepted the connection but connection not found");
+        } else {
+            sendSlackNotification(connectionId, "User accepted the connection");
+        }
     }
 
     private void handleCredentialIssuanceEvent(String connectionId) {
         sendSlackNotification(connectionId, "User accepted the credential");
+        int updated = userDao.enableDiceByConnectionId(connectionId);
+        if (updated == 0) {
+            sendSlackNotification(connectionId, "Dice cannot be enabled");
+        } else {
+            sendSlackNotification(connectionId, "DICE enabled :smile_cat:");
+        }
     }
 
     private void handleConnectionDeclinedEvent(String connectionId) {

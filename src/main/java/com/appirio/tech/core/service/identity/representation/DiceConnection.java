@@ -4,6 +4,7 @@ public class DiceConnection {
 
 	private String connection;
 	private Boolean accepted;
+	private Boolean diceEnabled;
 
 	public String getConnection() {
 		return connection;
@@ -19,5 +20,13 @@ public class DiceConnection {
 
 	public void setAccepted(Boolean accepted) {
 		this.accepted = accepted;
+	}
+
+	public Boolean getDiceEnabled() {
+		return diceEnabled;
+	}
+
+	public void setDiceEnabled(Boolean diceEnabled) {
+		this.accepted = diceEnabled;
 	}
 }

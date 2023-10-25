@@ -169,13 +169,20 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
 
     @SqlUpdate("UPDATE common_oltp.dice_connection SET " +
             "connection=:connection, short_url=:shortUrl, con_created_at = current_timestamp " +
-            "WHERE user_id=(SELECT user_id FROM common_oltp.email WHERE address=:email AND email_type_id = 1)")
+            "WHERE user_id=(SELECT e.user_id FROM common_oltp.email AS e LEFT JOIN common_oltp.user_2fa AS fa ON fa.user_id = e.user_id " +
+            "WHERE e.address=:email AND e.email_type_id = 1 AND fa.dice_enabled = false)")
     public abstract int updateDiceConnection(@Bind("email") String email, @Bind("connection") String connection, @Bind("shortUrl") String shortUrl);
 
     @SqlUpdate("UPDATE common_oltp.dice_connection SET " +
             "accepted=:accepted " +
             "WHERE connection=:connection")
     public abstract int updateDiceConnectionStatus(@Bind("connection") String connection, @Bind("accepted") boolean accepted);
+
+    @SqlUpdate("UPDATE common_oltp.user_2fa SET " +
+            "dice_enabled=true, modified_at=current_timestamp " +
+            "WHERE user_id=(SELECT user_id FROM common_oltp.dice_connection WHERE connection=:connection) " +
+            "AND mfa_enabled = true")
+    public abstract int enableDiceByConnectionId(@Bind("connection") String connection);
 
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
