@@ -1,21 +1,10 @@
 package com.appirio.tech.core.service.identity.representation;
 
-import org.joda.time.DateTime;
-
 public class DiceConnection {
 
-	private Long id;
 	private String connection;
 	private Boolean accepted;
-	private DateTime createdAt;
-
-	public Long getId() {
-		return id;
-	}
-
-	public void setId(Long id) {
-		this.id = id;
-	}
+	private Boolean diceEnabled;
 
 	public String getConnection() {
 		return connection;
@@ -33,11 +22,11 @@ public class DiceConnection {
 		this.accepted = accepted;
 	}
 
-	public DateTime getCreatedAt() {
-		return createdAt;
+	public Boolean getDiceEnabled() {
+		return diceEnabled;
 	}
 
-	public void setCreatedAt(DateTime createdAt) {
-		this.createdAt = createdAt;
+	public void setDiceEnabled(Boolean diceEnabled) {
+		this.diceEnabled = diceEnabled;
 	}
 }

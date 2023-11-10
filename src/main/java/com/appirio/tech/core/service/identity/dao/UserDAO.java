@@ -35,7 +35,6 @@ import com.appirio.tech.core.service.identity.dao.ExternalAccountDAO.ExternalAcc
 import com.appirio.tech.core.service.identity.representation.Achievement;
 import com.appirio.tech.core.service.identity.representation.Country;
 import com.appirio.tech.core.service.identity.representation.Credential;
-import com.appirio.tech.core.service.identity.representation.DiceConnection;
 import com.appirio.tech.core.service.identity.representation.User2fa;
 import com.appirio.tech.core.service.identity.representation.UserDiceAttributes;
 import com.appirio.tech.core.service.identity.representation.UserOtp;
@@ -138,51 +137,52 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
     public abstract List<User> findUsersByEmail(@Bind("email") String email);
 
     @SqlQuery("SELECT COUNT(e2.email_id) " +
-            "FROM common_oltp.user AS u LEFT JOIN common_oltp.email AS e ON e.user_id = u.user_id AND e.email_type_id = 1 AND e.primary_ind = 1 " +
+            "FROM common_oltp.user AS u LEFT JOIN common_oltp.email AS e ON e.user_id = u.user_id AND e.email_type_id = 1 " +
             "LEFT JOIN common_oltp.email AS e2 ON LOWER(e2.address) = LOWER(e.address) " +
             "WHERE u.user_id = :userId")
     public abstract int getEmailCount(@Bind("userId") long userId);
 
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
-            "SELECT mfa.id AS id, u.user_id AS userId, u.handle AS handle, u.first_name AS firstName, e.address AS email, mfa.mfa_enabled AS mfaEnabled, mfa.dice_enabled AS diceEnabled" +
-            ", dc.id AS diceConnectionId, dc.connection AS diceConnection, dc.accepted AS diceConnectionAccepted, dc.created_at AS diceConnectionCreatedAt " +
-            "FROM common_oltp.user AS u LEFT JOIN common_oltp.email AS e ON e.user_id = u.user_id AND e.email_type_id = 1 AND e.primary_ind = 1 " +
+            "SELECT mfa.id AS mfaId, u.user_id AS userId, u.handle AS handle, u.first_name AS firstName, mfa.mfa_enabled AS mfaEnabled, mfa.dice_enabled AS diceEnabled" +
+            ", dc.id AS diceConnectionId, dc.connection AS diceConnection, dc.short_url AS connectionUrl, dc.accepted AS diceConnectionAccepted, dc.created_at AS diceJobCreatedAt" +
+            ", dc.con_created_at AS diceConnectionCreatedAt " +
+            "FROM common_oltp.user AS u " +
             "LEFT JOIN common_oltp.user_2fa AS mfa ON mfa.user_id = u.user_id " +
             "LEFT JOIN common_oltp.dice_connection AS dc ON dc.user_id = u.user_id " +
             "WHERE u.user_id = :userId")
-    public abstract UserDiceAttributes findUserDiceAttributesByUserId(@Bind("userId") long userId);
+    public abstract UserDiceAttributes findUserDiceByUserId(@Bind("userId") long userId);
 
-    @RegisterMapperFactory(TCBeanMapperFactory.class)
-    @SqlQuery(
-            "SELECT mfa.id AS id, u.user_id AS userId, u.handle AS handle, u.first_name AS firstName, e.address AS email, mfa.mfa_enabled AS mfaEnabled, mfa.dice_enabled AS diceEnabled" +
-            ", dc.id AS diceConnectionId, dc.connection AS diceConnection, dc.accepted AS diceConnectionAccepted, dc.created_at AS diceConnectionCreatedAt " +
-            "FROM common_oltp.user AS u JOIN common_oltp.email AS e ON e.user_id = u.user_id " +
-            "LEFT JOIN common_oltp.user_2fa AS mfa ON mfa.user_id = u.user_id " +
-            "LEFT JOIN common_oltp.dice_connection AS dc ON dc.user_id = u.user_id " +
-            "WHERE  LOWER(e.address) = LOWER(:email)")
-    public abstract List<UserDiceAttributes> findAllUserDiceAttributesByEmail(@Bind("email") String email);
-
-    @SqlQuery("INSERT INTO common_oltp.dice_connection " +
-            "(user_id, connection, accepted) VALUES " +
-            "(:userId, :connection, :accepted) RETURNING id")
-    public abstract long insertDiceConnection(@Bind("userId") long userId, @Bind("connection") String connection, @Bind("accepted") boolean accepted);
+    @SqlUpdate("INSERT INTO common_oltp.dice_connection " +
+            "(user_id) VALUES " +
+            "(:userId)")
+    public abstract long insertDiceConnection(@Bind("userId") long userId);
 
     @SqlUpdate("DELETE FROM common_oltp.dice_connection " +
+            "WHERE user_id=:userId")
+    public abstract int deleteDiceConnection(@Bind("userId") long userId);
+
+    @SqlUpdate("UPDATE common_oltp.dice_connection SET " +
+            "connection=null, short_url=null, accepted=false, created_at=current_timestamp, con_created_at=null " +
             "WHERE id=:id")
-    public abstract int deleteDiceConnection(@Bind("id") long id);
+    public abstract int renewDiceConnection(@Bind("id") long id);
+
+    @SqlUpdate("UPDATE common_oltp.dice_connection SET " +
+            "connection=:connection, short_url=:shortUrl, con_created_at = current_timestamp " +
+            "WHERE user_id=(SELECT e.user_id FROM common_oltp.email AS e LEFT JOIN common_oltp.user_2fa AS fa ON fa.user_id = e.user_id " +
+            "WHERE e.address=:email AND e.email_type_id = 1 AND fa.dice_enabled = false)")
+    public abstract int updateDiceConnection(@Bind("email") String email, @Bind("connection") String connection, @Bind("shortUrl") String shortUrl);
 
     @SqlUpdate("UPDATE common_oltp.dice_connection SET " +
             "accepted=:accepted " +
-            "WHERE id=:id")
-    public abstract int updateDiceConnectionStatus(@Bind("id") long id, @Bind("accepted") boolean accepted);
+            "WHERE connection=:connection")
+    public abstract int updateDiceConnectionStatus(@Bind("connection") String connection, @Bind("accepted") boolean accepted);
 
-    @RegisterMapperFactory(TCBeanMapperFactory.class)
-    @SqlQuery(
-            "SELECT dc.id AS id, dc.connection AS connection, dc.accepted AS accepted, dc.created_at AS createdAt " +
-            "FROM common_oltp.dice_connection AS dc " +
-            "WHERE dc.id = :id AND dc.user_id = :userId")
-    public abstract DiceConnection findDiceConnection(@Bind("userId") long userId, @Bind("id") long id);
+    @SqlUpdate("UPDATE common_oltp.user_2fa SET " +
+            "dice_enabled=true, modified_at=current_timestamp " +
+            "WHERE user_id=(SELECT user_id FROM common_oltp.dice_connection WHERE connection=:connection) " +
+            "AND mfa_enabled = true")
+    public abstract int enableDiceByConnectionId(@Bind("connection") String connection);
 
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery(
@@ -482,6 +482,10 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
         User paramUser = new User();
         return paramUser;
     }
+
+    public Email findUserPrimaryEmail(long userId) {
+        return createEmailDAO().findPrimaryEmail(userId);
+    }
     
     public User findUserByEmail(String email) {
         if(email==null || email.length()==0)
@@ -508,21 +512,6 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
         }
         
         // nothing matched with email parameter in the result, returns the first one.
-        return users.get(0);
-    }
-
-    public UserDiceAttributes findUserDiceAttributesByEmail(String email) {
-        List<UserDiceAttributes> users = findAllUserDiceAttributesByEmail(email);
-        if (users == null || users.size() == 0)
-            return null;
-
-        if (users.size() == 1)
-            return users.get(0);
-
-        for (UserDiceAttributes user : users) {
-            if (user.getEmail().equals(email))
-                return user;
-        }
         return users.get(0);
     }
   
