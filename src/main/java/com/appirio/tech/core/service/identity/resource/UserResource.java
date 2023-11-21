@@ -1773,7 +1773,6 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         ObjectNode emailAttr = attributes.addObject();
         ObjectNode roleAttr = attributes.addObject();
         ObjectNode validUntilAttr = attributes.addObject();
-        ObjectNode diceDisplayName = attributes.addObject();
         nameAttr.put("name", "Name");
         nameAttr.put("value", diceAttributes.getFirstName());
         emailAttr.put("name", "Email");
@@ -1784,8 +1783,6 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         cal.add(Calendar.YEAR, 1);
         validUntilAttr.put("name", "Valid_Till");
         validUntilAttr.put("value", new SimpleDateFormat("dd-MMM-yyyy HH:mm:ss").format(cal.getTime()));
-        diceDisplayName.put("name", "dice_display_name");
-        diceDisplayName.put("value", diceAttributes.getHandle());
         credentialData.set("attributes", attributes);
         body.set("credential_data", credentialData);
         String token = DICEAuth.getDiceAuthToken(diceAuth.getDiceApiUrl(), diceAuth.getUserId(),
