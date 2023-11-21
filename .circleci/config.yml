@@ -129,6 +129,14 @@ jobs:
       TEMP_ENV: "dev"
     steps: *build_deploy_steps  
 
+  "build-qa":
+    <<: *defaults
+    environment:
+      DEPLOY_ENV: "QA"
+      LOGICAL_ENV: "qa-pg"
+      PLATFORM_ENV: "qa"
+    steps: *build_deploy_steps
+
   # Build & Deploy against development backend
   "build-prod":
     <<: *defaults
@@ -148,7 +156,13 @@ workflows:
           context : org-global
           filters:
             branches:
-              only: [dev, 'feature/default-role']
+              only: [dev, 'PLAT-3601']
+      # Development builds are executed on "qa" branch only.
+      - "build-qa":
+          context : org-global
+          filters:
+            branches:
+              only: [qa]
       # Production build is executed on "master" branch only.
       - "build-prod":
           context : org-global

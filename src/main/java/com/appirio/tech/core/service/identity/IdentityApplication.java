@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.appirio.eventsbus.api.client.EventProducer;
-import com.appirio.eventsbus.api.client.exception.ProducerInitializationException;
 import com.appirio.tech.core.api.v3.dropwizard.APIApplication;
 import com.appirio.tech.core.api.v3.util.jdbi.TCIDArgumentFactory;
 import com.appirio.tech.core.service.identity.clients.EventBusServiceClient;
@@ -56,7 +55,6 @@ import com.appirio.tech.core.service.identity.util.Utils;
 import com.appirio.tech.core.service.identity.util.auth.Auth0Client;
 import com.appirio.tech.core.service.identity.util.auth.ServiceAccountAuthenticator;
 import com.appirio.tech.core.service.identity.util.cache.CacheService;
-import com.appirio.tech.core.service.identity.util.event.EventClientManager;
 import com.appirio.tech.core.service.identity.util.ldap.LDAPService;
 import com.appirio.tech.core.service.identity.util.shiro.Shiro;
 import com.appirio.tech.core.service.identity.util.store.AuthDataStore;
@@ -234,7 +232,7 @@ public class IdentityApplication extends APIApplication<IdentityConfiguration> {
 		        configuration.getEventBusServiceClientConfig(), configuration.getM2mAuthConfiguration());
 		// Resources::users
     	CacheService cacheService = configuration.getCache().createCacheService();
-    	UserResource userResource = new UserResource(userDao, roleDao, cacheService, eventProducer, eventBusServiceClient, configuration.getM2mAuthConfiguration().getUserProfiles(), configuration.getM2mAuthConfiguration().getUser2fa());
+    	UserResource userResource = new UserResource(userDao, roleDao, cacheService, eventProducer, eventBusServiceClient, configuration.getM2mAuthConfiguration().getUserProfiles());
     	userResource.setAuth0Client(configuration.getAuth0()); // TODO: constructor
 		userResource.setDiceAuth(configuration.getDiceAuth());
     	userResource.setDomain(configuration.getAuthDomain());
