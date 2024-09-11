@@ -95,7 +95,7 @@ echo "copying LDAP keystore file"
 if [ "$CONFIG" = "qa" ]; then
 	aws s3 cp s3://tc-buildproperties-$CONFIG/tc-api-core/TC.prod.ldap.new.keystore $DOCKER_DIR/TC.prod.ldap.keystore
 else
-    aws s3 cp s3://appirio-platform-$CONFIG/application/tc-api-core/$CONFIG/TC.prod.ldap.new.keystore $DOCKER_DIR/TC.prod.ldap.keystore
+    aws s3 cp s3://appirio-platform-$CONFIG/application/tc-api-core/$CONFIG/TC.prod.ldap.sept2024.keystore $DOCKER_DIR/TC.prod.ldap.keystore
 fi
 
 echo "copying environment-specific resources"
