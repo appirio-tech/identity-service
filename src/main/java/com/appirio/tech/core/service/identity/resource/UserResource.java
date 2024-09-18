@@ -1827,35 +1827,35 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         }
         checkParam(postRequest);
         DiceStatusRequest status = postRequest.getParam();
-        if (status.getEvent() == null) {
-            logger.info(String.format("Dice status missing event: %s %s", postRequest, request));
-            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "event"));
+        if (status.getType() == null) {
+            logger.info(String.format("Dice status missing type: %s %s", postRequest, request));
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "type"));
         }
-        if (status.getConnectionId() == null || status.getConnectionId().isEmpty()) {
-            logger.info(String.format("Dice status missing connection ID: %s %s", postRequest, request));
-            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "connectionId"));
+        if (status.getAction() == null || status.getAction().isEmpty()) {
+            logger.info(String.format("Dice status missing action: %s %s", postRequest, request));
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "action"));
         }
         logger.info(status);
-        switch (status.getEvent()) {
-            case "connection-invitation":
-                handleConnectionCreatedEvent(status.getConnectionId(), status.getEmailId(), status.getShortUrl());
-                break;
-            case "connection-response":
-                handleConnectionAcceptedEvent(status.getConnectionId());
-                break;
-            case "credential-issuance":
-                handleCredentialIssuanceEvent(status.getConnectionId());
-                break;
-            case "connection-declined":
-                handleConnectionDeclinedEvent(status.getConnectionId());
-                break;
-            case "credential-declined":
-                handleCredentialDeclinedEvent(status.getConnectionId());
-                break;
-            default:
-                throw new APIRuntimeException(SC_BAD_REQUEST,
-                        String.format("%s is not valid event", status.getEvent()));
-        }
+        // switch (status.getEvent()) {
+        //     case "connection-invitation":
+        //         handleConnectionCreatedEvent(status.getConnectionId(), status.getEmailId(), status.getShortUrl());
+        //         break;
+        //     case "connection-response":
+        //         handleConnectionAcceptedEvent(status.getConnectionId());
+        //         break;
+        //     case "credential-issuance":
+        //         handleCredentialIssuanceEvent(status.getConnectionId());
+        //         break;
+        //     case "connection-declined":
+        //         handleConnectionDeclinedEvent(status.getConnectionId());
+        //         break;
+        //     case "credential-declined":
+        //         handleCredentialDeclinedEvent(status.getConnectionId());
+        //         break;
+        //     default:
+        //         throw new APIRuntimeException(SC_BAD_REQUEST,
+        //                 String.format("%s is not valid event", status.getEvent()));
+        // }
 
         return ApiResponseFactory.createResponse("SUCCESS");
     }
