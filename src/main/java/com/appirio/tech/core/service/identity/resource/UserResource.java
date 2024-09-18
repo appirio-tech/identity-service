@@ -1792,6 +1792,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
                 diceAuth.getOrgId(), diceAuth.getDiceApiKey());
         Response response;
         try {
+            logger.info(String.format("Sending Dice connection invitation with body: %s", mapper.writeValueAsString(body)));
             response = new Request(diceAuth.getDiceApiUrl() + "/connection/invitation", "POST")
                     .header("org_id", diceAuth.getOrgId())
                     .header("invoked_by", diceAuth.getUserId())
