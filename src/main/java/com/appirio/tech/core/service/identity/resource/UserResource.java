@@ -1819,7 +1819,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     @POST
     @Path("/dice-callback")
     @Timed
-    public ApiResponse diceStatus(@Valid PostPutRequest<DiceCallbackRequest> postRequest,
+    public ApiResponse diceCallback(@Valid PostPutRequest<DiceCallbackRequest> postRequest,
             @Context HttpServletRequest request) {
         logger.info(String.format("Dice callback: %s %s", postRequest, request));
         if (!diceAuth.isValidAPIKey(request)) {
