@@ -1824,7 +1824,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if (!diceAuth.isValidAPIKey(request)) {
             throw new APIRuntimeException(SC_FORBIDDEN, "Forbidden");
         }
-        logger.info(String.format("Dice status request: %s", request));
+        logger.error(String.format("Dice status request: %s", request));
         checkParam(postRequest);
         DiceStatusRequest status = postRequest.getParam();
         if (status.getEvent() == null) {
