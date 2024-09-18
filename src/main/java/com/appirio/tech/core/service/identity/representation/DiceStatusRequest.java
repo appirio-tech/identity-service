@@ -2,40 +2,40 @@ package com.appirio.tech.core.service.identity.representation;
 
 public class DiceStatusRequest {
 
-	private String event;
-	private String connectionId;
-	private String emailId;
-	private String shortUrl;
+	private String type;
+	private String action;
+	private String name;
+	private String email;
 
-	public String getEvent() {
-		return event;
+	public String getType() {
+		return type;
 	}
 
-	public void setEvent(String event) {
-		this.event = event;
+	public void setType(String type) {
+		this.type = type;
 	}
 
-	public String getConnectionId() {
-		return connectionId;
+	public String getAction() {
+		return action;
 	}
 
-	public void setConnectionId(String connectionId) {
-		this.connectionId = connectionId;
+	public void setAction(String action) {
+		this.action = action;
 	}
 
-	public String getEmailId() {
-		return emailId;
+	public String getName() {
+		return name;
 	}
 
-	public void setEmailId(String emailId) {
-		this.emailId = emailId;
+	public void setName(String name) {
+		this.name = name;
+	}
+	
+	public String getEmail() {
+		return email;
 	}
 
-	public String getShortUrl() {
-		return shortUrl;
-	}
-
-	public void setShortUrl(String shortUrl) {
-		this.shortUrl = shortUrl;
+	public void setEmail(String email) {
+		this.email = email;
 	}
 }
