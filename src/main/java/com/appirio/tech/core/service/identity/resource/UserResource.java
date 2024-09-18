@@ -1808,7 +1808,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         if (response.getStatusCode() != HttpURLConnection.HTTP_OK) {
             sendSlackNotification(diceAttributes.getHandle(), "Error happened, please check the logs.");
             throw new APIRuntimeException(HttpURLConnection.HTTP_INTERNAL_ERROR,
-                    String.format("Error when calling dice connection api with body. %s %s %d %s", mapper.writeValueAsString(body), token, response.getStatusCode(),
+                    String.format("Error when calling dice connection api with body. %s %s %d %s", mapper.writeValueAsString(body), token,response.getStatusCode(),
                             response.getMessage()));
         }
         DiceInvitationResponse diceInvitation = new ObjectMapper().readValue(response.getText(),
@@ -1817,16 +1817,21 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     }
 
     @POST
-    @Path("/dice-status")
+    @Path("/dice-callback")
     @Timed
-    public ApiResponse diceStatus(@Valid PostPutRequest<DiceStatusRequest> postRequest,
+    public ApiResponse diceStatus(@Valid PostPutRequest<DiceCallbackRequest> postRequest,
             @Context HttpServletRequest request) {
-        logger.info(String.format("Dice status request: %s %s", postRequest, request));
+        logger.info(String.format("Dice callback: %s %s", postRequest, request));
         if (!diceAuth.isValidAPIKey(request)) {
             throw new APIRuntimeException(SC_FORBIDDEN, "Forbidden");
         }
-        checkParam(postRequest);
-        DiceStatusRequest status = postRequest.getParam();
+        
+        if (postRequest == null) {
+            return ApiResponseFactory.createResponse(
+                createValidationResult(true, "Connection success"));
+        }
+
+        DiceCallbackRequest status = postRequest.getParam();
         if (status.getType() == null) {
             logger.info(String.format("Dice status missing type: %s %s", postRequest, request));
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "type"));
@@ -1856,6 +1861,47 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
         //         throw new APIRuntimeException(SC_BAD_REQUEST,
         //                 String.format("%s is not valid event", status.getEvent()));
         // }
+
+        return ApiResponseFactory.createResponse("SUCCESS");
+    }
+
+    @POST
+    @Path("/dice-status")
+    @Timed
+    public ApiResponse diceStatus(@Valid PostPutRequest<DiceStatusRequest> postRequest,
+            @Context HttpServletRequest request) {
+        if (!diceAuth.isValidAPIKey(request)) {
+            throw new APIRuntimeException(SC_FORBIDDEN, "Forbidden");
+        }
+        checkParam(postRequest);
+        DiceStatusRequest status = postRequest.getParam();
+        if (status.getEvent() == null) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "event"));
+        }
+        if (status.getConnectionId() == null || status.getConnectionId().isEmpty()) {
+            throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "connectionId"));
+        }
+        logger.info(status);
+        switch (status.getEvent()) {
+            case "connection-invitation":
+                handleConnectionCreatedEvent(status.getConnectionId(), status.getEmailId(), status.getShortUrl());
+                break;
+            case "connection-response":
+                handleConnectionAcceptedEvent(status.getConnectionId());
+                break;
+            case "credential-issuance":
+                handleCredentialIssuanceEvent(status.getConnectionId());
+                break;
+            case "connection-declined":
+                handleConnectionDeclinedEvent(status.getConnectionId());
+                break;
+            case "credential-declined":
+                handleCredentialDeclinedEvent(status.getConnectionId());
+                break;
+            default:
+                throw new APIRuntimeException(SC_BAD_REQUEST,
+                        String.format("%s is not valid event", status.getEvent()));
+        }
 
         return ApiResponseFactory.createResponse("SUCCESS");
     }
