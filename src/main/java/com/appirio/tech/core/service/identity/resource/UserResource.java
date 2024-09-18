@@ -1821,16 +1821,18 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     @Timed
     public ApiResponse diceStatus(@Valid PostPutRequest<DiceStatusRequest> postRequest,
             @Context HttpServletRequest request) {
-        System.out.println(String.format("Dice status request: %s", request));
+        logger.info(String.format("Dice status request: %s %s", postRequest, request));
         if (!diceAuth.isValidAPIKey(request)) {
             throw new APIRuntimeException(SC_FORBIDDEN, "Forbidden");
         }
         checkParam(postRequest);
         DiceStatusRequest status = postRequest.getParam();
         if (status.getEvent() == null) {
+            logger.info(String.format("Dice status missing event: %s %s", postRequest, request));
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "event"));
         }
         if (status.getConnectionId() == null || status.getConnectionId().isEmpty()) {
+            logger.info(String.format("Dice status missing connection ID: %s %s", postRequest, request));
             throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "connectionId"));
         }
         logger.info(status);
