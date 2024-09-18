@@ -1821,10 +1821,10 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     @Timed
     public ApiResponse diceStatus(@Valid PostPutRequest<DiceStatusRequest> postRequest,
             @Context HttpServletRequest request) {
+        System.out.println(String.format("Dice status request: %s", request));
         if (!diceAuth.isValidAPIKey(request)) {
             throw new APIRuntimeException(SC_FORBIDDEN, "Forbidden");
         }
-        logger.error(String.format("Dice status request: %s", request));
         checkParam(postRequest);
         DiceStatusRequest status = postRequest.getParam();
         if (status.getEvent() == null) {
