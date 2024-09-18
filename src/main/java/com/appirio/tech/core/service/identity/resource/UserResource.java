@@ -1819,8 +1819,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     @POST
     @Path("/dice-callback")
     @Timed
-    public ApiResponse diceCallback(@Auth AuthUser authUser,
-            @Context HttpServletRequest request,
+    public ApiResponse diceCallback(@Context HttpServletRequest request,
             @Context HttpServletResponse response)
     // public ApiResponse diceCallback(@Valid PostPutRequest<DiceCallbackRequest> postRequest,
     //         @Context HttpServletRequest request) 
