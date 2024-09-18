@@ -1801,7 +1801,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
                     .json(mapper.writeValueAsString(body))
                     .execute();
         } catch (Exception e) {
-            logger.error("Error when calling dice connection api", e);
+            logger.error(String.format("Error when calling dice connection api with body: %s", mapper.writeValueAsString(body)), e);
             sendSlackNotification(diceAttributes.getHandle(), "Error happened, please check the logs.");
             throw new APIRuntimeException(SC_INTERNAL_SERVER_ERROR, "Error when calling dice connection api");
         }
