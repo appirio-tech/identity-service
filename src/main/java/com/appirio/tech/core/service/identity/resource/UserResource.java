@@ -1789,6 +1789,7 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
                 diceAuth.getOrgId(), diceAuth.getDiceApiKey());
         Response response;
         try {
+            logger.info(String.format("Sending Dice connection invitation with body: %s", mapper.writeValueAsString(body)));
             response = new Request(diceAuth.getDiceApiUrl() + "/connection/invitation", "POST")
                     .header("org_id", diceAuth.getOrgId())
                     .header("invoked_by", diceAuth.getUserId())
@@ -1798,14 +1799,14 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
                     .json(mapper.writeValueAsString(body))
                     .execute();
         } catch (Exception e) {
-            logger.error("Error when calling dice connection api", e);
+            logger.error(String.format("Error when calling dice connection api with body: %s", mapper.writeValueAsString(body)), e);
             sendSlackNotification(diceAttributes.getHandle(), "Error happened, please check the logs.");
             throw new APIRuntimeException(SC_INTERNAL_SERVER_ERROR, "Error when calling dice connection api");
         }
         if (response.getStatusCode() != HttpURLConnection.HTTP_OK) {
             sendSlackNotification(diceAttributes.getHandle(), "Error happened, please check the logs.");
             throw new APIRuntimeException(HttpURLConnection.HTTP_INTERNAL_ERROR,
-                    String.format("Got unexpected response from remote service. %d %s", response.getStatusCode(),
+                    String.format("Error when calling dice connection api with body. %s %s %d %s", mapper.writeValueAsString(body), token,response.getStatusCode(),
                             response.getMessage()));
         }
         DiceInvitationResponse diceInvitation = new ObjectMapper().readValue(response.getText(),
