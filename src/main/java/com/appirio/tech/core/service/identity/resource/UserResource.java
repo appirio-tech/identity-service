@@ -1818,58 +1818,6 @@ public class UserResource implements GetResource<User>, DDLResource<User> {
     }
 
     @POST
-    @Path("/dice-callback")
-    @Timed
-    public ApiResponse diceCallback(@Context HttpServletRequest request,
-            @Context HttpServletResponse response)
-    // public ApiResponse diceCallback(@Valid PostPutRequest<DiceCallbackRequest> postRequest,
-    //         @Context HttpServletRequest request) 
-    {
-        logger.info(String.format("Dice callback: %s", request));
-        // if (!diceAuth.isValidAPIKey(request)) {
-        //     throw new APIRuntimeException(SC_FORBIDDEN, "Forbidden");
-        // }
-        
-        // if (postRequest == null) {
-        //     return ApiResponseFactory.createResponse(
-        //         createValidationResult(true, "Connection success"));
-        // }
-
-        // DiceCallbackRequest status = postRequest.getParam();
-        // if (status.getType() == null) {
-        //     logger.info(String.format("Dice status missing type: %s %s", postRequest, request));
-        //     throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "type"));
-        // }
-        // if (status.getAction() == null || status.getAction().isEmpty()) {
-        //     logger.info(String.format("Dice status missing action: %s %s", postRequest, request));
-        //     throw new APIRuntimeException(SC_BAD_REQUEST, String.format(MSG_TEMPLATE_MANDATORY, "action"));
-        // }
-        // logger.info(status);
-        // switch (status.getEvent()) {
-        //     case "connection-invitation":
-        //         handleConnectionCreatedEvent(status.getConnectionId(), status.getEmailId(), status.getShortUrl());
-        //         break;
-        //     case "connection-response":
-        //         handleConnectionAcceptedEvent(status.getConnectionId());
-        //         break;
-        //     case "credential-issuance":
-        //         handleCredentialIssuanceEvent(status.getConnectionId());
-        //         break;
-        //     case "connection-declined":
-        //         handleConnectionDeclinedEvent(status.getConnectionId());
-        //         break;
-        //     case "credential-declined":
-        //         handleCredentialDeclinedEvent(status.getConnectionId());
-        //         break;
-        //     default:
-        //         throw new APIRuntimeException(SC_BAD_REQUEST,
-        //                 String.format("%s is not valid event", status.getEvent()));
-        // }
-
-        return ApiResponseFactory.createResponse("SUCCESS");
-    }
-
-    @POST
     @Path("/dice-status")
     @Timed
     public ApiResponse diceStatus(@Valid PostPutRequest<DiceStatusRequest> postRequest,
