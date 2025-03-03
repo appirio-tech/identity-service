@@ -108,7 +108,7 @@ build_deploy_steps: &build_deploy_steps
             source awsenvconf
             source buildenvvar
             # ./master_deploy.sh -d EBS -e $DEPLOY_ENV -t "${PLATFORM_ENV}.${VER}"
-            ./master_deploy.sh -d ECS -e $DEPLOY_ENV -t "${PLATFORM_ENV}.${VER}" -s ${LOGICAL_ENV}_identity_ecs_appvar -i ap-identity-microservice
+            ./master_deploy.sh -d ECS -e $DEPLOY_ENV -t "${PLATFORM_ENV}.${VER}" -s ${LOGICAL_ENV}_identity_ecs_appvar -i ap-identity-microservice -p FARGATE
 
 
 jobs:
