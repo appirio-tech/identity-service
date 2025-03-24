@@ -14,9 +14,6 @@
 @application.sendgrid.selfservice.welcome.template.id@=dummy
 @application.sendgrid.2fa.otp.template.id@=dummy
 
-@ldap.host@=127.0.0.1
-@ldap.port@=389
-@ldap.password@=dummy
 
 @redis.host@=127.0.0.1
 @redis.port@=6379

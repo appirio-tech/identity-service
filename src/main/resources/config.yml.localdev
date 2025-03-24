@@ -91,14 +91,6 @@ diceAuth:
   credDefId: dummy
   otpDuration: 10
 
-# LDAP Settings
-ldap:
-  host: ${DOCKER_IP}
-  port: 389
-  bindDN: cn=admin,dc=topcoder,dc=com
-  bindPassword: topcoder
-  useSSLConnection: false
-
 # Authorized accounts
 serviceAccount:
   type: static

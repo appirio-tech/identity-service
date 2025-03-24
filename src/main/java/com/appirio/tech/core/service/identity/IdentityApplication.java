@@ -55,7 +55,6 @@ import com.appirio.tech.core.service.identity.util.Utils;
 import com.appirio.tech.core.service.identity.util.auth.Auth0Client;
 import com.appirio.tech.core.service.identity.util.auth.ServiceAccountAuthenticator;
 import com.appirio.tech.core.service.identity.util.cache.CacheService;
-import com.appirio.tech.core.service.identity.util.ldap.LDAPService;
 import com.appirio.tech.core.service.identity.util.shiro.Shiro;
 import com.appirio.tech.core.service.identity.util.store.AuthDataStore;
 import com.appirio.tech.core.service.identity.util.zendesk.ZendeskAuthPlugin;
@@ -182,10 +181,6 @@ public class IdentityApplication extends APIApplication<IdentityConfiguration> {
 		jdbi.registerArgumentFactory(new TCIDArgumentFactory());
 		final UserDAO userDao = jdbi.onDemand(UserDAO.class);
 		final IdentityProviderDAO identityProviderDAO = jdbi.onDemand(IdentityProviderDAO.class);
-		
-		// LDAP Utility
-		LDAPService ldapService = configuration.getLdap().createLDAPService();
-		userDao.setLdapService(ldapService);
 		
 		// DynamoDB based DAO
 		AmazonDynamoDBClient dynamoDbClient = new AmazonDynamoDBClient(new DefaultAWSCredentialsProviderChain());
