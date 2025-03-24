@@ -105,9 +105,10 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
 
     @RegisterMapperFactory(TCBeanMapperFactory.class)
     @SqlQuery("SELECT " + USER_COLUMNS + ", " +
-            "e.address AS email, e.status_id AS emailStatus " +
+            "s.password AS credential$encodedPassword, e.address AS email, e.status_id AS emailStatus " +
             "FROM common_oltp.user AS u " +
             "LEFT OUTER JOIN common_oltp.email AS e ON u.user_id = e.user_id AND e.email_type_id = 1 " +
+            "LEFT OUTER JOIN common_oltp.security_user AS s ON u.user_id = s.login_id " +
             "WHERE u.handle_lower = LOWER(:handle)")
     public abstract User findUserByHandle(@Bind("handle") String handle);
 
