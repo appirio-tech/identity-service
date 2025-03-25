@@ -88,16 +88,6 @@ cp $SOURCE_ROOT/target/classes/config.yml $DOCKER_DIR/config.yml
 APPDOMAIN=`cat $DOCKER_DIR/config.yml | grep "authDomain" | sed -e 's/authDomain: //g'`
 echo "[CHECK THIS IS CORRECT] application domain: ${APPDOMAIN}"
 
-echo "copying LDAP keystore file"
-#cp /mnt/ebs/deploy/topcoder/ap-identity/conf/$CONFIG/TC.prod.ldap.keystore $DOCKER_DIR/TC.prod.ldap.keystore
-#aws s3 cp s3://appirio-platform-$CONFIG/application/tc-api-core/$CONFIG/TC.prod.ldap.new.keystore $DOCKER_DIR/TC.prod.ldap.keystore
-
-if [ "$CONFIG" = "qa" ]; then
-	aws s3 cp s3://tc-buildproperties-$CONFIG/tc-api-core/TC.prod.ldap.new.keystore $DOCKER_DIR/TC.prod.ldap.keystore
-else
-    aws s3 cp s3://appirio-platform-$CONFIG/application/tc-api-core/$CONFIG/TC.prod.ldap.sept2024.keystore $DOCKER_DIR/TC.prod.ldap.keystore
-fi
-
 echo "copying environment-specific resources"
 cat $WORK_DIR/config/sumo-template.conf | sed -e "s/@APINAME@/${SERVICE}/g" | sed -e "s/@CONFIG@/${CONFIG}/g" > $DOCKER_DIR/sumo.conf
 cat $WORK_DIR/config/sumo-sources-template.json | sed -e "s/@APINAME@/${SERVICE}/g" | sed -e "s/@CONFIG@/${CONFIG}/g" > $DOCKER_DIR/sumo-sources.json
