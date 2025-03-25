@@ -1,4 +1,4 @@
-FROM appiriodevops/ap-microservice-base:0.0.2
+FROM openjdk:8u141
 
 MAINTAINER devops@appirio.com
 
