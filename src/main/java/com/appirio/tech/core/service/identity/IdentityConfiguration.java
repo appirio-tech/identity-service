@@ -15,7 +15,6 @@ import com.appirio.tech.core.service.identity.util.auth.DICEAuth;
 import com.appirio.tech.core.service.identity.util.auth.ServiceAccountAuthenticatorFactory;
 import com.appirio.tech.core.service.identity.util.cache.CacheServiceFactory;
 import com.appirio.tech.core.service.identity.util.event.EventSystemFactory;
-import com.appirio.tech.core.service.identity.util.ldap.LDAPServiceFactory;
 import com.appirio.tech.core.service.identity.util.shiro.Shiro;
 import com.appirio.tech.core.service.identity.util.store.AuthDataStoreFactory;
 import com.appirio.tech.core.service.identity.util.zendesk.ZendeskFactory;
@@ -71,11 +70,7 @@ public class IdentityConfiguration extends APIBaseConfiguration {
 	@NotNull
 	@JsonProperty
 	private EventSystemFactory eventSystem = new EventSystemFactory();
-	
-	@Valid
-	@JsonProperty
-	private LDAPServiceFactory ldap = new LDAPServiceFactory();
-	
+
 	@Valid
 	@NotNull
 	@JsonProperty
@@ -144,11 +139,7 @@ public class IdentityConfiguration extends APIBaseConfiguration {
 	public DICEAuth getDiceAuth() {
         return diceAuth;
     }
-	
-	public LDAPServiceFactory getLdap() {
-		return ldap;
-	}
-	
+
 	public EventSystemFactory getEventSystem() {
 		return eventSystem;
 	}

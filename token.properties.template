@@ -15,10 +15,6 @@
 @application.sendgrid.selfservice.welcome.template.id@={{SENDGRID_SELF_SERVICE_WELCOME_EMAIL_TEMPLATE_ID}}
 @application.sendgrid.2fa.otp.template.id@={{SENDGRID_2FA_OTP_TEMPLATE_ID}}
 
-@ldap.host@={{LDAP_SERVER}}
-@ldap.port@=389
-@ldap.password@={{LDAP_PASSWORD}}
-
 @redis.host@={{REDIS_HOST}}
 @redis.port@=6379
 

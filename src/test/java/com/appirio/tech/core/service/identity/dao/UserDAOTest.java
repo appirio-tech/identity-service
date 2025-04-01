@@ -37,7 +37,6 @@ import com.appirio.tech.core.service.identity.util.Utils.NumberTrimmingTokenExtr
 import com.appirio.tech.core.service.identity.util.Utils.RegexTokenExtractor;
 import com.appirio.tech.core.service.identity.util.Utils.TokenExtractor;
 import com.appirio.tech.core.service.identity.util.idgen.SequenceDAO;
-import com.appirio.tech.core.service.identity.util.ldap.LDAPService;
 import com.appirio.tech.core.service.identity.util.ldap.MemberStatus;
 
 /**
@@ -1083,7 +1082,6 @@ public class UserDAOTest {
 		}
 		verify(testee).cretateAlgoRating(newUserId);
 		verify(testee).addUserToDefaultGroups(user);
-		verify(testee).registerLDAP(user);
 	}
 	
 	@Test
@@ -1177,7 +1175,6 @@ public class UserDAOTest {
 		verify(testee).registerEmail(newUserId, newEmailId, user.getEmail(), Constants.EMAIL_STATUS_ID_INACTIVE);
 		verify(testee).createCoder(eq(user));
 		verify(testee).addUserToDefaultGroups(user);
-		verify(testee).registerLDAP(user);
 		
 		if(profile.isSocial()) {
 			verify(testee).createSocialUser(newUserId, profile);
@@ -1940,7 +1937,6 @@ public class UserDAOTest {
 		assertTrue("Email should be active after activation.", user.isEmailActive());
 		verify(testee).activateUser(userId);
 		verify(testee).activateEmail(userId);
-		verify(testee).activateLDAP(userId);
 	}
 
 	@Test
@@ -1966,7 +1962,6 @@ public class UserDAOTest {
 		assertFalse("Email should not be active.", user.isEmailActive());
 		verify(testee, never()).activateUser(userId);
 		verify(testee, never()).activateEmail(userId);
-		verify(testee, never()).activateLDAP(userId);
 	}
 	
 	@Test
@@ -1978,7 +1973,6 @@ public class UserDAOTest {
 
 		UserDAO testee = mock(UserDAO.class);
 		doCallRealMethod().when(testee).activate(anyLong());
-		doThrow(RuntimeException.class).when(testee).activateLDAP(userId);
 		
 		// test
 		try {
@@ -1992,7 +1986,6 @@ public class UserDAOTest {
 		assertFalse("Email should not be active.", user.isEmailActive());
 		verify(testee).activateUser(userId);
 		verify(testee).activateEmail(userId);
-		verify(testee).activateLDAP(userId);
 	}
 	
 	@Test
@@ -2011,7 +2004,6 @@ public class UserDAOTest {
 		// verify
 		verify(testee).updateHandle(userId, user.getHandle());
 		verify(testee).updateSecurityUserHandle(userId, user.getHandle());
-		verify(testee).updateHandleLDAP(userId, user.getHandle());
 	}
 	
 	@Test
@@ -2055,32 +2047,8 @@ public class UserDAOTest {
 		// verify
 		verify(testee, never()).updateHandle(anyLong(), anyString());
 		verify(testee, never()).updateSecurityUserHandle(anyLong(), anyString());
-		verify(testee, never()).updateHandleLDAP(anyLong(), anyString());
 	}
 
-	@Test
-	public void testUpdateHandleLDAP() throws Exception {
-		
-		// data
-		long userId = 123456L;
-		String handle = "HANDLE-DUMMY";
-		
-		// mock
-		LDAPService ldapService = mock(LDAPService.class);
-		
-		// testee
-		UserDAO testee = mock(UserDAO.class);
-		doCallRealMethod().when(testee).updateHandleLDAP(anyLong(), anyString());
-		doCallRealMethod().when(testee).setLdapService(any(LDAPService.class));
-		testee.setLdapService(ldapService);
-		
-		// test
-		testee.updateHandleLDAP(userId, handle);
-		
-		// verify
-		verify(ldapService).changeHandleLDAPEntry(userId, handle);
-	}
-	
 	@Test
 	public void testUpdatePrimaryEmail() throws Exception {
 		// data
@@ -2208,7 +2176,6 @@ public class UserDAOTest {
 		
 		assertEquals(MemberStatus.INACTIVE_DUPLICATE_ACCOUNT.getValue(), user.getStatus());
 		verify(testee).updateStatus(userId, user.getStatus());
-		verify(testee).updateStatusLDAP(userId, user.getStatus());
 		verify(testee).createUserAchievement(userId, comment);
 	}
 	
@@ -2234,7 +2201,6 @@ public class UserDAOTest {
 		assertTrue(user.isEmailActive());
 		
 		verify(testee).updateStatus(userId, user.getStatus());
-		verify(testee).updateStatusLDAP(userId, user.getStatus());
 		verify(testee).activateEmail(userId);
 		verify(testee).createUserAchievement(userId, comment);
 	}
@@ -2256,7 +2222,6 @@ public class UserDAOTest {
 		
 		verify(testee).updateStatus(user, null);
 		verify(testee).updateStatus(userId, user.getStatus());
-		verify(testee).updateStatusLDAP(userId, user.getStatus());
 		verify(testee, never()).createUserAchievement(anyLong(), anyString()); // not invoked
 	}
 	
@@ -2308,7 +2273,6 @@ public class UserDAOTest {
 		when(testee.authenticate(any(User.class), anyString())).thenCallRealMethod();
 		when(testee.findUserByHandle(handle)).thenReturn(user); // user exists in DB
 		when(testee.findUserByEmail(email)).thenReturn(user);   // user exists in DB
-		when(testee.authenticateLDAP(handle, password)).thenReturn(true); // user registered in LDAP
 
 		// test
 		assertFalse(handle + " is invalid for the test. This should not be an email.", Utils.isEmail(handle));
@@ -2321,7 +2285,6 @@ public class UserDAOTest {
 		verify(testee).authenticate(any(User.class), eq(password));
 		verify(testee).findUserByHandle(eq(handle));
 		verify(testee, never()).findUserByEmail(eq(email));
-		verify(testee).authenticateLDAP(eq(handle), eq(password));
 	}
 	
 	@Test
@@ -2340,7 +2303,6 @@ public class UserDAOTest {
 		when(testee.authenticate(any(User.class), anyString())).thenCallRealMethod();
 		when(testee.findUserByHandle(handle)).thenReturn(user); // user exists in DB
 		when(testee.findUserByEmail(email)).thenReturn(user);   // user exists in DB
-		when(testee.authenticateLDAP(handle, password)).thenReturn(true); // user registered in LDAP
 
 		// test#
 		assertTrue(email + " is invalid for the test. This should be an email.", Utils.isEmail(email));
@@ -2353,7 +2315,6 @@ public class UserDAOTest {
 		verify(testee).authenticate(any(User.class), eq(password));
 		verify(testee).findUserByEmail(eq(email));
 		verify(testee, never()).findUserByHandle(eq(handle));
-		verify(testee).authenticateLDAP(eq(handle), eq(password));
 	}
 	
 	@Test
@@ -2371,7 +2332,6 @@ public class UserDAOTest {
 		when(testee.authenticate(anyLong(), anyString())).thenCallRealMethod();
 		when(testee.authenticate(any(User.class), anyString())).thenCallRealMethod();
 		when(testee.findUserById(userId)).thenReturn(user); // user exists in DB
-		when(testee.authenticateLDAP(handle, password)).thenReturn(true); // user registered in LDAP
 
 		// test#
 		assertTrue(email + " is invalid for the test. This should be an email.", Utils.isEmail(email));
@@ -2383,28 +2343,8 @@ public class UserDAOTest {
 		verify(testee).authenticate(userId, password);
 		verify(testee).authenticate(any(User.class), eq(password));
 		verify(testee).findUserById(eq(userId));
-		verify(testee).authenticateLDAP(eq(handle), eq(password));
 	}
 	
-	/*
-	@Test
-	public void testAuthenticate_IAEWhenHandleOrEmailIsNull() throws Exception {
-		String password = "PASSWORD";
-		// testee
-		UserDAO testee = mock(UserDAO.class);
-		doCallRealMethod().when(testee).authenticate(anyString(), anyString());
-		doCallRealMethod().when(testee).authenticate(anyLong(), anyString());
-		// test
-		try {
-			// email is null
-			testee.authenticate((String)null, password);
-			fail("IllegalArgumentException should be thrown in the previous step.");
-		} catch (IllegalArgumentException e) {
-		}
-		verify(testee, never()).authenticateLDAP(anyString(), anyString());
-	}
-	*/
-
 	@Test
 	public void testAuthenticate_IAEWhenPasswordIsNull() throws Exception {
 		String email = "jdoe@example.com";
@@ -2419,7 +2359,6 @@ public class UserDAOTest {
 			fail("IllegalArgumentException should be thrown in the previous step.");
 		} catch (IllegalArgumentException e) {
 		}
-		verify(testee, never()).authenticateLDAP(anyString(), anyString());
 	}
 	
 	@Test
@@ -2442,7 +2381,6 @@ public class UserDAOTest {
 		assertNull("The result of authenticate() should be null.", authedUser);
 		
 		verify(testee).findUserByEmail(eq(email));
-		verify(testee, never()).authenticateLDAP(anyString(), anyString());
 	}
 		
 	@Test
@@ -2459,7 +2397,6 @@ public class UserDAOTest {
 		when(testee.authenticate(email, password)).thenCallRealMethod();
 		when(testee.authenticate(any(User.class), eq(password))).thenCallRealMethod();
 		when(testee.findUserByEmail(email)).thenReturn(user); // user exists in DB
-		when(testee.authenticateLDAP(handle, password)).thenReturn(false); // authentication will be failed with the user.
 		
 		// test
 		User authedUser = testee.authenticate(email, password);
@@ -2470,30 +2407,8 @@ public class UserDAOTest {
 		verify(testee).authenticate(email, password);
 		verify(testee).authenticate(any(User.class), eq(password));
 		verify(testee).findUserByEmail(eq(email));
-		verify(testee).authenticateLDAP(eq(handle), eq(password));
 	}
 	
-	@Test
-	public void testAuthenticateLDAP() throws Exception {
-		UserDAO testee = mock(UserDAO.class);
-		doCallRealMethod().when(testee).authenticateLDAP(anyString(), anyString());
-		doCallRealMethod().when(testee).setLdapService(any(LDAPService.class));
-		
-		// mock
-		LDAPService ldapService = mock(LDAPService.class);
-		testee.setLdapService(ldapService);
-		
-		// test data
-		long userId = 123456L;
-		User user = createTestUser(userId);
-
-		// test
-		testee.authenticateLDAP(user.getHandle(), user.getCredential().getPassword());
-		
-		// verify
-		verify(ldapService).authenticateLDAPEntry(eq(user.getHandle()), eq(user.getCredential().getPassword()));
-	}
-
 	@Test
 	public void testUpdateLastLoginDate() throws Exception {
 		
@@ -2528,7 +2443,6 @@ public class UserDAOTest {
 		
 		// verify
 		verify(testee).updatePassword(eq(user.getHandle()), eq(user.getCredential().getEncodedPassword()));
-		verify(testee).updatePasswordLDAP(eq(userId), eq(newPassword));
 	}
 	
 	@Test
@@ -2573,27 +2487,6 @@ public class UserDAOTest {
 		verify(testee, never()).updatePasswordLDAP(anyLong(), anyString());
 	}
 	
-	@Test
-	public void testUpdatePasswordLDAP() throws Exception {
-		// testee
-		UserDAO testee = mock(UserDAO.class);
-		doCallRealMethod().when(testee).updatePasswordLDAP(anyLong(), anyString());
-		doCallRealMethod().when(testee).setLdapService(any(LDAPService.class));
-		
-		// mock
-		LDAPService ldapService = mock(LDAPService.class);
-		testee.setLdapService(ldapService);
-		
-		// test data
-		long userId = 123456L;
-		User user = createTestUser(userId);
-
-		// test
-		testee.updatePasswordLDAP(userId, user.getCredential().getPassword());
-		
-		// verify
-		verify(ldapService).changePasswordLDAPEntry(userId, user.getCredential().getPassword());
-	}
 	
 	@Test
 	public void testGetUserId_LDAPUserProfile() throws Exception {

@@ -54,7 +54,7 @@ If you want to conenct to the database with JDBC, the connection spec is followi
     password: informix
 
 
-### Other services (MySQL,OpenLDAP,Kafka,Redis)
+### Other services (MySQL,Kafka,Redis)
 
 Identity service needs several services to work. They can be run in the docker with docker-compose. 
 Before doing docker-compose, set the environment variable "DOCKER_IP" which is supposed to have valid IP address or hostname assigned to your Docker service. 

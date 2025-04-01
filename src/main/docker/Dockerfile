@@ -1,4 +1,4 @@
-FROM appiriodevops/ap-microservice-base:0.0.2
+FROM openjdk:8u141
 
 MAINTAINER devops@appirio.com
 
@@ -14,8 +14,6 @@ COPY sumo-sources.json ./sumo-sources.json
 COPY tech.core.service.identity.jar ./tech.core.service.identity.jar
 
 COPY config.yml ./config.yml
-
-COPY TC.prod.ldap.keystore ./TC.prod.ldap.keystore
 
 COPY run-service.sh ./run-service.sh
 

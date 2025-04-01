@@ -218,21 +218,6 @@
     </dependency>
     <dependency>
       <groupId>com.topcoder.legacy</groupId>
-      <artifactId>ldap</artifactId>
-      <version>1.0.0</version>
-    </dependency>
-    <dependency>
-      <groupId>com.topcoder.legacy</groupId>
-      <artifactId>ldap_sdk_interface</artifactId>
-      <version>1.0.0</version>
-    </dependency>
-    <dependency>
-      <groupId>com.topcoder.legacy</groupId>
-      <artifactId>ldapjdk</artifactId>
-      <version>1.0.0</version>
-    </dependency>
-    <dependency>
-      <groupId>com.topcoder.legacy</groupId>
       <artifactId>shared</artifactId>
       <version>1.0.0</version>
     </dependency>
