@@ -3,7 +3,7 @@
 
 if [ "$AP_ENV" = "prod" ]
 then
-	java -Dnewrelic.environment=$AP_ENV -javaagent:$NEWRELIC_JAR -DZOOKEEPER_HOSTS_LIST=$ZOOKEEPER_HOSTS_LIST -jar /data/tech.core.service.identity.jar server /data/config.yml
+	java  -DZOOKEEPER_HOSTS_LIST=$ZOOKEEPER_HOSTS_LIST -jar /data/tech.core.service.identity.jar server /data/config.yml
 else
 	java  -DZOOKEEPER_HOSTS_LIST=$ZOOKEEPER_HOSTS_LIST -jar /data/tech.core.service.identity.jar server /data/config.yml
 fi
