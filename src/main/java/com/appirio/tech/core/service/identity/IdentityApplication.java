@@ -35,6 +35,7 @@ import com.appirio.eventsbus.api.client.EventProducer;
 import com.appirio.tech.core.api.v3.dropwizard.APIApplication;
 import com.appirio.tech.core.api.v3.util.jdbi.TCIDArgumentFactory;
 import com.appirio.tech.core.service.identity.clients.EventBusServiceClient;
+import com.appirio.tech.core.service.identity.clients.MemberApiClient;
 import com.appirio.tech.core.service.identity.dao.ClientDAO;
 import com.appirio.tech.core.service.identity.dao.ExternalAccountDAO;
 import com.appirio.tech.core.service.identity.dao.GroupDAO;
@@ -192,6 +193,11 @@ public class IdentityApplication extends APIApplication<IdentityConfiguration> {
 		IdentityProviderResource identityProviderResource = new IdentityProviderResource(identityProviderDAO);
 		environment.jersey().register(identityProviderResource);
 
+		final Client apiClient = new JerseyClientBuilder(environment).using(new JerseyClientConfiguration())
+				.build(getName());
+		final MemberApiClient memberApiClient = new MemberApiClient(apiClient,
+				configuration.getMemberApiClientConfig(), configuration.getM2mAuthConfiguration());
+
 		// RDS
 		final DBIFactory authDBIFactory = new DBIFactory();
 		final DBI authjdbi = authDBIFactory.build(environment, configuration.getAuthorizationDatabase(), "Authorization");
@@ -212,7 +218,7 @@ public class IdentityApplication extends APIApplication<IdentityConfiguration> {
 			roleDAO.setShiroSettings(shiroSettings);
 
 	        // creating new resource for every request
-	        RoleResource roleResource = new RoleResource(roleDAO);
+	        RoleResource roleResource = new RoleResource(roleDAO, memberApiClient);
 	        environment.jersey().register(roleResource);
 
 			final PermissionPolicyDAO policyDAO = authjdbi.onDemand(PermissionPolicyDAO.class);
@@ -221,8 +227,6 @@ public class IdentityApplication extends APIApplication<IdentityConfiguration> {
 			environment.jersey().register(polResource);
 		}
 
-		final Client apiClient = new JerseyClientBuilder(environment).using(new JerseyClientConfiguration())
-                .build(getName());
 		final EventBusServiceClient eventBusServiceClient = new EventBusServiceClient(apiClient, 
 		        configuration.getEventBusServiceClientConfig(), configuration.getM2mAuthConfiguration());
 		// Resources::users

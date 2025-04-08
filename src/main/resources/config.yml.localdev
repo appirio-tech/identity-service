@@ -190,3 +190,7 @@ logging:
       archivedLogFilenamePattern: /var/log/ap-identity-%d.log
       archivedFileCount: 50
       timeZone: UTC
+
+#for Member API, is for the real dev environment
+memberApiClient:
+  endpoint: end-point-url

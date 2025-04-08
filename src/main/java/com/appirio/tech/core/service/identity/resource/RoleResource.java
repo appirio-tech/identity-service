@@ -16,8 +16,11 @@ import com.appirio.tech.core.api.v3.resource.GetResource;
 import com.appirio.tech.core.api.v3.response.ApiResponse;
 import com.appirio.tech.core.api.v3.response.ApiResponseFactory;
 import com.appirio.tech.core.auth.AuthUser;
+import com.appirio.tech.core.service.identity.clients.MemberApiClient;
 import com.appirio.tech.core.service.identity.dao.RoleDAO;
+import com.appirio.tech.core.service.identity.representation.MemberInfo;
 import com.appirio.tech.core.service.identity.representation.Role;
+import com.appirio.tech.core.service.identity.representation.RoleSubjects;
 import com.appirio.tech.core.service.identity.util.Utils;
 import com.codahale.metrics.annotation.Timed;
 import io.dropwizard.auth.Auth;
@@ -38,8 +41,11 @@ import static com.appirio.tech.core.service.identity.util.Constants.MSG_TEMPLATE
 import static javax.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
 import static javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * API resource to manage roles.
@@ -63,12 +69,15 @@ public class RoleResource implements GetResource<Role>, DDLResource<Role>{
 	private static final Logger logger = Logger.getLogger(RoleResource.class);
 
 	protected RoleDAO dao;
+
+	protected MemberApiClient memberApiClient;
 	
 	public RoleResource() {
 	}
 
-	public RoleResource(RoleDAO roleDao) {
+	public RoleResource(RoleDAO roleDao, MemberApiClient memberApiClient) {
 		this.dao = roleDao;
+		this.memberApiClient = memberApiClient;
 	}
 	public RoleDAO getDao() {
 		return dao;
@@ -78,7 +87,15 @@ public class RoleResource implements GetResource<Role>, DDLResource<Role>{
 		this.dao = dao;
 	}
 
-    /**
+	public MemberApiClient getMemberApiClient() {
+		return memberApiClient;
+	}
+
+	public void setMemberApiClient(MemberApiClient memberApiClient) {
+		this.memberApiClient = memberApiClient;
+	}
+
+	/**
      * Get roles.
      * 
      * @param authUser the authenticated user
@@ -258,10 +275,31 @@ public class RoleResource implements GetResource<Role>, DDLResource<Role>{
         }
         
         Role role = null;
+		RoleSubjects roleSubjects = null;
         try {
     		if (hasField(selector, "subjects")) {
     			logger.info("Found subjects");
     			role = dao.getSubjects(roleId);
+				if (role != null) {
+					roleSubjects = new RoleSubjects();
+					roleSubjects.setRoleName(role.getRoleName());
+					roleSubjects.setSubjects(new ArrayList<>());
+					if (!role.getSubjects().isEmpty()) {
+						List<MemberInfo> memberList = memberApiClient.getUserInfoList(role.getSubjects());
+						Map<String, MemberInfo> infoMap = memberList.stream().collect(
+								Collectors.toMap(m -> m.getUserId().toString(), model -> model));
+						for (TCID userId: role.getSubjects()) {
+							MemberInfo info = new MemberInfo();
+							info.setUserId(Long.parseLong(userId.getId()));
+							if (infoMap.containsKey(userId.getId())) {
+								MemberInfo realInfo = infoMap.get(userId.getId());
+								info.setEmail(realInfo.getEmail());
+								info.setHandle(realInfo.getHandle());
+							}
+							roleSubjects.getSubjects().add(info);
+						}
+					}
+				}
     		} else {
     			role = dao.populateById(selector, roleId);
     		}
@@ -273,6 +311,9 @@ public class RoleResource implements GetResource<Role>, DDLResource<Role>{
         if (role == null)
             throw new APIRuntimeException(HttpServletResponse.SC_NOT_FOUND);
 
+		if (roleSubjects != null) {
+			return ApiResponseFactory.createFieldSelectorResponse(roleSubjects, selector);
+		}
         return ApiResponseFactory.createFieldSelectorResponse(role, selector);
 	}
 
