@@ -156,6 +156,10 @@ eventBusServiceClient:
     topic: @eventBusServiceClient.configuration.topic@
     originator: @eventBusServiceClient.configuration.originator@
 
+#for Member API, is for the real dev environment
+memberApiClient:
+  endpoint: @memberApiClient.endpoint@
+
 m2mAuthConfig:
   clientId: @m2mAuthConfig.clientId@
   clientSecret: @m2mAuthConfig.clientSecret@
