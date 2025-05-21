@@ -801,7 +801,7 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
         if (password == null)
             throw new IllegalArgumentException("password must be specified.");
 
-        logger.debug("Authenticating user ID: " + userId);
+        logger.info("Authenticating user ID: " + userId);
 
         User user = findUserById(userId);
 
@@ -811,13 +811,13 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
     protected User authenticate(User user, String password) {
         if (user == null)
         {
-            logger.debug("No user provided to authenticate");
+            logger.info("No user provided to authenticate");
             return null;
         }
         if (password == null)
             throw new IllegalArgumentException("password must be specified.");
         
-        logger.debug("Testing encoded password: " + user.getCredential().getEncodedPassword().trim() + " against provided one: " + Utils.encodePassword(password));
+        logger.info("Testing encoded password: " + user.getCredential().getEncodedPassword().trim() + " against provided one: " + Utils.encodePassword(password));
         if(user.getCredential().getEncodedPassword().trim().equals(Utils.encodePassword(password))){
             return user; //Authentication successful
         } else {
