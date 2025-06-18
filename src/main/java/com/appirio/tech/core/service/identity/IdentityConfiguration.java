@@ -108,7 +108,14 @@ public class IdentityConfiguration extends APIBaseConfiguration {
     @NotNull
     @JsonProperty("eventBusServiceClient")
     private final BaseClientConfiguration eventBusServiceClientConfig = new BaseClientConfiguration();
-        
+
+	/**
+	 * The Member API URL
+	 */
+	@Valid
+	@NotNull
+	@JsonProperty("memberApiClient")
+	private final BaseClientConfiguration memberApiClientConfig = new BaseClientConfiguration();
 		
 	
 	public DataSourceFactory getDataSourceFactory() {
@@ -181,4 +188,12 @@ public class IdentityConfiguration extends APIBaseConfiguration {
     public BaseClientConfiguration getEventBusServiceClientConfig() {
         return this.eventBusServiceClientConfig;
     }
+
+	/**
+	 * Get memberApiClientConfig
+	 * @return memberApiClientConfig
+	 */
+	public BaseClientConfiguration getMemberApiClientConfig() {
+		return memberApiClientConfig;
+	}
 }

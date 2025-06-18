@@ -86,6 +86,8 @@
 @eventBusServiceClient.configuration.topic@={{EVENTBUSSERVICE_TOPIC}}
 @eventBusServiceClient.configuration.originator@={{EVENTBUSSERVICE_ORIGINATOR}}
 
+@memberApiClient.endpoint@={{MEMBERSERVICE_ENDPOINT}}
+
 @m2mAuthConfig.clientId@={{M2MAUTHCONFIG_CID}}
 @m2mAuthConfig.clientSecret@={{M2MAUTHCONFIG_SECRET}}
 @m2mAuthConfig.audience@={{M2MAUTHCONFIG_AUDIENCE}}

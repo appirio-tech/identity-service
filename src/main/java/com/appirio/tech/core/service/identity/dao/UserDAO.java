@@ -807,7 +807,10 @@ public abstract class UserDAO implements DaoBase<User>, Transactional<UserDAO> {
 
     protected User authenticate(User user, String password) {
         if (user == null)
+        {
+            logger.info("No user provided to authenticate");
             return null;
+        }
         if (password == null)
             throw new IllegalArgumentException("password must be specified.");
         

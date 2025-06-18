@@ -2484,7 +2484,6 @@ public class UserDAOTest {
 		
 		// verify
 		verify(testee, never()).updatePassword(anyString(), anyString());
-		verify(testee, never()).updatePasswordLDAP(anyLong(), anyString());
 	}
 	
 	

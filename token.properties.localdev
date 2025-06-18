@@ -60,6 +60,8 @@
 @eventBusServiceClient.configuration.topic@=dummy
 @eventBusServiceClient.configuration.originator@=dummy-service
 
+@memberApiClient.endpoint@=dummy
+
 @m2mAuthConfig.clientId@=dummy
 @m2mAuthConfig.clientSecret@=dummy
 @m2mAuthConfig.audience@=dummy
