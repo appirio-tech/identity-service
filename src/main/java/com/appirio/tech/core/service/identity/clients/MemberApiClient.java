@@ -41,7 +41,7 @@ public class MemberApiClient extends BaseClient {
         this.m2mAuthConfiguration = m2mAuthConfiguration;
     }
 
-    public List<MemberInfo> getUserInfoList(Set<TCID> userIds) {
+    public List<MemberInfo> getUserInfoList(TCID[] userIds) {
         List<MemberInfo> res = new ArrayList<>();
         try  {
             StringBuilder strBuffer = new StringBuilder(this.config.getEndpoint());
