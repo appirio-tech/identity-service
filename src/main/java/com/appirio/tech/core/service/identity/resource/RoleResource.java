@@ -285,18 +285,35 @@ public class RoleResource implements GetResource<Role>, DDLResource<Role>{
 					roleSubjects.setRoleName(role.getRoleName());
 					roleSubjects.setSubjects(new ArrayList<>());
 					if (!role.getSubjects().isEmpty()) {
-						List<MemberInfo> memberList = memberApiClient.getUserInfoList(role.getSubjects());
-						Map<String, MemberInfo> infoMap = memberList.stream().collect(
-								Collectors.toMap(m -> m.getUserId().toString(), model -> model));
-						for (TCID userId: role.getSubjects()) {
-							MemberInfo info = new MemberInfo();
-							info.setUserId(Long.parseLong(userId.getId()));
-							if (infoMap.containsKey(userId.getId())) {
-								MemberInfo realInfo = infoMap.get(userId.getId());
-								info.setEmail(realInfo.getEmail());
-								info.setHandle(realInfo.getHandle());
+						int currentIndex=0;
+						TCID[] subjects = role.getSubjects().toArray(new TCID[0]);
+						// If we try to get _all_ member details at once, the member API may throw a 502 because the request is too big
+						// So, we split it up into blocks of 40
+						while(currentIndex<subjects.length) {
+							ArrayList<TCID> currentRequest=new ArrayList<TCID>();
+							for(int i=0; i<=40; i++){
+								if(currentIndex>=subjects.length){
+									break;
+								}
+								else{
+									currentRequest.add(subjects[currentIndex]);
+									currentIndex++;
+								}
 							}
-							roleSubjects.getSubjects().add(info);
+
+							List<MemberInfo> memberList = memberApiClient.getUserInfoList(currentRequest.toArray(new TCID[0]));
+							Map<String, MemberInfo> infoMap = memberList.stream().collect(
+									Collectors.toMap(m -> m.getUserId().toString(), model -> model));
+							for (TCID userId: currentRequest) {
+								MemberInfo info = new MemberInfo();
+								info.setUserId(Long.parseLong(userId.getId()));
+								if (infoMap.containsKey(userId.getId())) {
+									MemberInfo realInfo = infoMap.get(userId.getId());
+									info.setEmail(realInfo.getEmail());
+									info.setHandle(realInfo.getHandle());
+								}
+								roleSubjects.getSubjects().add(info);
+							}
 						}
 					}
 				}
