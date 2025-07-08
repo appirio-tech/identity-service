@@ -292,12 +292,10 @@ public class RoleResource implements GetResource<Role>, DDLResource<Role>{
 						while(currentIndex<subjects.length) {
 							ArrayList<TCID> currentRequest=new ArrayList<TCID>();
 							for(int i=0; i<=40; i++){
+								currentRequest.add(subjects[currentIndex]);
+								currentIndex++;
 								if(currentIndex>=subjects.length){
 									break;
-								}
-								else{
-									currentRequest.add(subjects[currentIndex]);
-									currentIndex++;
 								}
 							}
 
