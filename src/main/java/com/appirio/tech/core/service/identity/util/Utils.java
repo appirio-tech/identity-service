@@ -171,6 +171,7 @@ public class Utils {
 		if(key==null)
 			throw new IllegalArgumentException("key must be specified.");
 		try {
+			logger.error("Key: " + key + " Decoded: " + Base64.decodeBase64(key));
 			SecretKeySpec sksSpec = new SecretKeySpec(Base64.decodeBase64(key), "Blowfish");
 			Cipher cipher = Cipher.getInstance("Blowfish");
 			cipher.init(Cipher.ENCRYPT_MODE, sksSpec);
@@ -208,7 +209,6 @@ public class Utils {
 	 */
 	public static String decodePassword(String encodedPassword, String key) {
 		try {
-			logger.error("Key: " + key + " Decoded: " + Base64.decodeBase64(key));
 			SecretKeySpec sksSpec = new SecretKeySpec(Base64.decodeBase64(key), "Blowfish");
 			Cipher cipher = Cipher.getInstance("Blowfish");
 			cipher.init(Cipher.DECRYPT_MODE, sksSpec);
