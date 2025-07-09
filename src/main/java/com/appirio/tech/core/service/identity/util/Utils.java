@@ -208,7 +208,7 @@ public class Utils {
 	 */
 	public static String decodePassword(String encodedPassword, String key) {
 		try {
-			logger.info("Key: " + key + " Decoded: " + Base64.decodeBase64(key));
+			logger.error("Key: " + key + " Decoded: " + Base64.decodeBase64(key));
 			SecretKeySpec sksSpec = new SecretKeySpec(Base64.decodeBase64(key), "Blowfish");
 			Cipher cipher = Cipher.getInstance("Blowfish");
 			cipher.init(Cipher.DECRYPT_MODE, sksSpec);
