@@ -176,7 +176,6 @@ public class Utils {
 			Cipher cipher = Cipher.getInstance("Blowfish");
 			cipher.init(Cipher.ENCRYPT_MODE, sksSpec);
 			byte[] encrypted = cipher.doFinal(password.getBytes("UTF-8"));
-			logger.info(String.format("iv = %s", cipher.getIV().toString()));
 			logger.info(String.format(" password. (password=%s)", password));
 			logger.info(String.format(" key (key=%s)",key));
 			logger.info(String.format("decode password. (encoded=%s)", encrypted));
